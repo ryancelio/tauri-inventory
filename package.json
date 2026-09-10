@@ -1,0 +1,25 @@
+{
+  "name": "tauri-inventory",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:tauri": "npm run tauri dev -w @tauri-inventory/pos",
+    "dev:api": "npm run dev -w @tauri-inventory/api",
+    "build:types": "npm run build -w @tauri-inventory/types"
+  },
+  "allowScripts": {
+    "bcrypt@6.0.0": true,
+    "esbuild@0.28.0": true,
+    "esbuild@0.27.7": true,
+    "sharp@0.34.5": true,
+    "better-sqlite3@12.11.1": true
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "prettier": "^3.8.4",
+    "prettier-plugin-tailwindcss": "^0.8.0"
+  }
+}

@@ -1,0 +1,49 @@
+/* @import url("https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"); */
+@import "tailwindcss";
+@import "overlayscrollbars/overlayscrollbars.css";
+@import "./FontFaces.css";
+
+:root {
+  interpolate-size: allow-keywords;
+}
+@theme {
+  --color-cmblue: #0000e0;
+  --color-cmred: #d90202;
+}
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+body {
+  /* font-family: "Roboto", "Google Sans"; */
+  font-family: "Inter";
+}
+.os-theme-custom.os-scrollbar {
+  --os-size: 8px;
+  --os-padding-perpendicular: 0px;
+  --os-padding-axis: 0px;
+}
+
+.os-theme-custom.os-scrollbar .os-scrollbar-track {
+  background: rgba(120, 90, 200, 0.12);
+  border-radius: 4px;
+}
+
+.os-theme-custom.os-scrollbar .os-scrollbar-handle {
+  background: rgba(80, 60, 180, 0.45);
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.os-theme-custom.os-scrollbar .os-scrollbar-handle:hover {
+  background: rgba(80, 60, 180, 0.7);
+}

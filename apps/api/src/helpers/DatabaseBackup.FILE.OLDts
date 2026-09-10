@@ -1,0 +1,127 @@
+import { createGzip } from "zlib";
+import { spawn } from "child_process";
+import path from "path";
+import { createWriteStream, createReadStream, mkdirSync } from "fs";
+import { NextFunction, Request, Response } from "express";
+
+const BACKUP_CACHE_DIR = path.join(__dirname, "cache", "backups");
+const CACHE_DURATION_MS = 20 * 60 * 1000;
+
+interface CacheState {
+  isGenerating: boolean;
+  lastGenerated: number | null;
+  filePath: string;
+  promise: Promise<string> | null;
+}
+
+const backupCache: CacheState = {
+  isGenerating: false,
+  lastGenerated: null,
+  filePath: path.join(BACKUP_CACHE_DIR, "latest_backup.sql.gz"),
+  promise: null,
+};
+
+mkdirSync(BACKUP_CACHE_DIR, { recursive: true });
+
+export function generateBackupFile(): Promise<string> {
+  if (backupCache.promise) {
+    return backupCache.promise;
+  }
+
+  backupCache.isGenerating = true;
+
+  backupCache.promise = new Promise<string>((resolve, reject) => {
+    console.log("Iniciando MariaDB dump for backup...");
+    // LOG TO FILE "Backup #N Started at DATE"
+    const dump = spawn("mariadb-dump", [
+      "-u",
+      "backup_user",
+      "-p" + "password4312",
+      "--single-transaction",
+      "--quick",
+      "CelioMoveis",
+    ]);
+
+    const gzip = createGzip();
+    const writeStream = createWriteStream(backupCache.filePath);
+
+    dump.stdout.pipe(gzip).pipe(writeStream);
+
+    dump.stderr.on("data", (data) => {
+      console.error(`[mariadb-dump stderr]: ${data}`);
+    });
+
+    writeStream.on("finish", () => {
+      backupCache.isGenerating = false;
+      backupCache.lastGenerated = Date.now();
+      backupCache.promise = null;
+      console.log("MariaDB dump gerado com sucesso!");
+      // LOG
+      resolve(backupCache.filePath);
+    });
+    writeStream.on("error", (err) => {
+      backupCache.isGenerating = false;
+      backupCache.promise = null;
+      reject(err);
+    });
+
+    dump.on("error", (err) => {
+      backupCache.isGenerating = false;
+      backupCache.promise = null;
+      reject(err);
+    });
+  });
+  return backupCache.promise;
+}
+
+export async function backupDownload(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const now = Date.now();
+    const isCacheValid =
+      backupCache.lastGenerated &&
+      now - backupCache.lastGenerated < CACHE_DURATION_MS;
+
+    res.setHeader("Content-Type", "application/gzip");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="backup-local.sql.gz"',
+    );
+
+    if (isCacheValid && !backupCache.isGenerating) {
+      console.log("Servindo backup em cache...");
+      // LOG
+
+      const fileStream = createReadStream(backupCache.filePath);
+      fileStream.pipe(res);
+      return;
+    }
+
+    if (backupCache.isGenerating) {
+      console.log(
+        "Backup request recieved while one dump is in progress, awaiting...",
+      );
+      // LOG
+      const filePath = await backupCache.promise;
+
+      const fileStream = createReadStream(backupCache.filePath);
+      fileStream.pipe(res);
+      return;
+    }
+
+    // No pending request or valid cache
+    const filePath = await generateBackupFile();
+    const fileStream = createReadStream(backupCache.filePath);
+    fileStream.pipe(res);
+    return;
+  } catch (e) {
+    console.error("Error processing backup dump: ", e);
+    res.status(500).json({
+      response:
+        "Erro interno ao realizar backup. Entre em contato com um administrador!",
+    });
+  }
+}
