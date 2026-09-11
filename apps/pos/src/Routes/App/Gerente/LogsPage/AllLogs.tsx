@@ -1,46 +1,13 @@
-import {
-  AlertOctagon,
-  AlertTriangle,
-  ArrowRight,
-  ChevronDown,
-  Factory,
-  Inbox,
-  Layers,
-  Loader2,
-  LogIn,
-  Package,
-  PencilLine,
-  PlusCircle,
-  Tag,
-  Trash2,
-  UserIcon,
-} from "lucide-react";
-import {
-  ActionFunctionArgs,
-  LoaderFunctionArgs,
-  useFetcher,
-  useLoaderData,
-  useNavigate,
-  useRouteError,
-  useSearchParams,
-} from "react-router";
+import { Loader2 } from "lucide-react";
+import { LoaderFunctionArgs, useLoaderData, useRouteError } from "react-router";
 import { getAllLogs } from "../../../../api/apiLogs";
-import { useReducedMotion, motion, AnimatePresence } from "motion/react";
-import { useRef, useState } from "react";
-import { string } from "zod";
 import {
-  AuditLogAction,
-  AuditLogLevel,
-  AuditLogTargetType,
-  AuditLog,
   isAuditLogLevel,
   isAuditLogAction,
-} from "../../../../../../../packages/types/database/Logs";
+} from "@tauri-inventory/types";
 import { AuditLogList } from "./AuditLog/AuditLogsList";
 import { getUsuarios } from "../../../../api/apiHelper";
 import { Item } from "../../Mercadorias/MercadoriaEdit/FormComponents/BASE-UI/AutoCompleteDropdown/AutoCompleteDropdown";
-import QueryString from "qs";
-import { timeout } from "../../../../Helpers/delay";
 
 export function HydrateFallback() {
   return (
@@ -78,7 +45,7 @@ export async function loader({ url }: LoaderFunctionArgs) {
     level: isAuditLogLevel(level) ? level : undefined,
   });
 
-  const users = await getUsuarios();
+  const users = await getUsuarios(true);
 
   const usersItems: Item[] = users.map((user) => ({
     label: user.nome,
@@ -94,28 +61,10 @@ export async function loader({ url }: LoaderFunctionArgs) {
 export function Component() {
   const { logs, usersItems } = useLoaderData<typeof loader>();
 
-  // const navigate = useNavigate();
-  const [searchParams,setSearchParams] = useSearchParams();
-
-  const formRef = useRef(null);
-
-  const submitForm = () => {
-    if (!formRef.current) {
-      return;
-    }
-    const datas = Object.fromEntries(new FormData(formRef.current).entries());
-    const queryString = QueryString.stringify(datas,{skipNulls: true});
-    // console.log(queryString);
-    // navigate(`?${queryString}`, { replace: true });
-    setSearchParams(queryString)
-  };
-
   return (
     <AuditLogList
       logs={logs}
       usersItems={usersItems}
-      submitForm={submitForm}
-      // fetcherTarget={"/gerente/logs/all"}
       title="Registro de auditoria"
       description="Histórico de ações realizadas no sistema"
     />

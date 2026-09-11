@@ -1,4 +1,4 @@
-import { ActionFunction, LoaderFunction, redirect } from "react-router";
+import { ActionFunction, LoaderFunction, LoaderFunctionArgs, redirect } from "react-router";
 import { apiLogin } from "../../api/apiHelper";
 import LoginPage from "./LoginPage";
 import { apiStatusContext } from "../../context/contexts";
@@ -27,7 +27,7 @@ export const action: ActionFunction = async ({ request }) => {
   }
 };
 
-export const loader: LoaderFunction = async ({ context }) => {
+export async function loader({ context }: LoaderFunctionArgs){
   let apiStatus = context.get(apiStatusContext);
   let isOfflineMode = await invoke<boolean>("get_offline_mode");
 

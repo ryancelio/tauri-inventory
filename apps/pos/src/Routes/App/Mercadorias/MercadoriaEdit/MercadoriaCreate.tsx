@@ -1,5 +1,5 @@
 import { ActionFunction, LoaderFunction, redirect } from "react-router";
-import { MercadoriaEditPage, MercEditLoader } from "./MercadoriaEditPage";
+import { MercadoriaEditPage } from "./MercadoriaEditPage";
 import {
   getCategorias,
   getFabricantes,
@@ -10,13 +10,12 @@ import {
 } from "../../../../api/apiHelper";
 import { userContext } from "../../../../context/contexts";
 import {
-  ApiResponse,
   IMercadoria,
   MercadoriaDB,
   MercadoriaPhotosListing,
 } from "@tauri-inventory/types";
-import { invoke } from "@tauri-apps/api/core";
 import { formDataToMercadoria } from "../../../../Helpers/formDataHelper";
+import { getIsOfflineModeActive } from "../../../../backend/backendHelper";
 
 export const loader: LoaderFunction = async ({ request, context }) => {
   const url = new URL(request.url);
@@ -26,12 +25,12 @@ export const loader: LoaderFunction = async ({ request, context }) => {
     Object.fromEntries(searchParams);
 
   const usuario = context.get(userContext);
+  const isOfflineMode = getIsOfflineModeActive();
 
   if (!usuario) {
     throw new Error("Usuario nao autenticado");
   }
 
-  console.log(mercadoriaParams);
 
   const pageData = Promise.all([
     getFabricantes(),
@@ -77,7 +76,7 @@ export const loader: LoaderFunction = async ({ request, context }) => {
   return {
     pageData,
     usuario,
-    isOfflineMode: false,
+    isOfflineMode,
   };
 };
 

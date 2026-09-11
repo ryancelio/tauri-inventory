@@ -132,7 +132,7 @@ export default function AddAtributoModal({
                 name="tipo"
                 label="Tipo de dado"
                 items={TIPO_OPTIONS}
-                defaultValue={atributo?.tipo}
+                defaultValue={atributo ? {label: atributo.tipo, value: atributo.tipo} : undefined}
                 className="h-10"
               />
             </div>

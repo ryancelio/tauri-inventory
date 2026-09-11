@@ -4,24 +4,20 @@ import {
   isAuditLogAction,
   isAuditLogLevel,
 } from "@tauri-inventory/types";
-import { Factory, User } from "lucide-react";
-import { LoaderFunctionArgs, useLoaderData, useNavigate } from "react-router";
+import { Factory } from "lucide-react";
+import { LoaderFunctionArgs, useLoaderData } from "react-router";
 import { getFabricantes, getUsuarios } from "../../../../api/apiHelper";
-import { getLogsFabricantes, getLogsUsuario } from "../../../../api/apiLogs";
+import { getLogsFabricantes } from "../../../../api/apiLogs";
 import AutoCompleteDropdown, {
   Item,
 } from "../../Mercadorias/MercadoriaEdit/FormComponents/BASE-UI/AutoCompleteDropdown/AutoCompleteDropdown";
 import { AuditLogList, useFilterParams } from "./AuditLog/AuditLogsList";
-import { useMemo, useRef } from "react";
-import QueryString from "qs";
 
 export async function loader({ url }: LoaderFunctionArgs) {
-  // await new Promise((res) => setTimeout(res, 800));
-
   const page = Number(url.searchParams.get("page"));
   const userId = Number(url.searchParams.get("userId"));
-  let action = url.searchParams.get("action");
-  let level = url.searchParams.get("level");
+  const action = url.searchParams.get("action");
+  const level = url.searchParams.get("level");
 
   const fabricanteId = Number(url.searchParams.get("fabricanteId"));
   let logs: ApiListResponse<AuditLog> = { count: 0, data: [] };
@@ -52,7 +48,7 @@ export async function loader({ url }: LoaderFunctionArgs) {
     usersItems,
     users,
     fabricantesItems,
-    fabricante: fabricantes.find((fab) => fab.id == fabricanteId),
+    fabricante: fabricantes.find((fab) => fab.id === fabricanteId),
   };
 }
 
@@ -60,22 +56,8 @@ export function Component() {
   const { fabricantesItems, fabricante, logs, usersItems } =
     useLoaderData<typeof loader>();
 
-    const {updateFilters} = useFilterParams();
+  const { updateFilters } = useFilterParams();
 
-
-
-  // const submitForm = () => {
-  //   if (!formRef.current) {
-  //     return;
-  //   }
-  //   let datas = Object.fromEntries(new FormData(formRef.current).entries());
-
-  //   console.log("datas", datas);
-
-  //   const queryString = QueryString.stringify(datas);
-  //   console.log(queryString);
-  //   navigate(`?${queryString}`, { replace: true });
-  // };
   return (
     <AuditLogList
       logs={logs}
@@ -96,11 +78,16 @@ export function Component() {
             items={fabricantesItems}
             name="fabricanteId"
             label="fabricante"
-            selectedItem={fabricante ? {label: fabricante.nome, value: fabricante.id}: undefined}
-            // selectedItem={}
+            selectedItem={
+              fabricante
+                ? { label: fabricante.nome, value: fabricante.id }
+                : undefined
+            }
             placeholder="Selecione o Fabricante"
-            classNames={{input: "bg-white"}}
-            onValueChange={(item) =>               updateFilters({fabricanteId: item?.value?.toString() })}
+            classNames={{ input: "bg-white" }}
+            setSelectedItem={(item) =>
+              updateFilters({ fabricanteId: item?.value?.toString() })
+            }
           />
         </div>
       }

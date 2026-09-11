@@ -72,8 +72,9 @@ export default function TableFooter({
           <option value="100">100</option>
         </select> */}
         <div className="w-fit">
-
-        <UISelect items={[
+        <UISelect style="underlined"
+        size="sm"
+         items={[
           {value: 10, label: "10"},
           {value: 25, label: "25"},
           {value: 50, label: "50"},

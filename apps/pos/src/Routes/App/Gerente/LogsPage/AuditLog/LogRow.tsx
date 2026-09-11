@@ -15,10 +15,7 @@ export function LogRow({ log, index }: { log: AuditLog; index: number }) {
   const menuHandle = Menu.createHandle();
 
   const [expanded, setExpanded] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const action = searchParams.get("action") || undefined;
-  const level = searchParams.get("level") ?? undefined;
-  const userId = searchParams.get("userId") ?? undefined;
+  const [, setSearchParams] = useSearchParams();
 
   const prefersReducedMotion = useReducedMotion();
 
@@ -147,7 +144,7 @@ export function LogRow({ log, index }: { log: AuditLog; index: number }) {
               {
                 action: () =>
                   navigate(
-                    `/gerente/logs/usuarios?userIdTarget=${log.Usuario?.id}`,
+                    `/gerente/logs/usuarios?targetUserId=${log.Usuario?.id}`,
                   ),
                 label: `Alterações realizadas sob ${log.Usuario?.nome}`,
               },

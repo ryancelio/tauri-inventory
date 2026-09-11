@@ -54,8 +54,6 @@ export async function getAllLogs(
       ...actionFilter,
     };
 
-    console.log(where);
-
     const { count, rows } = await AuditLogModel.findAndCountAll({
       where,
       limit: LOG_PAGE_LIMIT,
@@ -72,7 +70,6 @@ export async function getAllLogs(
       attributes: { exclude: ["usuarioId"] },
     });
 
-    // console.log({ count, data: rows[0].get({ plain: true }) });
     return res.status(200).json({ count, data: rows });
   } catch (e) {
     console.error(e);

@@ -42,14 +42,14 @@ pub enum AuditLogLevel {
 pub struct AuditLog {
     id: i32,
     #[serde(rename = "Usuario")]
-    usuario: LoggedUser,
+    usuario: Option<LoggedUser>,
     alvo_tipo: AuditLogTargetType,
-    alvo_id: i32,
+    alvo_id: Option<i32>,
     acao: AuditLogAction,
     nivel: AuditLogLevel,
-    dados: serde_json::Value,
+    dados: Option<serde_json::Value>,
     data: String,
-    ip: String,
+    ip: Option<String>,
 }
 
 #[tauri::command]
@@ -182,7 +182,7 @@ pub async fn get_logs_usuario(
 
     let request = state.http_client.get(url).bearer_auth(token);
 
-    let identifier = &String::from("get_logs_mercadoria");
+    let identifier = &String::from("get_logs_usuario");
     let response = try_connection(request, identifier, &state, &app).await?;
     let body = get_body(&app, response, identifier).await?;
 

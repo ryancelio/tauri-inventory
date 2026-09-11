@@ -2,15 +2,11 @@
 import * as React from "react";
 import { Combobox, Separator } from "@base-ui/react";
 import {
-  getMercadoriaKeyListing,
   getMercadoriaSimpleListing,
   getMercadoriaSimpleListingLog,
 } from "../../../../../../../api/apiHelper";
 import { Check, ChevronDown, X } from "lucide-react";
-import {
-  MercadoriaKeyListing,
-  MercadoriaSimpleResponse,
-} from "@tauri-inventory/types";
+import { MercadoriaSimple } from "@tauri-inventory/types";
 import { Item } from "./AutoCompleteDropdown";
 
 interface AsyncSearchComboboxProps {
@@ -125,7 +121,7 @@ export default function MercadoriaSimpleSelect({
         startTransition(async () => {
           setError(null);
           try {
-            let result: MercadoriaSimpleResponse[];
+            let result: MercadoriaSimple[];
             if (isLog) {
               result = await getMercadoriaSimpleListingLog(nextSearchValue);
             } else {
