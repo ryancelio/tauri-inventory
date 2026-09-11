@@ -89,15 +89,6 @@ export const ALVO_CONFIG: Record<
   [AuditLogTargetType.ATRIBUTO]: { label: "Atributo", icon: Timeline },
 };
 
-export const ALVO_ITEMS: Item[] = [
-  { value: AuditLogTargetType.MERCADORIA, label: "Mercadoria" },
-  { value: AuditLogTargetType.FABRICANTE, label: "Fabricante" },
-  { value: AuditLogTargetType.CATEGORIA, label: "Categoria" },
-  { value: AuditLogTargetType.GRUPO, label: "Grupo" },
-  { value: AuditLogTargetType.USUARIO, label: "Usuario" },
-  { value: AuditLogTargetType.ATRIBUTO, label: "Atributi" },
-];
-
 export const ACAO_ITEMS: Item[] = [
   { value: AuditLogAction.CREATE, label: "Criação" },
   { value: AuditLogAction.UPDATE, label: "Atualização" },

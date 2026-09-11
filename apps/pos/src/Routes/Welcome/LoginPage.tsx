@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
-import { apiLogin } from "../../api/apiHelper";
+import { useFetcher, useLoaderData } from "react-router";
 import {
-  ActionFunction,
-  Form,
-  Link,
-  redirect,
-  useActionData,
-  useFetcher,
-  useLoaderData,
-} from "react-router";
-import { ApiStatusCheck } from "../../context/contexts";
-import { Bolt, Loader2 } from "lucide-react";
-import { AnimatePresence } from "motion/react";
+  AlertCircle,
+  Bolt,
+  Eye,
+  EyeOff,
+  Loader2,
+  Lock,
+  User,
+  WifiOff,
+} from "lucide-react";
+import { loader } from "./LoginLayout";
+import { AnimatePresence, motion } from "motion/react";
 import ConfigModal from "../ConfigOptions/ConfigModal";
 
 export default function LoginPage() {
@@ -19,135 +19,247 @@ export default function LoginPage() {
 
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
-  const [error, setError] = useState<boolean>(false);
+  const [hasError, setHasError] = useState<boolean>(false);
   const [cfgModal, setCfgModal] = useState(false);
 
-  const { apiStatus, isOfflineMode } = useLoaderData<{
-    apiStatus: ApiStatusCheck;
-    isOfflineMode: boolean;
-  }>();
+  const { isOfflineMode } = useLoaderData<typeof loader>();
+
+  // Extrai mensagens de erro de múltiplos formatos possíveis do backend
+  const getErrorMessage = (data: any): string => {
+    if (!data) return "";
+    if (typeof data === "string") return data;
+    if (data.message?.response) return data.message.response;
+    if (data.message) return data.message;
+    if (data.error) return data.error;
+    return "Ocorreu um erro ao realizar o login. Tente novamente.";
+  };
+
+  const errorMessage = getErrorMessage(fetcher.data);
+  const isSubmitting = fetcher.state !== "idle";
 
   useEffect(() => {
-    setError(Boolean(fetcher.data));
+    if (fetcher.data) {
+      setHasError(true);
+    }
   }, [fetcher.data]);
 
   return (
     <>
-      <div className="grid h-full w-full place-items-center">
-        <div className="flex flex-col gap-4">
-          <div className="grid h-12 w-full place-items-center">
-            <h1 className="text-2xl font-semibold text-cmblue text-shadow-md">
-              Entrar
+      <div className="relative flex min-h-screen w-full items-center justify-center bg-slate-50 p-4">
+        {/* Card Principal */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="w-full max-w-md rounded-2xl border border-slate-200/80 bg-white p-8 shadow-xl shadow-slate-200/50"
+        >
+          {/* Cabeçalho */}
+          <div className="mb-6 flex flex-col items-center gap-2 text-center">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-800">
+              Acesso de Funcionário
             </h1>
+            <p className="text-sm text-slate-500">
+              Digite suas credenciais para continuar
+            </p>
+
+            {/* Badge do Modo Offline */}
+            {isOfflineMode && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-700 border border-amber-200"
+              >
+                <WifiOff className="size-3.5" />
+                <span>Modo de Operação Offline</span>
+              </motion.div>
+            )}
           </div>
-          <fetcher.Form method="POST" className="flex flex-col gap-4">
+
+          {/* Form */}
+          <fetcher.Form method="POST" className="space-y-4">
             <SecureInput
-              inputName="usuario"
               inputId="usuario"
+              inputName="usuario"
+              label="Usuário"
+              icon={User}
               inputValue={usuario}
-              setInputValue={setUsuario}
+              setInputValue={(val) => {
+                setUsuario(val);
+                setHasError(false);
+              }}
               autoFocus
-              error={{ data: fetcher.data, error: error }}
-              setError={setError}
+              hasError={hasError}
+              disabled={isSubmitting}
             />
+
             <SecureInput
               inputId="senha"
               inputName="senha"
+              label="Senha"
               inputType="password"
+              icon={Lock}
               inputValue={senha}
-              setInputValue={setSenha}
-              error={{ data: fetcher.data, error: error }}
-              setError={setError}
+              setInputValue={(val) => {
+                setSenha(val);
+                setHasError(false);
+              }}
+              hasError={hasError}
+              disabled={isSubmitting}
             />
-            <p
-              className={`h-4 w-full text-center text-cmred transition-all ease-in ${error ? "opacity-100" : "opacity-0"}`}
+
+            {/* Banner de Erro Animado */}
+            <AnimatePresence mode="wait">
+              {hasError && errorMessage && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, y: -6 }}
+                  animate={{ opacity: 1, height: "auto", y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-600">
+                    <AlertCircle className="size-4 shrink-0 text-red-500 mt-0.5" />
+                    <span className="font-medium leading-relaxed">
+                      {errorMessage}
+                    </span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Botão de Entrar */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 font-semibold text-white shadow-md shadow-blue-500/20 transition-all hover:bg-blue-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {(fetcher.data?.message &&
-                error &&
-                fetcher.data.message.response) ||
-                ""}
-            </p>
-            <div className="flex w-full justify-center pt-4">
-              <button
-                type="submit"
-                className="cursor-pointer rounded-xl bg-blue-500 px-6 py-3 font-semibold text-white hover:brightness-90"
-                disabled={fetcher.state !== "idle"}
-              >
-                <div className="flex items-center">
-                  {fetcher.state !== "idle" && (
-                    <Loader2 className="animate-spin" />
-                  )}
-                  {isOfflineMode ? "Entrar Offline" : "Entrar"}
-                </div>
-              </button>
-            </div>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="size-5 animate-spin" />
+                  <span>Autenticando...</span>
+                </>
+              ) : (
+                <span>{isOfflineMode ? "Entrar Offline" : "Entrar"}</span>
+              )}
+            </button>
           </fetcher.Form>
-        </div>
-        {/* <button
+        </motion.div>
+
+        {/* Botão de Configurações */}
+        <button
           type="button"
           onClick={() => setCfgModal(true)}
-          className="absolute bottom-4 left-4"
+          title="Configurações do Sistema"
+          className="absolute bottom-5 left-5 flex size-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95"
         >
-          <Bolt />
-        </button> */}
+          <Bolt className="size-5" />
+        </button>
       </div>
-      {/* <AnimatePresence>
+
+      {/* Modal de Configuração */}
+      <AnimatePresence>
         {cfgModal && <ConfigModal onClose={() => setCfgModal(false)} />}
-      </AnimatePresence> */}
+      </AnimatePresence>
     </>
   );
 }
 
+// Interfaces e Componente de Input Reutilizável
+
 export interface SecureInputProps {
   inputName: string;
-  inputId?: string;
+  inputId: string;
+  label?: string;
   inputType?: React.HTMLInputTypeAttribute;
   inputValue: string | number;
-  setInputValue: React.Dispatch<React.SetStateAction<string>>;
+  setInputValue: (value: string) => void;
   onBlur?: () => void;
   autoFocus?: boolean;
-  error: { data: string; error: boolean };
-  setError: React.Dispatch<React.SetStateAction<any>>;
+  hasError?: boolean;
+  disabled?: boolean;
+  icon?: React.ElementType;
 }
 
 function SecureInput({
   inputName,
   inputId,
+  label,
   inputType = "text",
   inputValue,
   setInputValue,
   onBlur,
   autoFocus = false,
-  error,
-  setError,
+  hasError = false,
+  disabled = false,
+  icon: Icon,
 }: SecureInputProps): React.ReactElement {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPasswordType = inputType === "password";
+  const currentType = isPasswordType
+    ? showPassword
+      ? "text"
+      : "password"
+    : inputType;
+
   return (
-    <div className="relative mt-6 flex flex-col">
-      <input
-        id={inputId}
-        name={inputId}
-        type={inputType}
-        value={inputValue}
-        onChange={(e) => {
-          setInputValue(e.target.value);
-          setError(false);
-        }}
-        onBlur={onBlur}
-        autoFocus={autoFocus}
-        className={`peer rounded-lg border-2 bg-transparent p-1 text-xl text-neutral-700 transition-all ease-in focus:border-gray-400 focus:outline-none ${
-          error.error ? "border-red-500/70" : "border-gray-300/70"
-        }`}
-      />
-      <label
-        htmlFor={inputId}
-        className={`pointer-events-none absolute transition-all duration-200 ${
-          String(inputValue).length > 0
-            ? "-top-6 left-0 text-sm text-gray-600"
-            : "top-1.5 left-2 text-xl text-gray-400 peer-focus:-top-6 peer-focus:left-0 peer-focus:text-sm peer-focus:text-gray-600"
-        }`}
-      >
-        {inputName}
-      </label>
+    <div className="relative flex flex-col">
+      <div className="relative flex items-center">
+        {Icon && (
+          <div className="pointer-events-none absolute left-3.5 text-slate-400">
+            <Icon className="size-5" />
+          </div>
+        )}
+
+        <input
+          id={inputId}
+          name={inputName}
+          type={currentType}
+          value={inputValue}
+          disabled={disabled}
+          onChange={(e) => setInputValue(e.target.value)}
+          onBlur={onBlur}
+          autoFocus={autoFocus}
+          placeholder=" "
+          aria-invalid={hasError}
+          className={`peer w-full rounded-xl border bg-slate-50/50 py-3 text-slate-800 transition-all focus:bg-white focus:outline-none disabled:opacity-60 ${
+            Icon ? "pl-11" : "pl-4"
+          } ${isPasswordType ? "pr-11" : "pr-4"} ${
+            hasError
+              ? "border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+              : "border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+          }`}
+        />
+
+        {/* Label Flutuante Melhorado */}
+        <label
+          htmlFor={inputId}
+          className={`pointer-events-none absolute transition-all duration-150 ease-out ${
+            Icon ? "left-11" : "left-4"
+          } peer-focus:text-xs peer-focus:font-semibold peer-focus:-translate-y-3.5 peer-focus:text-blue-600 ${
+            String(inputValue).length > 0
+              ? "-translate-y-3.5 text-xs font-semibold text-slate-500"
+              : "text-slate-400"
+          } ${hasError ? "peer-focus:text-red-500" : ""}`}
+        >
+          {label || inputName}
+        </label>
+
+        {/* Toggle de Visibilidade de Senha */}
+        {isPasswordType && (
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            tabIndex={-1}
+            className="absolute right-3.5 text-slate-400 hover:text-slate-600 focus:outline-none"
+          >
+            {showPassword ? (
+              <EyeOff className="size-5" />
+            ) : (
+              <Eye className="size-5" />
+            )}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,4 @@
 import {
-  RefObject,
   useCallback,
   useEffect,
   useMemo,
@@ -16,12 +15,7 @@ import UISelect from "../../../Components/BASE-UI/Select";
 import AutoCompleteDropdown, {
   Item,
 } from "../../../Mercadorias/MercadoriaEdit/FormComponents/BASE-UI/AutoCompleteDropdown/AutoCompleteDropdown";
-import {
-  Form,
-  useLocation,
-  useNavigation,
-  useSearchParams,
-} from "react-router";
+import { Form, useNavigation, useSearchParams } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
 
 interface AuditLogListProps {
@@ -40,8 +34,6 @@ export function useFilterParams() {
 
   const updateFilters = useCallback(
     (patch: Record<string, string | undefined>) => {
-
-      console.log(patch)
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
@@ -210,8 +202,7 @@ export function AuditLogList({
             label="Nível"
             placeholder="Nivel da log"
             onValueChange={(item) =>
-                {console.log(item);
-              updateFilters({ level: item?.value?.toString() })}
+              updateFilters({ level: item?.value?.toString() })
             }
             allowEmpty
             // defaultValue={level ? LEVEL_ITEMS.find((item) => item.value == level) : null}

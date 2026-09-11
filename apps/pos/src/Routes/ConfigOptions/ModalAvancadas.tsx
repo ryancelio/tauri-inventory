@@ -32,7 +32,6 @@ export default function ConfigAvançada({
     null,
   );
 
-  // Exemplo de estado para armazenar o valor da senha
 
   const toaster = useToast();
 

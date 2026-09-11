@@ -15,6 +15,7 @@ import {
 } from "../../../backend/backendHelper";
 import { useToast } from "../../../context/Toast/ToastContext";
 import { AnimatePresence, motion } from "motion/react";
+import { useNavigation } from "react-router";
 
 export function TitleBar({
   isOfflineMode,
@@ -25,6 +26,8 @@ export function TitleBar({
 }) {
   const appWindow = getCurrentWindow();
   const toaster = useToast();
+  const navigation = useNavigation();
+  const isNavigating = navigation.state !== "idle";
 
   const [checkResponse, setCheckResponse] = useState<boolean | null>(null);
   const [checkingApi, setCheckingApi] = useState(false);
@@ -76,15 +79,8 @@ export function TitleBar({
     get();
   }, []);
 
-  // const setFullscreenWindow = async () => {
-  //   console.log("Fullscreen changed");
-
-  //   const isFull = await appWindow.isFullscreen();
-  //   await appWindow.setFullscreen(!isFull);
-  // };
-
   return (
-    <div>
+    <div className="flex flex-col gap-0">
       <div
         className={`sticky top-0 right-0 left-0 z-200 flex h-8 select-none ${
           isOfflineMode ? "bg-red-600 text-white" : "bg-white text-black"
@@ -267,6 +263,26 @@ export function TitleBar({
             </button>
           </div>
         )}
+
+        {/* Sinalizador de Navegação (Barra de Progresso Indeterminada) */}
+        <motion.div
+          initial={false}
+          animate={{
+            opacity: isNavigating ? 1 : 0,
+          }}
+          transition={{ duration: 0.2 }}
+          className="absolute bottom-0 left-0 right-0 h-0.5 w-full overflow-hidden bg-blue-500/20"
+        >
+          <motion.div
+            className="h-full w-1/3 bg-blue-500"
+            animate={{ x: ["-100%", "300%"] }}
+            transition={{
+              repeat: Infinity,
+              duration: 1.2,
+              ease: "easeInOut",
+            }}
+          />
+        </motion.div>
       </div>
     </div>
   );

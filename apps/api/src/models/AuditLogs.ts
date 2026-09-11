@@ -30,9 +30,6 @@ export function getAuditChanges<T extends object>(
   anterior: T,
   novo: Partial<T>,
 ): AuditChanges<T> {
-
-  console.log("anterior", anterior)
-  console.log("novo", novo)
   const alteracoes: AuditChanges<T> = {};
 
   for (const key of Object.keys(novo) as Array<keyof T>) {

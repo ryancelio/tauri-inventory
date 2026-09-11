@@ -220,7 +220,7 @@ pub async fn deletar_usuario(
         .delete(format!("{api_url}/usuarios/{usuario_id}"))
         .bearer_auth(token);
 
-    let identifier = &String::from("criar_usuario");
+    let identifier = &String::from("deletar_usuario");
 
     let response = try_connection(request, identifier, &state, &app).await?;
 

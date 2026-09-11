@@ -62,7 +62,9 @@ export function Component() {
   const targetUserId = searchParams.get("targetUserId") ?? undefined;
 
   const targetUserIdItem = useMemo(
-    () => usersItems.find((i) => i.value == targetUserId) ?? null,
+    () =>
+      usersItems.find((i) => i.value !== null && String(i.value) === targetUserId) ??
+      null,
     [targetUserId, usersItems],
   );
 

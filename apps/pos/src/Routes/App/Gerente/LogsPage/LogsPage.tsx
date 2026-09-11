@@ -1,15 +1,10 @@
 import { Box, Loader2, LucideProps, ScanEye, Truck, User } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { ForwardRefExoticComponent, RefAttributes, useState } from "react";
+import { ForwardRefExoticComponent, RefAttributes } from "react";
 import {
-  Link,
-  LoaderFunctionArgs,
   NavLink,
   Outlet,
-  redirect,
   useLocation,
-  useNavigate,
-  useNavigation,
   useRouteError,
 } from "react-router";
 
