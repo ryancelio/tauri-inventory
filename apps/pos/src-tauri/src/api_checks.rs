@@ -7,7 +7,7 @@ use crate::{
 };
 
 pub async fn health_check(state: &State<'_, AppState>, app: &AppHandle) {
-    app.emit("checking-api-connection", true).unwrap();
+    app.emit("API://checking", true).unwrap();
 
     let api_url = get_api_url(&app);
     let response = match state
@@ -25,9 +25,13 @@ pub async fn health_check(state: &State<'_, AppState>, app: &AppHandle) {
                 state.is_online.store(false, Ordering::Relaxed);
             } // O MutexGuard é liberado aqui, antes do .await
 
-            log_to_default(&app, &format!("Falha ao conectar ao servidor: {}", e.to_string())).await;
-            app.emit("checking-api-connection", false).unwrap();
-            app.emit("api-online", false).unwrap();
+            log_to_default(
+                &app,
+                &format!("Falha ao conectar ao servidor: {}", e.to_string()),
+            )
+            .await;
+            app.emit("API://checking", false).unwrap();
+            app.emit("API://available", false).unwrap();
 
             return;
         }
@@ -38,13 +42,11 @@ pub async fn health_check(state: &State<'_, AppState>, app: &AppHandle) {
     if response.status().is_success() {
         println!("Response was OK.");
         {
-            // let mut on_state = state.is_online.lock().unwrap();
-            // *on_state = true;
             state.is_online.store(true, Ordering::Relaxed);
-        } // Liberado antes do .await
+        }
         log_to_default(&app, &format!("Conexão ao servidor realizada com sucesso!")).await;
-        app.emit("checking-api-connection", false).unwrap();
-        app.emit("api-online", true).unwrap();
+        app.emit("API://checking", false).unwrap();
+        app.emit("API://available", true).unwrap();
     } else {
         println!("Response was error");
         {
@@ -57,10 +59,11 @@ pub async fn health_check(state: &State<'_, AppState>, app: &AppHandle) {
             "Conexão ao servidor realizada, porem servidor retornou erro. Considerando como offline."
         ))
         .await;
-        app.emit("checking-api-connection", false).unwrap();
-        app.emit("api-online", false).unwrap();
+        app.emit("API://checking", false).unwrap();
+        app.emit("API://available", false).unwrap();
         return;
     }
+            app.emit("API://checking", false).unwrap();
 }
 
 #[tauri::command]

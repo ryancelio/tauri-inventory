@@ -53,10 +53,10 @@ pub async fn try_connection(
     let res = match request.send().await {
         Ok(val) => Ok(val),
         Err(e) => {
-            let _ = log_to_default(app,&format!(
-                "[{identifier}]: API connection error: {}",
-                e.to_string()
-            ))
+            let _ = log_to_default(
+                app,
+                &format!("[{identifier}]: API connection error: {}", e.to_string()),
+            )
             .await;
 
             health_check(&state, &app).await;
@@ -81,10 +81,13 @@ pub async fn get_body<T: DeserializeOwned>(
         let val: T = match response.json().await {
             Ok(val) => val,
             Err(e) => {
-                let _ = log_to_default(&app, &format!(
-                    "[{identifier}]: Erro processing response data: {}.",
-                    e.to_string()
-                ))
+                let _ = log_to_default(
+                    &app,
+                    &format!(
+                        "[{identifier}]: Erro processing response data: {}.",
+                        e.to_string()
+                    ),
+                )
                 .await;
 
                 return Err(RustApiError {
@@ -104,10 +107,13 @@ pub async fn get_body<T: DeserializeOwned>(
         let error_body = match response.json::<ApiResponse>().await {
             Ok(body) => body,
             Err(e) => {
-                let _ = log_to_default(&app, &format!(
-                    "[{identifier}] Failed to decode error body: {}",
-                    e.to_string()
-                ))
+                let _ = log_to_default(
+                    &app,
+                    &format!(
+                        "[{identifier}] Failed to decode error body: {}",
+                        e.to_string()
+                    ),
+                )
                 .await;
                 ApiResponse {
                     response: "Erro desconhecido".to_string(),
