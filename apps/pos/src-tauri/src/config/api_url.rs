@@ -41,9 +41,10 @@ pub async fn command_get_api_url(app: AppHandle) -> Result<String, ApiResponse> 
         Some(val) => match val.as_str() {
             Some(val) => val.to_string(),
             None => {
-                let _ = log_to_default(&app, &format!(
-                    "[command_get_api_url]: api_url key found but isn't stringfiable??."
-                ))
+                let _ = log_to_default(
+                    &app,
+                    &format!("[command_get_api_url]: api_url key found but isn't stringfiable??."),
+                )
                 .await;
                 return Err(ApiResponse {
                     response: "Erro interno, entre em contato com um administrador.".to_string(),
@@ -51,7 +52,11 @@ pub async fn command_get_api_url(app: AppHandle) -> Result<String, ApiResponse> 
             }
         },
         None => {
-            let _ = log_to_default(&app, &format!("[command_get_api_url]: api_url key not found.")).await;
+            let _ = log_to_default(
+                &app,
+                &format!("[command_get_api_url]: api_url key not found."),
+            )
+            .await;
             return Err(ApiResponse {
                 response: "Erro interno, entre em contato com um administrador.".to_string(),
             });
@@ -67,8 +72,11 @@ pub async fn change_api_url(new_url: String, app: AppHandle) -> Result<ApiRespon
 
     if let Some(value) = store.get("api_url") {
         if let Some(url) = value.as_str() {
-            let _ =
-                log_to_default(&app, &format!("Api Url changed from [{}] to [{}]", url, new_url)).await;
+            let _ = log_to_default(
+                &app,
+                &format!("Api Url changed from [{}] to [{}]", url, new_url),
+            )
+            .await;
         }
     }
 
@@ -109,9 +117,10 @@ pub async fn check_api_url(
         let body = match response.json::<ApiHealthCheck>().await {
             Ok(val) => val,
             Err(e) => {
-                let _ = log_to_default(&app, &format!(
-                    "[check_api_url]: Error decoding response body: {e}"
-                ))
+                let _ = log_to_default(
+                    &app,
+                    &format!("[check_api_url]: Error decoding response body: {e}"),
+                )
                 .await;
                 return Err(RustApiError {
                     code: 500,
@@ -121,10 +130,13 @@ pub async fn check_api_url(
                 });
             }
         };
-        let _ = log_to_default(&app, &format!(
-            "[check_api_url]: Check successfull for [{url}] at {}",
-            body.timestamp
-        ))
+        let _ = log_to_default(
+            &app,
+            &format!(
+                "[check_api_url]: Check successfull for [{url}] at {}",
+                body.timestamp
+            ),
+        )
         .await;
         Ok(ApiResponse {
             response: "URL Válida!".to_string(),

@@ -1,4 +1,4 @@
-use std::path::{PathBuf};
+use std::path::PathBuf;
 
 use chrono::Utc;
 use tauri::{AppHandle, Manager, State};
@@ -19,20 +19,21 @@ pub async fn get_local_db_path(app: &AppHandle) -> Result<PathBuf, RustApiError>
 
     return match file_path {
         Ok(val) => Ok(val.join(DEFAULT_LOCAL_DB_PATH)),
-        Err(error) =>{ 
-        {
-            log_to_default(app, &format!(
-            "Erro ao acessar localDataDir: {}",
-            error.to_string()
-        ))
-        .await;
+        Err(error) => {
+            {
+                log_to_default(
+                    app,
+                    &format!("Erro ao acessar localDataDir: {}", error.to_string()),
+                )
+                .await;
+            }
+            Err(RustApiError {
+                code: 400,
+                message: ApiResponse {
+                    response: String::from("Erro ao acessar arquivo de logs"),
+                },
+            })
         }
-        Err(RustApiError {
-            code: 400,
-            message: ApiResponse {
-                response: String::from("Erro ao acessar arquivo de logs"),
-            },
-        })},
     };
 
     // let store = app.store("config.json").expect("Falha ao abrir store");

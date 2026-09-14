@@ -4,6 +4,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Mutex;
 use tauri::Manager;
 use tauri_plugin_http::reqwest::Client;
+use tauri_plugin_updater::{Update};
 
 mod api_checks;
 mod auth;
@@ -12,6 +13,7 @@ mod database;
 mod log;
 mod offline;
 mod printers;
+mod update;
 
 pub struct AppState {
     // Secure token recieved from API, will be null before logging in
@@ -29,6 +31,9 @@ pub struct AppState {
     // Connection to local DB, for offline access
     pub db: Mutex<Option<Pool<Sqlite>>>,
     pub is_offline_mode: AtomicBool,
+
+    // Updates
+    pub pending_update: Mutex<Option<Update>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -40,6 +45,24 @@ pub struct RustApiError {
     pub code: u16,
     pub message: ApiResponse,
 }
+impl From<String> for RustApiError {
+    fn from(value: String) -> Self {
+        RustApiError {
+            code: 500,
+            message: ApiResponse { response: value },
+        }
+    }
+}
+impl From<&str> for RustApiError {
+    fn from(value: &str) -> Self {
+        RustApiError {
+            code: 500,
+            message: ApiResponse {
+                response: value.to_string(),
+            },
+        }
+    }
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -49,25 +72,31 @@ pub fn run() {
         .expect("Failed to create request client");
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             let handle = app.handle().clone();
 
-            tauri::async_runtime::block_on(async move {
-                handle.manage(AppState {
-                    jws_token: Mutex::new(None),
-                    http_client: client,
-                    user_data: Mutex::new(None),
-                    db: Mutex::new(None),
-                    is_online: AtomicBool::new(false),
-                    is_offline_mode: AtomicBool::new(false),
-                });
-
-                // Possible slowdown
-                api_checks::health_check(&app.state::<AppState>(), &handle).await;
+            handle.manage(AppState {
+                jws_token: Mutex::new(None),
+                http_client: client,
+                user_data: Mutex::new(None),
+                db: Mutex::new(None),
+                is_online: AtomicBool::new(false),
+                is_offline_mode: AtomicBool::new(false),
+                pending_update: Mutex::new(None),
             });
-            // may god help us all
+
+            let async_handle = handle.clone();
+            tauri::async_runtime::spawn(async move {
+                let state = async_handle.state::<AppState>();
+                tokio::join!(
+                    api_checks::health_check(&state, &async_handle),
+                    update::check_update_internal(&async_handle),
+                );
+            });
+            // Possible slowdown
             Ok(())
         })
         .plugin(tauri_plugin_store::Builder::new().build())
@@ -140,6 +169,8 @@ pub fn run() {
             offline::backups::get_latest_backup,
             printers::get_printers,
             printers::print_pdf,
+            update::start_update,
+
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

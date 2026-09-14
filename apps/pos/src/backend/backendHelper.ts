@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { check } from "@tauri-apps/plugin-updater";
 import { ApiResponse } from "@tauri-inventory/types";
 
 export async function getLastBackupDate(raw?: boolean) {
@@ -54,4 +55,13 @@ export async function setApiUrl(newUrl: string) {
   return await invoke<ApiResponse>("change_api_url", {
     newUrl: newUrl,
   });
+}
+
+export async function checkUpdate() {
+  const update = await check();
+
+  if(update){
+    console.log(`Update ${update.version} encontrado, data ${update.date} com notas: ${update.body}`);
+    
+  }
 }

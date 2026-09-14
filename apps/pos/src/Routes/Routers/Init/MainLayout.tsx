@@ -67,7 +67,7 @@ export function Component() {
     isOnlineRef.current = initialApiStatus.isOnline;
 
     // Fica escutando os eventos do Tauri em background
-    const unlistenOnline = listen<boolean>("api-online", (event) => {
+    const unlistenOnline = listen<boolean>("API://available", (event) => {
       const isNowOnline = event.payload;
 
       // Se a conexão VOLTOU (estava offline e agora está online)

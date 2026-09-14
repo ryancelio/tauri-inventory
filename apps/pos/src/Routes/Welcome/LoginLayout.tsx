@@ -3,9 +3,10 @@ import { apiLogin } from "../../api/apiHelper";
 import LoginPage from "./LoginPage";
 import { apiStatusContext } from "../../context/contexts";
 import { invoke } from "@tauri-apps/api/core";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Loader2 } from "lucide-react";
+import { listen } from "@tauri-apps/api/event";
 
 export const action: ActionFunction = async ({ request }) => {
   const data = await request.formData();
@@ -43,5 +44,26 @@ export const HydrateFallback = () => {
 };
 
 export function Component() {
-  return <LoginPage />;
+
+  const [isCheckingApi,setIsCheckingApi] = useState(true);
+
+  console.log(isCheckingApi);
+
+  useEffect(() => {
+    const unlistenCheckingOnline = listen<boolean>("API://checking", (event) => {
+      console.log("listen",event.payload);
+      const isChecking = event.payload;
+      setIsCheckingApi(isChecking);
+    })
+
+    return(() => {
+      unlistenCheckingOnline.then((f) => f())
+    })
+  },[])
+
+  if(isCheckingApi){
+    return <div className="size-full grid place-items-center"><Loader2/></div>
+  }else{
+    return <LoginPage />;
+  }
 }

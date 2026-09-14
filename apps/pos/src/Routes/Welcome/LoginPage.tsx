@@ -51,7 +51,7 @@ export default function LoginPage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="w-full max-w-md rounded-2xl border border-slate-200/80 bg-white p-8 shadow-xl shadow-slate-200/50"
+          className="w-full max-w-md rounded-2xl p-8 "
         >
           {/* Cabeçalho */}
           <div className="mb-6 flex flex-col items-center gap-2 text-center">
@@ -221,7 +221,7 @@ function SecureInput({
           autoFocus={autoFocus}
           placeholder=" "
           aria-invalid={hasError}
-          className={`peer w-full rounded-xl border bg-slate-50/50 py-3 text-slate-800 transition-all focus:bg-white focus:outline-none disabled:opacity-60 ${
+          className={`w-full rounded-xl border bg-slate-50/50 py-3 text-slate-800 transition-all focus:bg-white focus:outline-none disabled:opacity-60 ${
             Icon ? "pl-11" : "pl-4"
           } ${isPasswordType ? "pr-11" : "pr-4"} ${
             hasError

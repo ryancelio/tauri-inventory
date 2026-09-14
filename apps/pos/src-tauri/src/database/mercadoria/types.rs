@@ -94,9 +94,9 @@ pub struct CaracteristicaCreate {
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct MercadoriaCreate {
-        #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<Option<i32>>,
-        #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub key: Option<Option<i32>>,
     pub descricao: String,
     pub fabricante_id: i32,
