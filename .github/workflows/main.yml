@@ -43,10 +43,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
 
-      # This is an npm-workspaces monorepo (package-lock.json, no yarn.lock),
-      # so use `npm ci` instead of yarn.
+      # This is an npm-workspaces monorepo (package-lock.json, no yarn.lock).
+      # The Tauri app does not need the API workspace during packaging.
       - name: install frontend dependencies
-        run: npm ci
+        run: npm ci --workspace=@tauri-inventory/pos --include-workspace-root=false
 
       - uses: tauri-apps/tauri-action@v1
         env:
