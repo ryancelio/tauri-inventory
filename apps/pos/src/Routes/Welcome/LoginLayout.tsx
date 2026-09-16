@@ -1,4 +1,4 @@
-import { ActionFunction, LoaderFunction, LoaderFunctionArgs, redirect } from "react-router";
+import { ActionFunction, LoaderFunctionArgs, redirect } from "react-router";
 import { apiLogin } from "../../api/apiHelper";
 import LoginPage from "./LoginPage";
 import { apiStatusContext } from "../../context/contexts";
@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Loader2 } from "lucide-react";
 import { listen } from "@tauri-apps/api/event";
+import { getApiStatusCheck } from "../../backend/backendHelper";
 
 export const action: ActionFunction = async ({ request }) => {
   const data = await request.formData();
@@ -44,26 +45,59 @@ export const HydrateFallback = () => {
 };
 
 export function Component() {
-
-  const [isCheckingApi,setIsCheckingApi] = useState(true);
-
-  console.log(isCheckingApi);
+  const [isCheckingApi, setIsCheckingApi] = useState(true);
 
   useEffect(() => {
-    const unlistenCheckingOnline = listen<boolean>("API://checking", (event) => {
-      console.log("listen",event.payload);
-      const isChecking = event.payload;
-      setIsCheckingApi(isChecking);
-    })
+    let active = true;
+    let unlisten: (() => void) | undefined;
+    // Só o load inicial deve bloquear a tela; reconexões posteriores
+    // (API://checking) não devem reexibir o loading.
+    const resolved = { value: false };
 
-    return(() => {
-      unlistenCheckingOnline.then((f) => f())
-    })
-  },[])
+    (async () => {
+      // Consulta o estado atual, pois eventos emitidos antes do listener
+      // ser registrado (ex.: setup do Tauri) são perdidos.
+      try {
+        const { isChecking } = await getApiStatusCheck();
+        if (!active) return;
+        if (isChecking) {
+          setIsCheckingApi(true);
+        } else {
+          resolved.value = true;
+          setIsCheckingApi(false);
+        }
+      } catch {}
 
-  if(isCheckingApi){
-    return <div className="size-full grid place-items-center"><Loader2/></div>
-  }else{
+      const unlistenPromise = listen<boolean>("API://checking", (event) => {
+        if (!active) return;
+        if (event.payload === false) {
+          resolved.value = true;
+          setIsCheckingApi(false);
+        } else if (!resolved.value) {
+          setIsCheckingApi(true);
+        }
+      });
+      const stop = await unlistenPromise;
+      if (active) {
+        unlisten = stop;
+      } else {
+        stop();
+      }
+    })();
+
+    return () => {
+      active = false;
+      unlisten?.();
+    };
+  }, []);
+
+  if (isCheckingApi) {
+    return (
+      <div className="size-full grid place-items-center">
+        <Loader2 />
+      </div>
+    );
+  } else {
     return <LoginPage />;
   }
 }

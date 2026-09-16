@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   LoaderFunction,
   Outlet,
+  isRouteErrorResponse,
   useLoaderData,
   useNavigate,
   useRevalidator,
@@ -16,9 +17,10 @@ import FullscreenInfoModal from "../../App/SharedComponents/InfoModal";
 import { useToast } from "../../../context/Toast/ToastContext";
 import {
   checkApiStatus,
+  getApiStatusCheck,
   getIsOfflineModeActive,
 } from "../../../backend/backendHelper";
-import { Loader2 } from "lucide-react";
+import { Loader2, TriangleAlert } from "lucide-react";
 
 export const loader: LoaderFunction = async ({ context }) => {
   const initialApiStatus = context.get(apiStatusContext);
@@ -29,15 +31,39 @@ export const loader: LoaderFunction = async ({ context }) => {
 };
 
 export function ErrorBoundary() {
-  let error = useRouteError();
-  console.log(error);
+  const error = useRouteError();
+  const navigate = useNavigate();
+  console.error(error);
+
+  const message = isRouteErrorResponse(error)
+    ? typeof error.data === "string"
+      ? error.data
+      : `Erro ${error.status}`
+    : error instanceof Error
+      ? error.message
+      : "Erro desconhecido";
+
   return (
-    <div className="grid place-items-center border border-dotted border-red-500 bg-red-400">
-      <div>Erro Interno.</div>
-      <p>
-        Tente novamente e, caso o erro persista, entre em contato com um
-        administrador.
-      </p>
+    <div className="z-100 flex h-screen w-screen flex-col overflow-hidden bg-white">
+      <TitleBar isOfflineMode={false} setSuccessConnection={() => {}} />
+      <div className="grid grow place-items-center p-8">
+        <div className="flex max-w-md flex-col items-center gap-4 text-center">
+          <TriangleAlert className="size-12 text-red-500" strokeWidth={1.5} />
+          <h1 className="text-xl font-semibold text-slate-800">
+            Erro Interno.
+          </h1>
+          <p className="text-sm text-slate-500">
+            {message ||
+              "Tente novamente e, caso o erro persista, entre em contato com um administrador."}
+          </p>
+          <button
+            onClick={() => navigate("/")}
+            className="rounded-xl bg-blue-600 px-6 py-2.5 font-medium text-white transition-all hover:bg-blue-700 active:bg-blue-800"
+          >
+            Voltar ao início
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -62,31 +88,68 @@ export function Component() {
   const toaster = useToast();
 
   const [successConnection, setSuccessConnection] = useState(false);
+  // Se a verificação inicial ainda estava em andamento ao montar, a primeira
+  // resolução do estado não é uma "reconexão" e não deve exibir toast.
+  const wasInitiallyCheckingRef = useRef(initialApiStatus.isChecking);
 
   useEffect(() => {
     isOnlineRef.current = initialApiStatus.isOnline;
 
-    // Fica escutando os eventos do Tauri em background
-    const unlistenOnline = listen<boolean>("API://available", (event) => {
-      const isNowOnline = event.payload;
+    let active = true;
+    let stop: (() => void) | undefined;
 
-      // Se a conexão VOLTOU (estava offline e agora está online)
-      if (isNowOnline && !isOnlineRef.current) {
-        toaster.toast({
-          title: "Conexão",
-          message: "Conexão Reestabelecida.",
-          type: "success",
-        });
-        revalidator.revalidate();
+    (async () => {
+      // Se a verificação inicial terminou entre o middleware e este mount,
+      // os eventos já foram emitidos e não virão mais → resolve direto.
+      if (wasInitiallyCheckingRef.current) {
+        try {
+          const status = await getApiStatusCheck();
+          if (!active) return;
+          if (!status.isChecking) {
+            wasInitiallyCheckingRef.current = false;
+            isOnlineRef.current = status.isOnline;
+            revalidator.revalidate();
+            return;
+          }
+        } catch {}
       }
 
-      // Atualiza a referência
-      isOnlineRef.current = isNowOnline;
-    });
+      // Fica escutando os eventos do Tauri em background
+      const unlistenOnline = listen<boolean>("API://available", (event) => {
+        if (!active) return;
+        const isNowOnline = event.payload;
+
+        // Primeira resolução da verificação inicial: apenas sincroniza o estado,
+        // sem toast, para não exibir "offline"/"reconectado" durante o startup.
+        if (wasInitiallyCheckingRef.current) {
+          wasInitiallyCheckingRef.current = false;
+          isOnlineRef.current = isNowOnline;
+          revalidator.revalidate();
+          return;
+        }
+
+        const wasOnline = isOnlineRef.current;
+        isOnlineRef.current = isNowOnline;
+
+        // Se a conexão VOLTOU (estava offline e agora está online)
+        if (isNowOnline && !wasOnline) {
+          toaster.toast({
+            title: "Conexão",
+            message: "Conexão Reestabelecida.",
+            type: "success",
+          });
+          revalidator.revalidate();
+        } else if (!isNowOnline && wasOnline) {
+          revalidator.revalidate();
+        }
+      });
+      stop = await unlistenOnline;
+    })();
 
     // Cleanup do listener quando o componente desmontar
     return () => {
-      unlistenOnline.then((f) => f());
+      active = false;
+      stop?.();
     };
   }, [initialApiStatus.isOnline, revalidator]);
 
@@ -113,12 +176,14 @@ export function Component() {
 
   return (
     <>
-      {!initialApiStatus.isOnline && !isOfflineMode && (
-        <OfflineOverlay
-          apiStatus={initialApiStatus}
-          // lastBackupDate={lastBackupDate}
-        />
-      )}
+      {!initialApiStatus.isOnline &&
+        !initialApiStatus.isChecking &&
+        !isOfflineMode && (
+          <OfflineOverlay
+            apiStatus={initialApiStatus}
+            // lastBackupDate={lastBackupDate}
+          />
+        )}
       {successConnection && (
         <FullscreenInfoModal
           title="Conexão Reestabelecida"

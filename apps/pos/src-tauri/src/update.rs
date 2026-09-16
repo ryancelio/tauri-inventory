@@ -4,11 +4,21 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_updater::{Update, UpdaterExt};
 
-use crate::{update, ApiResponse, AppState, RustApiError};
+use crate::{ApiResponse, AppState, RustApiError};
+
+#[derive(Clone, Copy, Serialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum UpdateStatus {
+    #[default]
+    Idle,
+    Downloading,
+    Finished,
+    Error,
+}
 
 #[derive(Clone, Serialize, Default)]
 pub struct UpdateState {
-    status: String, // "idle" | "downloading" | "finished" | "error"
+    status: UpdateStatus,
     downloaded: usize,
     total: Option<u64>,
     message: Option<String>,
@@ -18,7 +28,7 @@ pub struct UpdateState {
 pub struct UpdateStateStore(Mutex<UpdateState>);
 
 #[derive(Clone, Serialize)]
-struct UpdateMetadata {
+pub struct UpdateMetadata {
     version: String,
     current_version: String,
     date: Option<String>,
@@ -70,13 +80,18 @@ pub async fn check_for_update(app: AppHandle) -> Result<Option<UpdateMetadata>, 
 }
 
 #[tauri::command]
-fn get_pending_update(state: State<AppState>) -> Option<UpdateMetadata> {
+pub fn get_pending_update(state: State<AppState>) -> Option<UpdateMetadata> {
     let guard = state.pending_update.lock().unwrap();
     guard.as_ref().map(UpdateMetadata::from_update)
 }
 
 #[tauri::command]
-pub async fn start_update(app: AppHandle) -> Result<(), RustApiError> {
+pub fn get_update_state(state: State<UpdateStateStore>) -> UpdateState {
+    state.0.lock().unwrap().clone()
+}
+
+#[tauri::command]
+pub fn start_update(app: AppHandle) -> Result<(), RustApiError> {
     // Stop repeated windows
     if app.get_webview_window("update-progress").is_some() {
         return Err(RustApiError {
@@ -94,40 +109,46 @@ pub async fn start_update(app: AppHandle) -> Result<(), RustApiError> {
     }
     .ok_or_else(|| "No update available to install")?;
 
-    WebviewWindowBuilder::new(
+    if let Err(err) = WebviewWindowBuilder::new(
         &app,
         "update-progress",
-        WebviewUrl::App("index.html#/updage-progress".into()),
+        WebviewUrl::App("index.html#/update-progress".into()),
     )
     .title("Atualizando..")
-    .inner_size(360.0, 160.0)
+    .inner_size(360.0, 230.0)
     .resizable(false)
     .center()
     .closable(false)
     .build()
-    .map_err(|err| RustApiError {
-        code: 500,
-        message: ApiResponse {
-            response: "Erro interno ao abrir janela para atualizar".to_string(),
-        },
-    })?;
-
-    if let Some(main_win) = app.get_webview_window("main") {
-        main_win.close().map_err(|e| RustApiError {
+    {
+        // Restore the pending update so the user can retry, and do not leave
+        // the app in a half-updated state.
+        *app.state::<AppState>().pending_update.lock().unwrap() = Some(update);
+        eprintln!("Failed to open update window: {err}");
+        return Err(RustApiError {
             code: 500,
             message: ApiResponse {
-                response: "Erro interno ao fechar janela principal".to_string(),
+                response: "Erro interno ao abrir janela para atualizar".to_string(),
             },
-        })?;
+        });
+    }
+
+    // Ideal UX: close the main window while the update is applied. If the
+    // update fails, the installed version is untouched and the user simply
+    // reopens the app to keep using it in its safe state.
+    if let Some(main_win) = app.get_webview_window("main") {
+        if let Err(e) = main_win.close() {
+            eprintln!("Failed to close main window: {e}");
+        }
     }
 
     let app_handle = app.clone();
     tauri::async_runtime::spawn(async move {
-        if let Err(e) = run_update(app_handle.clone(),update).await {
+        if let Err(e) = run_update(app_handle.clone(), update).await {
             update_state_and_emit(
                 &app_handle,
                 UpdateState {
-                    status: "Error".into(),
+                    status: UpdateStatus::Error,
                     downloaded: 0,
                     total: None,
                     message: Some(e.message.response),
@@ -142,14 +163,14 @@ fn update_state_and_emit(app: &AppHandle, new_state: UpdateState) {
     if let Some(store) = app.try_state::<UpdateStateStore>() {
         *store.0.lock().unwrap() = new_state.clone();
     }
-    let _ = app.emit_to("upgrade-progress", "update://progress", new_state);
+    let _ = app.emit_to("update-progress", "update://progress", new_state);
 }
 
 pub async fn run_update(app: AppHandle, update: Update) -> Result<(), RustApiError> {
     update_state_and_emit(
         &app,
         UpdateState {
-            status: "downloading".into(),
+            status: UpdateStatus::Downloading,
             downloaded: 0,
             total: None,
             message: None,
@@ -167,7 +188,7 @@ pub async fn run_update(app: AppHandle, update: Update) -> Result<(), RustApiErr
                 update_state_and_emit(
                     &app_progress,
                     UpdateState {
-                        status: "downloading".into(),
+                        status: UpdateStatus::Downloading,
                         downloaded: *d,
                         total: content_length,
                         message: None,
@@ -182,7 +203,7 @@ pub async fn run_update(app: AppHandle, update: Update) -> Result<(), RustApiErr
     update_state_and_emit(
         &app,
         UpdateState {
-            status: "finished".into(),
+            status: UpdateStatus::Finished,
             downloaded: 0,
             total: None,
             message: None,
