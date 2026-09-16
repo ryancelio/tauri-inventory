@@ -16,7 +16,6 @@ import {
 } from "../../../../api/apiHelper";
 import {
   Await,
-  LoaderFunction,
   useLoaderData,
   useSearchParams,
   useAsyncError,

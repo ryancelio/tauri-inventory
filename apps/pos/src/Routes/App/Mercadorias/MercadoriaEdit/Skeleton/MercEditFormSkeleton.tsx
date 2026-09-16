@@ -38,11 +38,11 @@ export default function MercadoriaFormSkeleton() {
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4 w-full">
                 <div className="flex flex-col md:col-span-8 gap-1.5">
                   <div className="w-20 h-4 bg-slate-200 rounded animate-pulse"></div>
-                  <div className="w-full h-[42px] bg-slate-100 rounded-xl animate-pulse"></div>
+                  <div className="w-full h-10.5 bg-slate-100 rounded-xl animate-pulse"></div>
                 </div>
                 <div className="flex flex-col md:col-span-4 gap-1.5">
                   <div className="w-12 h-4 bg-slate-200 rounded animate-pulse"></div>
-                  <div className="w-full h-[42px] bg-slate-100 rounded-xl animate-pulse"></div>
+                  <div className="w-full h-10.5 bg-slate-100 rounded-xl animate-pulse"></div>
                 </div>
               </div>
 
@@ -51,7 +51,7 @@ export default function MercadoriaFormSkeleton() {
                 {[1, 2, 3].map((item) => (
                   <div key={item} className="flex flex-col gap-1.5">
                     <div className="w-24 h-4 bg-slate-200 rounded animate-pulse"></div>
-                    <div className="w-full h-[42px] bg-slate-100 rounded-xl animate-pulse"></div>
+                    <div className="w-full h-10.5 bg-slate-100 rounded-xl animate-pulse"></div>
                   </div>
                 ))}
               </div>
@@ -88,11 +88,11 @@ export default function MercadoriaFormSkeleton() {
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <div className="w-12 h-4 bg-slate-200 rounded animate-pulse"></div>
-                  <div className="w-full h-[42px] bg-slate-100 rounded-xl animate-pulse"></div>
+                  <div className="w-full h-10.5 bg-slate-100 rounded-xl animate-pulse"></div>
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <div className="w-14 h-4 bg-slate-200 rounded animate-pulse"></div>
-                  <div className="w-full h-[42px] bg-slate-100 rounded-xl animate-pulse"></div>
+                  <div className="w-full h-10.5 bg-slate-100 rounded-xl animate-pulse"></div>
                 </div>
               </div>
 

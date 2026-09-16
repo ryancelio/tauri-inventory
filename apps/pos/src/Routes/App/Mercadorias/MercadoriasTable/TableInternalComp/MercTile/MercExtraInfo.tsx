@@ -1,12 +1,11 @@
 import {
   Caracteristica,
   getMercadoriaCor,
-  IAtributo,
   IMercadoria,
   MercadoriaPhotosListing,
 } from "@tauri-inventory/types";
 import { Boxes, ClipboardList, Image, Package2, Tag } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { getKeyPhotos, getMercPhotos } from "../../../../../../api/apiHelper";
 import FullscreenImageViewer from "../../../../SharedComponents/ImagesContainers/FullscreenImageViewer";
 import { AnimatePresence } from "motion/react";
@@ -14,6 +13,7 @@ import { useLoaderData } from "react-router";
 import { MercPageLoaderData } from "../../MercadoriaPage";
 import { useToast } from "../../../../../../context/Toast/ToastContext";
 
+// TODO - Use persisted value
 const API_URL = "http://localhost:8080";
 
 function objectToGrid(

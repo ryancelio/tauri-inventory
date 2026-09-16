@@ -1,17 +1,10 @@
 import { LoaderFunction, ActionFunction } from "react-router";
-import qs from "qs";
-import {
-  IMercadoria,
-  MercadoriaCreate,
-  MercadoriaDB,
-} from "@tauri-inventory/types";
 import {
   getAtributos,
   getCategorias,
   getFabricantes,
   getGrupos,
   getKeyPhotos,
-  getMercadorias,
   getMercPhotos,
   getSimilarMerc,
   getSingleMercadoria,
@@ -21,7 +14,6 @@ import { MercadoriaEditPage, MercEditLoader } from "./MercadoriaEditPage";
 import { userContext } from "../../../../context/contexts";
 import { formDataToMercadoria } from "../../../../Helpers/formDataHelper";
 import { AppError } from "../../Errors/AppError";
-import { timeout } from "../../../../Helpers/delay";
 import { getIsOfflineModeActive } from "../../../../backend/backendHelper";
 
 export const loader: LoaderFunction = async ({

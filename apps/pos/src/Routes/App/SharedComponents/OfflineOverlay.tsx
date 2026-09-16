@@ -1,4 +1,4 @@
-import { AlertTriangle, Bolt, CogIcon, Loader2, WifiOff } from "lucide-react";
+import { AlertTriangle, Bolt, Loader2, WifiOff } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { ApiStatusCheck } from "../../../context/contexts";
 import { invoke } from "@tauri-apps/api/core";

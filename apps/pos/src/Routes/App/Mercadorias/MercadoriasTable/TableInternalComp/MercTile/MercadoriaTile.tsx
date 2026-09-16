@@ -6,7 +6,7 @@ import {
 } from "@tauri-inventory/types";
 import { useState } from "react";
 import MercExtraInfo from "./MercExtraInfo";
-import { Link, useLoaderData, useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { Pencil, ChevronDown, Package } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion"; // <-- Import adicionado
 
@@ -106,7 +106,7 @@ export default function MercadoriaTile({
             Estoque
           </span>
           <span
-            className={`flex min-w-[3rem] items-center justify-center rounded-md px-2.5 py-1 text-sm font-bold ${
+            className={`flex min-w-12 items-center justify-center rounded-md px-2.5 py-1 text-sm font-bold ${
               estoqueTotal > 0
                 ? "border border-emerald-100 bg-emerald-50 text-emerald-700"
                 : "border border-red-100 bg-red-50 text-red-700"

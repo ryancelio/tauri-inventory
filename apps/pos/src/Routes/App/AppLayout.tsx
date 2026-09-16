@@ -1,12 +1,10 @@
 import {
   NavLink,
   Outlet,
-  useFetcher,
   ScrollRestoration,
   useLoaderData,
   useLocation,
   LoaderFunctionArgs,
-  redirect,
   useNavigate,
 } from "react-router";
 import {
@@ -14,19 +12,15 @@ import {
   BriefcaseBusiness,
   ChevronLeft,
   ClipboardList,
-  Dock,
-  Image as ImageIcon, // Evita conflito com a classe Image nativa
   Loader2,
   LogOut,
   LucideProps,
   Package,
-  Plus,
   PlusCircle,
   ScrollText,
   Timeline,
   Truck,
   Users,
-  Wrench,
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { UsuarioLogado } from "@tauri-inventory/types";

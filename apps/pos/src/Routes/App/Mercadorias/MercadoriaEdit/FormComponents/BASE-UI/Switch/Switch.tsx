@@ -54,7 +54,7 @@ export default function SwitchComponent({
           checked={currentChecked}
           disabled={disabled}
           onCheckedChange={() => currentSetChecked(!currentChecked)}
-          className="relative flex h-5 w-9 shrink-0 items-center rounded-full border border-slate-300 bg-slate-200 p-0.5 shadow-inner transition-colors duration-200 ease-out hover:border-slate-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 data-checked:border-blue-500 data-checked:bg-blue-500 data-checked:hover:bg-blue-600 data-disabled:cursor-not-allowed data-disabled:hover:border-slate-300"
+          className="relative flex h-5 w-9 shrink-0 items-center rounded-full border border-slate-300 bg-slate-200 p-0.5 shadow-inner transition-colors duration-200 ease-out hover:border-slate-400 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-blue-500 data-checked:border-blue-500 data-checked:bg-blue-500 data-checked:hover:bg-blue-600 data-disabled:cursor-not-allowed data-disabled:hover:border-slate-300"
         >
           <Switch.Thumb className="size-3.5 rounded-full bg-white shadow-sm ring-1 ring-black/5 transition-transform duration-200 ease-out data-checked:translate-x-4" />
         </Switch.Root>

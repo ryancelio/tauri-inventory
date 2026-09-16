@@ -1,5 +1,5 @@
 import { redirect } from "react-router";
-import { deleteMercadoria, updateMercadoria } from "../../../../api/apiHelper";
+import { deleteMercadoria } from "../../../../api/apiHelper";
 
 export async function deleteMercadoriaAction(formData: FormData) {
   const id = formData.get("id") as string;

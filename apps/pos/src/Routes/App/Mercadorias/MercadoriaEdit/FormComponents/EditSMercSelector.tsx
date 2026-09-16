@@ -1,12 +1,10 @@
-import { FetcherWithComponents, useFetcher } from "react-router";
-import { RefObject, useEffect, useState } from "react";
+import { useFetcher } from "react-router";
+import { useEffect, useState } from "react";
 import { IMercadoria, SimilarMerc } from "@tauri-inventory/types";
 import FullscreenInfoModal from "../../../SharedComponents/InfoModal";
 import { Check, Minus } from "lucide-react";
 import { useToast } from "../../../../../context/Toast/ToastContext";
-import { Checkbox } from "@base-ui/react";
 import CheckboxComponent from "./BASE-UI/Checkbox/Checkbox";
-import { MoneyInput } from "./MoneyInput";
 
 export default function EditSMercSelector({
   similarMerc,
@@ -29,8 +27,8 @@ export default function EditSMercSelector({
   const [updateVenda, setUpdateVenda] = useState(true);
   const [updateCusto, setUpdateCusto] = useState(true);
 
-  const [internalCusto, setInternalCusto] = useState(Number(precoCusto));
-  const [internalVenda, setInternalVenda] = useState(Number(precoVenda));
+  // const [internalCusto, setInternalCusto] = useState(Number(precoCusto));
+  // const [internalVenda, setInternalVenda] = useState(Number(precoVenda));
 
   const isAllSelected =
     similarMerc.length > 0 && selectedIds.length === similarMerc.length;

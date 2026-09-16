@@ -1,7 +1,7 @@
 import { useSearchParams } from "react-router";
 import PageSelector from "../../MercadoriaEdit/FormComponents/PageSelector";
 import { ApiListResponse, IMercadoria } from "@tauri-inventory/types";
-import { ComponentRef, RefObject } from "react";
+import { RefObject } from "react";
 import UISelect from "../../../Components/BASE-UI/Select";
 
 export default function TableFooter({

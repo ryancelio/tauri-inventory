@@ -8,7 +8,6 @@ import {
   getLastBackupDate,
   setLocalDbPassword,
   setLocalDbPath,
-  setOfflineMode,
 } from "../../backend/backendHelper";
 import ConfigAvançada from "./ModalAvancadas";
 import FullscreenModalWrapper from "../App/SharedComponents/FullscreenModal";
@@ -61,7 +60,7 @@ export default function ConfigModal({ onClose }: { onClose: () => void }) {
 
   // Estados de loading da tela
   const [isLoading, setIsLoading] = useState(true);
-  const [isOffline, setIsOffline] = useState(false);
+  const [, setIsOffline] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isApiChecking, setIsApiChecking] = useState(false);
 

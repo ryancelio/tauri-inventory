@@ -1,4 +1,4 @@
-import { Ref, useLayoutEffect, useRef, useState } from "react";
+import { Ref, useState } from "react";
 const parseToNumber = (val: string) => {
   if (!val) return 0;
 

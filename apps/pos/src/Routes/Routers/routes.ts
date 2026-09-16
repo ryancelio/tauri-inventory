@@ -55,7 +55,7 @@ export interface ActionErrorData<T> {
   errors?: T;
 }
 
-const app = [];
+// const app = [];
 
 export const router = createHashRouter([
   {

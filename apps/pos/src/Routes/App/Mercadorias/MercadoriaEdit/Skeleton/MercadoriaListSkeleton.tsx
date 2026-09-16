@@ -76,7 +76,7 @@ function MercadoriaTileSkeleton() {
 
         {/* Descrição */}
         <div className="lg:col-span-5 flex flex-col justify-center">
-          <div className="w-full max-w-[280px] h-5 bg-slate-200 rounded animate-pulse"></div>
+          <div className="w-full max-w-70 h-5 bg-slate-200 rounded animate-pulse"></div>
         </div>
 
         {/* Fabricante */}

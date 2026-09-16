@@ -1,4 +1,3 @@
-import { NativeButtonProps } from "@base-ui/react/internals/types";
 import { Plus } from "lucide-react";
 
 export default function CreateButton({

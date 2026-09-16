@@ -240,14 +240,13 @@ export default function CaracteristicasFilter({
                   Valor
                 </label>
                 {f.type === "boolean" ? (
-                  // 3. Utilizando o UISelect genérico com placeholder impeditivo (não selecionável)
-                  <UISelect<string>
+                  <UISelect
                     placeholder="Qualquer"
                     items={[
                       { label: "Sim", value: "true" },
                       { label: "Não", value: "false" },
                     ]}
-                    value={f.boolValue === "" ? null : f.boolValue}
+                    value={f.boolValue === "" ? null : {value: f.boolValue, label: f.boolValue}}
                     onValueChange={(val) =>
                       updateFilterValue(f.id, "boolValue", (val as any) || "")
                     }

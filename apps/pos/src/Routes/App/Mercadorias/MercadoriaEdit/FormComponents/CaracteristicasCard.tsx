@@ -1,4 +1,4 @@
-import { RefObject, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Plus, Tags, X } from "lucide-react";
 import {
   AtributoTypesType,
@@ -199,8 +199,8 @@ const getAtributoValorInput = (
             disabled={readOnly}
             name={`caracteristicas[${index}][value]`}
             id={`caracteristicas[${index}][value]`}
-            value={caracteristicaValue === "" ? null : caracteristicaValue}
-            onValueChange={(val) => setCaracteristicaValue(val || "")}
+            value={caracteristicaValue === "" ? null : {label: caracteristicaValue, value: caracteristicaValue}}
+            onValueChange={(val) => setCaracteristicaValue(val?.value?.toString() || "")}
           />
         </>
       );

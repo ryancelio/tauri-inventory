@@ -1,7 +1,6 @@
 import {
   getDescricaoCompleta,
   getEstoqueTotal,
-  IMercadoria,
   SimilarMerc,
 } from "@tauri-inventory/types";
 import { Package, Eye } from "lucide-react";

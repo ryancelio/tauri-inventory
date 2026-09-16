@@ -1,7 +1,7 @@
-import { Accordion, Checkbox, Field, Fieldset } from "@base-ui/react";
+import { Checkbox, Field, Fieldset } from "@base-ui/react";
 import { Check, ChevronDown } from "lucide-react";
 import { motion } from "motion/react";
-import { Fragment, useState } from "react";
+import { useState } from "react";
 
 export default function EstoqueCheckboxGroup({
   lojas,
@@ -31,7 +31,7 @@ export default function EstoqueCheckboxGroup({
         className=""
       >
         <div className={`${expanded ? "visible" : "invisible"}`}>
-          {lojas.map((loja, index) => (
+          {lojas.map((loja, _) => (
             <Field.Root
               key={loja.id}
               name={`estoque${loja.nome}Positivo`}

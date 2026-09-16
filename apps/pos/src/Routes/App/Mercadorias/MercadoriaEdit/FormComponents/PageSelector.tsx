@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ChevronsLeft } from "lucide-react";
+import { ChevronRight, ChevronsLeft } from "lucide-react";
 
 export default function PageSelector({
   totalPages,

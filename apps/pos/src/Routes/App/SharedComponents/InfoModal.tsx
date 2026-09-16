@@ -1,8 +1,7 @@
-import { TriangleAlert, Info, X, Loader2 } from "lucide-react";
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import { TriangleAlert, Info, Loader2 } from "lucide-react";
+import React, { useEffect, useState, useRef } from "react";
 import FullscreenModalWrapper from "./FullscreenModal";
 import { FetcherWithComponents } from "react-router";
-import { useToast } from "../../../context/Toast/ToastContext";
 
 export default function FullscreenInfoModal({
   title,

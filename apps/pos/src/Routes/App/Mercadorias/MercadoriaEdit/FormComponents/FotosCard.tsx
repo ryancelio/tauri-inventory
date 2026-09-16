@@ -3,7 +3,6 @@ import { ImageIcon, Ban, Plus } from "lucide-react";
 import ImageCarousel from "../../../SharedComponents/ImagesContainers/ImageCarousel";
 import CreateButton from "./CreateButton";
 import { Dispatch, SetStateAction } from "react";
-import { useFetcher } from "react-router";
 const API_URL = "http://localhost:8080";
 
 export default function FotosCard({

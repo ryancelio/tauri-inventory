@@ -2,7 +2,7 @@ import { Combobox, Separator } from "@base-ui/react";
 import { Check, ChevronDown, X } from "lucide-react";
 import React, { useEffect, useId, useRef, useState } from "react";
 import FullscreenInfoModal from "../../../../../SharedComponents/InfoModal";
-import { FetcherWithComponents, useFetcher } from "react-router";
+import { FetcherWithComponents } from "react-router";
 
 export interface Item {
   label: string; // Text Value

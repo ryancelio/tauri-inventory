@@ -4,11 +4,10 @@ import { useRevalidator } from "react-router";
 import { Loader2, PlusCircle, Save, X, Image as ImageIcon } from "lucide-react";
 import { useToast } from "../../../../../context/Toast/ToastContext";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
-import { readFile, stat } from "@tauri-apps/plugin-fs";
+import { stat } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { ApiResponse, IMercadoria } from "@tauri-inventory/types";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import CheckboxComponent from "./BASE-UI/Checkbox/Checkbox";
 import SwitchComponent from "./BASE-UI/Switch/Switch";
 
 interface FilePayload {
