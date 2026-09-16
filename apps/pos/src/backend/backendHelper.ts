@@ -1,5 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { ApiResponse } from "@tauri-inventory/types";
+import { UpdateMetadata } from "../Routes/Routers/Init/UpdateTypes";
+
+export type { UpdateMetadata };
 
 export async function getLastBackupDate(raw?: boolean) {
   const date = (await invoke<string>("get_backup_date")).replace(/\"/g, "");
@@ -23,6 +26,12 @@ export async function getIsOfflineModeActive() {
 
 export async function getIsApiOnline() {
   return await invoke<boolean>("get_api_status");
+}
+
+export async function getApiStatusCheck() {
+  return await invoke<{ isOnline: boolean; isChecking: boolean }>(
+    "get_api_status_check",
+  );
 }
 
 export async function getPrinters() {
@@ -54,4 +63,16 @@ export async function setApiUrl(newUrl: string) {
   return await invoke<ApiResponse>("change_api_url", {
     newUrl: newUrl,
   });
+}
+
+export async function checkUpdate(): Promise<UpdateMetadata | null> {
+  return await invoke("check_for_update");
+}
+
+export async function getPendingUpdate(): Promise<UpdateMetadata | null> {
+  return await invoke("get_pending_update");
+}
+
+export async function startUpdate(){
+  await invoke("start_update")
 }

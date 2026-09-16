@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Info, X, XCircle } from "lucide-react";
 import { Toast, ToastType } from "./ToastContext";
 import { AnimatePresence, motion } from "motion/react";
@@ -31,35 +32,35 @@ const TYPE_STYLES: Record<
   }
 > = {
   info: {
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-    title: "text-blue-800",
-    text: "text-blue-700",
-    bar: "bg-blue-500",
+    bg: "bg-sky-50",
+    border: "border-sky-200",
+    title: "text-sky-900",
+    text: "text-sky-700",
+    bar: "bg-sky-500",
     icon: Info,
   },
   success: {
-    bg: "bg-green-50",
-    border: "border-green-200",
-    title: "text-green-800",
-    text: "text-green-700",
-    bar: "bg-green-500",
+    bg: "bg-emerald-50",
+    border: "border-emerald-200",
+    title: "text-emerald-900",
+    text: "text-emerald-700",
+    bar: "bg-emerald-500",
     icon: CheckCircle2,
   },
   error: {
-    bg: "bg-red-50",
-    border: "border-red-200",
-    title: "text-red-800",
-    text: "text-red-700",
-    bar: "bg-red-500",
+    bg: "bg-rose-50",
+    border: "border-rose-200",
+    title: "text-rose-900",
+    text: "text-rose-700",
+    bar: "bg-rose-500",
     icon: XCircle,
   },
   warning: {
-    bg: "bg-yellow-50",
-    border: "border-yellow-200",
-    title: "text-yellow-800",
-    text: "text-yellow-700",
-    bar: "bg-yellow-500",
+    bg: "bg-amber-50",
+    border: "border-amber-200",
+    title: "text-amber-900",
+    text: "text-amber-700",
+    bar: "bg-amber-500",
     icon: AlertTriangle,
   },
 };
@@ -72,7 +73,7 @@ const POSITION_CONFIG: Record<
     centerX: boolean;
     /** -1: stack grows upward (bottom-anchored). 1: stack grows downward (top-anchored). */
     stackSign: 1 | -1;
-    /** Horizontal exit offset in px; 0 for centered positions (they fade/settle instead of sliding sideways). */
+    /** Horizontal exit offset in px; 0 for centered positions (they fade instead of sliding). */
     exitX: number;
   }
 > = {
@@ -120,11 +121,21 @@ const POSITION_CONFIG: Record<
   },
 };
 
-const TOAST_MIN_HEIGHT = 76; // px — approximate, used only for the hover fan-out spacing
-const MAX_STACK_DEPTH = 3; // toasts beyond this look identical, so a deep queue doesn't collapse to nothing
-// The progress bar finishes slightly before the toast actually unmounts, so it
-// doesn't appear to "hang" at empty for the length of the exit transition.
-const EXIT_TRANSITION_S = 0.18;
+/** Vertical gap (px) between consecutive toasts while resting (the "peek"
+ *  stack). Small so older toasts appear as a barely-visible pile. */
+const REST_GAP = 10;
+/** Vertical gap (px) between consecutive toasts once the stack is hovered.
+ *  Combined with measured per-toast heights this keeps even spacing even
+ *  when a toast carries a long, multi-line message. */
+const HOVER_GAP = 12;
+/** Fallback height used before a toast has been measured (first frame). */
+const DEFAULT_TOAST_HEIGHT = 72;
+/** Approximate timing (s) of the exit transition — used to finish the progress
+ *  bar just before the toast unmounts so it never "hangs" at zero. */
+const EXIT_TRANSITION_S = 0.2;
+/** Grace period before the stack collapses after the pointer leaves, so
+ *  briefly crossing the small gap between toasts doesn't flicker. */
+const LEAVE_GRACE_MS = 150;
 
 export default function ToastContainer({
   toasts,
@@ -137,28 +148,90 @@ export default function ToastContainer({
   const config = POSITION_CONFIG[position];
   const anchorX: string | number = config.centerX ? "-50%" : 0;
 
+  const [isHovered, setIsHovered] = useState(false);
+  const [heights, setHeights] = useState<Record<string, number>>({});
+  const leaveTimer = useRef<number | null>(null);
+
+  // Prune stale measurements so the map stays bounded by the visible stack.
+  useEffect(() => {
+    setHeights((prev) => {
+      const ids = new Set(toasts.map((t) => t.id));
+      const cleaned = Object.fromEntries(
+        Object.entries(prev).filter(([id]) => ids.has(id)),
+      );
+      return Object.keys(cleaned).length === Object.keys(prev).length
+        ? prev
+        : cleaned;
+    });
+  }, [toasts]);
+
+  useEffect(
+    () => () => {
+      if (leaveTimer.current !== null) window.clearTimeout(leaveTimer.current);
+    },
+    [],
+  );
+
+  // Pre-compute real heights per toast so the hover fan-out spaces toasts by
+  // their *actual* size instead of assuming a fixed height.
+  const offsets = useMemo(() => {
+    const list: number[] = [];
+    let acc = 0;
+    for (let i = toasts.length - 1; i >= 0; i--) {
+      // acc = cumulative height + gap of every toast further from the anchor
+      list[i] = acc;
+      acc += (heights[toasts[i].id] ?? DEFAULT_TOAST_HEIGHT) + HOVER_GAP;
+    }
+    return list;
+  }, [toasts, heights]);
+
+  const handleEnter = () => {
+    if (leaveTimer.current !== null) {
+      window.clearTimeout(leaveTimer.current);
+      leaveTimer.current = null;
+    }
+    setIsHovered(true);
+    pauseToasts();
+  };
+
+  const handleLeave = () => {
+    if (leaveTimer.current !== null) window.clearTimeout(leaveTimer.current);
+    leaveTimer.current = window.setTimeout(() => {
+      leaveTimer.current = null;
+      setIsHovered(false);
+      resumeToasts();
+    }, LEAVE_GRACE_MS);
+  };
+
   return (
-    <motion.div
+    <div
       className={`pointer-events-none fixed z-[100] ${config.containerClass}`}
       role="region"
       aria-live="polite"
       aria-label="Notificações"
-      whileHover="hover"
-      onHoverStart={pauseToasts}
-      onHoverEnd={resumeToasts}
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
     >
       <AnimatePresence>
         {toasts.map((toast, idx) => {
           const style = TYPE_STYLES[toast.type];
           const Icon = style.icon;
           const reverseIndex = toasts.length - 1 - idx;
-          const depth = Math.min(reverseIndex, MAX_STACK_DEPTH);
+          const depth = reverseIndex;
 
-          const restY = config.stackSign * depth * 12;
-          const hoverY = config.stackSign * depth * (TOAST_MIN_HEIGHT + 8);
-          const scale = Math.max(0.92, 1 - depth * 0.04);
-          const opacity = Math.max(0.88, 1 - depth * 0.03);
-          const entranceY = -24 * config.stackSign;
+          // Resting position: compact, evenly-piled stack.
+          const restY = config.stackSign * depth * REST_GAP;
+
+          // Hover position: evenly spaced by *measured* heights, so a tall
+          // toast no longer breaks the gap between its neighbours.
+          const hoverY = config.stackSign * offsets[idx];
+
+          const y = isHovered ? hoverY : restY;
+          const scale = isHovered ? 1 : 1 - depth * 0.025;
+          const opacity = isHovered ? 1 : 1 - depth * 0.06;
+
+          // Slide in from just off the anchor edge, then settle into place.
+          const entranceY = -config.stackSign * 24;
 
           const barDuration = Math.max(
             0,
@@ -168,50 +241,71 @@ export default function ToastContainer({
           return (
             <motion.div
               key={toast.id}
-              initial={{ x: anchorX, y: entranceY, scale: 0.96, opacity: 0 }}
-              animate={{ x: anchorX, y: restY, scale, opacity }}
-              variants={{
-                hover: { x: anchorX, y: hoverY, scale: 1, opacity: 1 },
+              ref={(el) => {
+                if (!el) return;
+                const h = el.offsetHeight;
+                setHeights((prev) =>
+                  prev[toast.id] === h ? prev : { ...prev, [toast.id]: h },
+                );
               }}
+              initial={{ x: anchorX, y: entranceY, scale: 0.94, opacity: 0 }}
+              animate={{ x: anchorX, y, scale, opacity }}
               exit={{
                 x: config.centerX ? anchorX : config.exitX,
                 opacity: 0,
-                scale: 0.96,
+                scale: 0.94,
+                transition: { duration: EXIT_TRANSITION_S, ease: "easeIn" },
               }}
-              transition={{ duration: 0.22, ease: "easeOut" }}
+              transition={{
+                x: { type: "spring", stiffness: 500, damping: 36, mass: 0.9 },
+                y: { type: "spring", stiffness: 420, damping: 32, mass: 0.9 },
+                scale: { type: "spring", stiffness: 420, damping: 30 },
+                opacity: { duration: 0.18, ease: "easeOut" },
+              }}
               style={{ zIndex: 100 + idx, width }}
-              className={`pointer-events-auto absolute flex min-h-[76px] flex-col justify-center overflow-hidden rounded-xl border ${style.bg} ${style.border} p-4 shadow-lg ring-1 shadow-black/10 ring-black/5 ${config.itemAnchorClass}`}
+              className={`pointer-events-auto absolute flex min-h-[72px] flex-col justify-center overflow-hidden rounded-xl border ${style.bg} ${style.border} p-4 shadow-lg ring-1 shadow-black/8 ring-black/5 backdrop-blur-sm ${config.itemAnchorClass}`}
             >
+              {/* ── Progress bar ── */}
               <motion.div
                 key={toast.timeoutId}
-                className={`absolute top-0 left-0 h-1 w-full ${style.bar}`}
+                className={`absolute top-0 left-0 h-[3px] w-full ${style.bar}`}
                 style={{ transformOrigin: "left" }}
                 initial={{ scaleX: 1 }}
                 animate={{ scaleX: toast.timeoutId === undefined ? 1 : 0 }}
                 transition={{ duration: barDuration, ease: "linear" }}
               />
 
+              {/* ── Close button ── */}
               <button
                 onClick={() => onClose(toast.id)}
                 aria-label="Fechar notificação"
-                className={`absolute top-3 right-3 rounded-full p-0.5 transition-colors hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none ${style.text}`}
+                className={`absolute top-2.5 right-2.5 rounded-md p-1 transition-colors hover:bg-black/8 focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none ${style.text}`}
               >
-                <X size={16} />
+                <X size={14} strokeWidth={2.5} />
               </button>
 
-              <div className="flex items-start gap-2.5 pr-6">
-                <Icon size={18} className={`mt-0.5 shrink-0 ${style.text}`} />
-                <div className="min-w-0">
-                  <h3 className={`text-sm font-semibold ${style.title}`}>
+              {/* ── Content ── */}
+              <div className="flex items-start gap-2.5 pr-5">
+                <Icon
+                  size={18}
+                  strokeWidth={2}
+                  className={`mt-0.5 shrink-0 ${style.text}`}
+                />
+                <div className="min-w-0 flex-1">
+                  <h3
+                    className={`text-[13px] font-semibold leading-snug ${style.title}`}
+                  >
                     {toast.title}
-                    {toast.repeatedTimes !== 0 && (
-                      <span className="ml-2 font-normal text-black/40">
-                        x{toast.repeatedTimes + 1}
+                    {toast.repeatedTimes > 0 && (
+                      <span className="ml-1.5 font-medium text-black/30">
+                        ×{toast.repeatedTimes + 1}
                       </span>
                     )}
                   </h3>
                   {toast.message && (
-                    <p className={`mt-0.5 text-sm break-words ${style.text}`}>
+                    <p
+                      className={`mt-0.5 text-[12.5px] leading-relaxed break-words ${style.text}`}
+                    >
                       {toast.message}
                     </p>
                   )}
@@ -221,6 +315,6 @@ export default function ToastContainer({
           );
         })}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }

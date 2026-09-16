@@ -72,11 +72,12 @@ export default function DeleteFabModal({
 
   const handleReassignDelete = () => {
     if (!selectedNewFab) {
-      return toaster.toast({
+      toaster.toast({
         title: "Atenção",
         message: "Selecione um fabricante para receber as mercadorias.",
         type: "warning",
       });
+      return;
     }
     fetcher.submit(
       {

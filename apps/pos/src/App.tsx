@@ -1,16 +1,28 @@
-import { useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { useEffect, useState } from "react";
 import React from "react";
 import ToastProvider from "./context/Toast/ToastContext";
+import { checkApiStatus, checkUpdate, UpdateMetadata } from "./backend/backendHelper";
+import AppUpdateModal from "./Routes/Routers/Init/AppUpdateModal";
 
 export default function App({ children }: React.PropsWithChildren) {
+
+  const [updateModal,setUpdateModal] = useState<UpdateMetadata | null>(null)
+
   useEffect(() => {
-    const checkHealth = () => {
-      invoke("recheck_api_status").catch((err) => {
-        console.error("Health check falhou:", err);
-      });
+    const initialChecks = async () => {
+      try{
+        await checkApiStatus();
+        // -- Has connection to API
+        const update = await checkUpdate();
+        if(update){
+          setUpdateModal(update);
+        }
+      }catch(e){
+        console.error(e)
+      }
     };
-    checkHealth();
+    
+    initialChecks();
   }, []);
 
   return (
@@ -18,7 +30,12 @@ export default function App({ children }: React.PropsWithChildren) {
       className="isolate"
       // onContextMenu={(e) => e.preventDefault()}
     >
-      <ToastProvider>{children}</ToastProvider>
+      <ToastProvider>
+        { updateModal !== null &&
+          <AppUpdateModal onClose={() => setUpdateModal(null)} update={updateModal} />
+        }
+        {children}
+        </ToastProvider>
     </main>
   );
 }

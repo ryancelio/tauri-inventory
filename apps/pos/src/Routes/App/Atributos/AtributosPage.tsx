@@ -1,6 +1,5 @@
 import {
   LoaderFunction,
-  useActionData,
   useFetcher,
   useLoaderData,
 } from "react-router";
@@ -13,13 +12,11 @@ import {
   ArrowUp,
   ArrowUpDown,
   Lock,
-  Plus,
   Search,
   Trash2,
   WifiOff,
   X,
 } from "lucide-react";
-import { Toast } from "../SharedComponents/Toast";
 import FullscreenInfoModal from "../SharedComponents/InfoModal";
 import { userContext } from "../../../context/contexts";
 import { getIsOfflineModeActive } from "../../../backend/backendHelper";
