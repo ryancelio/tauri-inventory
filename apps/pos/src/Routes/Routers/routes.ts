@@ -4,18 +4,11 @@ import {
   requireGerenteMiddleware,
 } from "../../middlewares/auth";
 import {
-  criarUsuario,
-  deleteGrupo,
   deleteKeyPhoto,
-  deleteMercadoria,
   updateSimilarMerc,
 } from "../../api/apiHelper";
-import { formDataToMercadoria } from "../../Helpers/formDataHelper";
 import { apiStatusMiddleware } from "../../middlewares/apiStatus";
 import {
-  ApiResponse,
-  Funcao,
-  Local,
   SimilarMercUpdate,
 } from "@tauri-inventory/types";
 import {
@@ -45,13 +38,11 @@ import {
   updateGrupo,
 } from "./Actions/GruposActions";
 import { deleteMercadoriaAction } from "./Actions/MercadoriasActions/MercadoriasActions";
-import {
-  createUsuarioAction,
-  updateUsuarioAction,
-} from "./Actions/UsuariosActions";
-import { userContext } from "../../context/contexts";
-import { invoke } from "@tauri-apps/api/core";
 import LogsPage from "../App/Gerente/LogsPage/LogsPage";
+import { AppError } from "../App/Errors/AppError";
+import UpdateProgress, {
+  updateProgressLoader,
+} from "./Init/UpdateDownloadModal";
 
 export type ActionResponse<T> = {
   ok: boolean;
@@ -67,6 +58,13 @@ export interface ActionErrorData<T> {
 const app = [];
 
 export const router = createHashRouter([
+  {
+    // Separate, minimal route used by the dedicated update-progress window.
+    // Avoids MainLayout chrome (TitleBar, middlewares) in the tiny window.
+    path: "/update-progress",
+    loader: updateProgressLoader,
+    Component: UpdateProgress,
+  },
   {
     middleware: [apiStatusMiddleware],
     lazy: () => import("../Routers/Init/MainLayout"),
@@ -96,6 +94,12 @@ export const router = createHashRouter([
         middleware: [requireAuthMiddleware, apiStatusMiddleware],
         lazy: () => import("../App/AppLayout"),
         children: [
+          {
+            // Captura erros de loaders/actions das rotas filhas dentro do
+            // conteúdo, mantendo TitleBar e sidebar montados para que o modal
+            // de modo offline apareça por cima.
+            ErrorBoundary: AppError,
+            children: [
           // LISTAR MERC
           {
             path: "/mercadorias",
@@ -452,6 +456,8 @@ export const router = createHashRouter([
                 },
               },
             ],
+          },
+        ],
           },
         ],
       },

@@ -1,3 +1,4 @@
+use serde::Serialize;
 use std::sync::atomic::Ordering;
 
 use tauri::{AppHandle, Emitter, State};
@@ -6,7 +7,15 @@ use crate::{
     config::api_url::get_api_url, log::log_to_default, ApiResponse, AppState, RustApiError,
 };
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApiStatusInfo {
+    pub is_online: bool,
+    pub is_checking: bool,
+}
+
 pub async fn health_check(state: &State<'_, AppState>, app: &AppHandle) {
+    state.is_checking.store(true, Ordering::Relaxed);
     app.emit("API://checking", true).unwrap();
 
     let api_url = get_api_url(&app);
@@ -19,11 +28,8 @@ pub async fn health_check(state: &State<'_, AppState>, app: &AppHandle) {
         Ok(val) => val,
         Err(e) => {
             println!("No response from API server");
-            {
-                // let mut on_state = state.is_online.lock().unwrap();
-                // *on_state = false;
-                state.is_online.store(false, Ordering::Relaxed);
-            } // O MutexGuard é liberado aqui, antes do .await
+            state.is_online.store(false, Ordering::Relaxed);
+            state.is_checking.store(false, Ordering::Relaxed);
 
             log_to_default(
                 &app,
@@ -41,29 +47,24 @@ pub async fn health_check(state: &State<'_, AppState>, app: &AppHandle) {
 
     if response.status().is_success() {
         println!("Response was OK.");
-        {
-            state.is_online.store(true, Ordering::Relaxed);
-        }
+        state.is_online.store(true, Ordering::Relaxed);
         log_to_default(&app, &format!("Conexão ao servidor realizada com sucesso!")).await;
-        app.emit("API://checking", false).unwrap();
-        app.emit("API://available", true).unwrap();
     } else {
         println!("Response was error");
-        {
-            // let mut on_state = state.is_online.lock().unwrap();
-            // *on_state = false;
-            state.is_online.store(false, Ordering::Relaxed);
-        } // Liberado antes do .await
-
+        state.is_online.store(false, Ordering::Relaxed);
         log_to_default(&app, &format!(
             "Conexão ao servidor realizada, porem servidor retornou erro. Considerando como offline."
         ))
         .await;
-        app.emit("API://checking", false).unwrap();
-        app.emit("API://available", false).unwrap();
-        return;
     }
-            app.emit("API://checking", false).unwrap();
+
+    state.is_checking.store(false, Ordering::Relaxed);
+    app.emit("API://checking", false).unwrap();
+    app.emit(
+        "API://available",
+        state.is_online.load(Ordering::Relaxed),
+    )
+    .unwrap();
 }
 
 #[tauri::command]
@@ -73,6 +74,14 @@ pub fn get_api_status(state: State<'_, AppState>) -> bool {
     println!("saved status check: {val}");
 
     val
+}
+
+#[tauri::command]
+pub fn get_api_status_check(state: State<'_, AppState>) -> ApiStatusInfo {
+    ApiStatusInfo {
+        is_online: state.is_online.load(Ordering::Relaxed),
+        is_checking: state.is_checking.load(Ordering::Relaxed),
+    }
 }
 
 // CHECK NECESSITY OF RETURN VALUE HERE

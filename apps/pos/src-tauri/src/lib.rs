@@ -26,6 +26,8 @@ pub struct AppState {
 
     // Check for API access
     pub is_online: AtomicBool,
+    // Whether a health check is currently in progress
+    pub is_checking: AtomicBool,
     // Offline access
 
     // Connection to local DB, for offline access
@@ -84,24 +86,23 @@ pub fn run() {
                 user_data: Mutex::new(None),
                 db: Mutex::new(None),
                 is_online: AtomicBool::new(false),
+                is_checking: AtomicBool::new(false),
                 is_offline_mode: AtomicBool::new(false),
                 pending_update: Mutex::new(None),
             });
 
+            handle.manage(update::UpdateStateStore::default());
+
             let async_handle = handle.clone();
             tauri::async_runtime::spawn(async move {
                 let state = async_handle.state::<AppState>();
-                tokio::join!(
-                    api_checks::health_check(&state, &async_handle),
-                    update::check_update_internal(&async_handle),
-                );
+                tokio::join!(api_checks::health_check(&state, &async_handle));
             });
             // Possible slowdown
             Ok(())
         })
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_store::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             database::mercadoria::get_mercadorias,
             database::mercadoria::get_single_mercadoria,
@@ -159,6 +160,7 @@ pub fn run() {
             config::local_db_path::command_get_db_path,
             config::local_db_path::set_db_path,
             api_checks::get_api_status,
+            api_checks::get_api_status_check,
             api_checks::recheck_api_status,
             offline::database::off_mercadorias::offline_get_mercadorias,
             offline::database::set_db_pass,
@@ -170,7 +172,9 @@ pub fn run() {
             printers::get_printers,
             printers::print_pdf,
             update::start_update,
-
+            update::check_for_update,
+            update::get_pending_update,
+            update::get_update_state,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
