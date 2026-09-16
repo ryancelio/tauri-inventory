@@ -1,7 +1,7 @@
 import { useRef, useEffect } from "react";
 import FullscreenModalWrapper from "../SharedComponents/FullscreenModal";
 import { useFetcher } from "react-router";
-import { ChevronDown, Loader2, Pencil, Plus, Save } from "lucide-react";
+import { Loader2, Pencil, Plus, Save } from "lucide-react";
 import { IAtributo } from "@tauri-inventory/types";
 import { useToast } from "../../../context/Toast/ToastContext";
 import UISelect from "../Components/BASE-UI/Select";

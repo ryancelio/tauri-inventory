@@ -1,14 +1,10 @@
 import {
   GrupoCategorias,
-  ICategoria,
   UsuarioLogado,
 } from "@tauri-inventory/types";
 import { Tags, Check, X, Pencil, Trash2, Loader2 } from "lucide-react";
 import { DragEventHandler, Ref, useEffect, useRef } from "react";
-import { flushSync } from "react-dom";
-import { createRoot } from "react-dom/client";
 import {
-  FetcherWithComponents,
   useFetcher,
   useRevalidator,
 } from "react-router";

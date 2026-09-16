@@ -6,9 +6,7 @@ import {
   Search,
   Trash2,
   Package,
-  AlertCircle,
   ChevronDown,
-  Filter,
   X,
 } from "lucide-react";
 import FullscreenInfoModal from "../SharedComponents/InfoModal";

@@ -1,8 +1,8 @@
 import {
-  MercadoriaReportResponse,
+  MercadoriaReport,
   UsuarioLogado,
 } from "@tauri-inventory/types";
-import { HTMLAttributes, Ref, RefObject } from "react";
+import { HTMLAttributes, Ref } from "react";
 export const getMargem = (custo: number, venda: number) => {
   return `${(((venda - custo) / venda) * 100).toFixed(2)}%`;
 };
@@ -17,7 +17,7 @@ export const formatCurrency = (value: string) => {
 };
 
 type MercadoriaReportRowProps = HTMLAttributes<HTMLDivElement> & {
-  mercadoria: MercadoriaReportResponse;
+  mercadoria: MercadoriaReport;
   usuario: UsuarioLogado;
   ref: Ref<HTMLDivElement> | undefined;
   colLayout: any;

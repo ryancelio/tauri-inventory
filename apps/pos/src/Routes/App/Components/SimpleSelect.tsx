@@ -39,7 +39,7 @@ export default function SimpleSelect({
           <option value="">Carregando...</option>
         ) : (
           items.map((item) => (
-            <option key={item.value} value={item.value}>
+            <option key={item.value} value={item.value?.toString()}>
               {item.label}
             </option>
           ))

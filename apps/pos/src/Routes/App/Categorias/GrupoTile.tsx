@@ -2,7 +2,7 @@ import { IGrupo, UsuarioLogado } from "@tauri-inventory/types";
 import { LayoutGrid, ChevronRight, Check, X, Loader2, Ban } from "lucide-react";
 import { GroupEditButton } from "./CategoriasPage";
 import { PropsWithChildren, useEffect, useRef, useState } from "react";
-import { FetcherWithComponents, useFetcher } from "react-router";
+import { useFetcher } from "react-router";
 import { useToast } from "../../../context/Toast/ToastContext";
 
 export function GrupoTile({

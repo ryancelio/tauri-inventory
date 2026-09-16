@@ -1,6 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
- IUsuario,
  UsuarioLogado,
 } from "@tauri-inventory/types";
 

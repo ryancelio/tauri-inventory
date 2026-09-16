@@ -6,7 +6,6 @@ import { useToast } from "../../../context/Toast/ToastContext";
 import FullscreenModalWrapper from "../SharedComponents/FullscreenModal";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { FabricantesPageLoaderData } from "./FabricantesPage";
-import UISelect from "../Components/BASE-UI/Select";
 import AutoCompleteDropdown from "../Mercadorias/MercadoriaEdit/FormComponents/BASE-UI/AutoCompleteDropdown/AutoCompleteDropdown";
 
 export default function DeleteFabModal({
@@ -22,7 +21,7 @@ export default function DeleteFabModal({
   const [loading, setLoading] = useState(true);
 
   // Novos estados para a lógica de exclusão
-  const [selectedNewFab, setSelectedNewFab] = useState("");
+  const [selectedNewFab, _] = useState("");
   const [cooldown, setCooldown] = useState(5);
   const [showCascadeConfirm, setShowCascadeConfirm] = useState(false);
 

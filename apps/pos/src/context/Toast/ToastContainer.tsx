@@ -205,7 +205,7 @@ export default function ToastContainer({
 
   return (
     <div
-      className={`pointer-events-none fixed z-[100] ${config.containerClass}`}
+      className={`pointer-events-none fixed z-100 ${config.containerClass}`}
       role="region"
       aria-live="polite"
       aria-label="Notificações"
@@ -263,12 +263,12 @@ export default function ToastContainer({
                 opacity: { duration: 0.18, ease: "easeOut" },
               }}
               style={{ zIndex: 100 + idx, width }}
-              className={`pointer-events-auto absolute flex min-h-[72px] flex-col justify-center overflow-hidden rounded-xl border ${style.bg} ${style.border} p-4 shadow-lg ring-1 shadow-black/8 ring-black/5 backdrop-blur-sm ${config.itemAnchorClass}`}
+              className={`pointer-events-auto absolute flex min-h-18 flex-col justify-center overflow-hidden rounded-xl border ${style.bg} ${style.border} p-4 shadow-lg ring-1 shadow-black/8 ring-black/5 backdrop-blur-sm ${config.itemAnchorClass}`}
             >
               {/* ── Progress bar ── */}
               <motion.div
                 key={toast.timeoutId}
-                className={`absolute top-0 left-0 h-[3px] w-full ${style.bar}`}
+                className={`absolute top-0 left-0 h-0.75 w-full ${style.bar}`}
                 style={{ transformOrigin: "left" }}
                 initial={{ scaleX: 1 }}
                 animate={{ scaleX: toast.timeoutId === undefined ? 1 : 0 }}
@@ -304,7 +304,7 @@ export default function ToastContainer({
                   </h3>
                   {toast.message && (
                     <p
-                      className={`mt-0.5 text-[12.5px] leading-relaxed break-words ${style.text}`}
+                      className={`mt-0.5 text-[12.5px] leading-relaxed wrap-break-word ${style.text}`}
                     >
                       {toast.message}
                     </p>

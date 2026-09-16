@@ -1,8 +1,6 @@
 import { IFabricante } from "@tauri-inventory/types";
-import { Loader2 } from "lucide-react";
-import { useState, useCallback, useEffect, useRef } from "react";
-import { FetcherWithComponents, useFetcher } from "react-router";
-import FullscreenModalWrapper from "../SharedComponents/FullscreenModal";
+import { useEffect, useRef } from "react";
+import { useFetcher } from "react-router";
 import FullscreenInfoModal from "../SharedComponents/InfoModal";
 import { useToast } from "../../../context/Toast/ToastContext";
 
@@ -19,7 +17,7 @@ export default function FabricanteModal({
   const actionData = fetcher.data;
   const toaster = useToast();
 
-  const isSaving = fetcher.state !== "idle";
+  // const isSaving = fetcher.state !== "idle";
   const method = mode === "edit" ? "PUT" : "POST";
   const toastTitle = mode === "edit" ? "Editar" : "Criar";
 

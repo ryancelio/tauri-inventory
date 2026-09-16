@@ -2,12 +2,9 @@ import {
   ApiListResponse,
   ICategoria,
   MercadoriaFilter,
-  MercadoriaReportResponse,
-  UsuarioLogado,
+  type MercadoriaReport,
 } from "@tauri-inventory/types";
 import {
-  DetailedHTMLProps,
-  HTMLAttributes,
   useEffect,
   useMemo,
   useRef,
@@ -15,8 +12,6 @@ import {
 } from "react";
 import { getCategorias, getMercadoriaReport } from "../api/apiHelper";
 import { useToast } from "../context/Toast/ToastContext";
-import { motion } from "motion/react";
-import { useReactToPrint } from "react-to-print";
 import { jsPDF } from "jspdf";
 import autoTable, { RowInput } from "jspdf-autotable";
 import { writeFile } from "@tauri-apps/plugin-fs";
@@ -25,7 +20,7 @@ import { parseFiltrosParaTexto } from "./FilterTranslator";
 import { useLoaderData } from "react-router";
 import { MercPageLoaderData } from "../Routes/App/Mercadorias/MercadoriasTable/MercadoriaPage";
 import { getPrinters, printPdf } from "../backend/backendHelper";
-import { ChevronDown, Download, Loader2, Printer } from "lucide-react";
+import { Download, Printer } from "lucide-react";
 import SimpleSelect from "../Routes/App/Components/SimpleSelect";
 import { Item } from "../Routes/App/Mercadorias/MercadoriaEdit/FormComponents/BASE-UI/AutoCompleteDropdown/AutoCompleteDropdown";
 import FullscreenModalWrapper from "../Routes/App/SharedComponents/FullscreenModal";
@@ -44,7 +39,7 @@ export function MercadoriaReport({
   onClose: () => void;
 }) {
   const [mercadoriaList, setMercadoriaList] =
-    useState<ApiListResponse<MercadoriaReportResponse> | null>(null);
+    useState<ApiListResponse<MercadoriaReport> | null>(null);
   const [categorias, setCategorias] = useState<ICategoria[]>([]);
   const [printers, setPrinters] = useState<string[]>([]);
   const [isLoading, setLoading] = useState(true);

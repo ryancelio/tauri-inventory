@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Select, SelectItem, SelectRootProps } from "@base-ui/react/select";
+import { Select, SelectRootProps } from "@base-ui/react/select";
 import { CheckIcon, ChevronDown, ChevronUp } from "lucide-react";
 import { Item } from "../../Mercadorias/MercadoriaEdit/FormComponents/BASE-UI/AutoCompleteDropdown/AutoCompleteDropdown";
 
