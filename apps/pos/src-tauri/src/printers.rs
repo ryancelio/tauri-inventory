@@ -27,7 +27,7 @@ pub fn get_printers() -> Result<Vec<String>, RustApiError> {
         };
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        let printers: Vec<string> = stdout
+        let printers: Vec<String> = stdout
             .lines()
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty())
