@@ -1,14 +1,16 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use sqlx::Execute;
+use sqlx::{prelude::FromRow, Execute};
 use tauri::State;
 
 use crate::{
     database::{
         categoria::Categoria,
         fabricante::Fabricante,
-        mercadoria::types::{Mercadoria, MercadoriaFilter, MercadoriaReportResponse, SimilarMerc},
+        mercadoria::types::{
+            Mercadoria, MercadoriaFilter, MercadoriaReportResponse, MercadoriaSimple, SimilarMerc,
+        },
         ApiListResponse,
     },
     offline::database::{
@@ -116,7 +118,7 @@ pub async fn offline_get_mercadorias(
 ) -> Result<ApiListResponse<Mercadoria>, RustApiError> {
     println!("{:?}", &filter);
 
-    let mut builder = build_mercadorias_query(&filter, false);
+    let mut builder = build_mercadorias_query(&filter, false, false);
     let pool = get_db_pool(&state)?;
 
     let query = builder.build_query_as::<SQLiteMercadoria>();
@@ -129,7 +131,7 @@ pub async fn offline_get_mercadorias(
     })?;
 
     let categorias = offline_get_categorias(&state).await?;
-    let fabricantes = offline_get_fabricantes(&state).await?;
+    let fabricantes = offline_get_fabricantes(&state, None).await?;
 
     let categorias_por_id: HashMap<i32, Categoria> =
         categorias.into_iter().map(|c| (c.id, c)).collect();
@@ -141,7 +143,7 @@ pub async fn offline_get_mercadorias(
         .filter_map(|m| m.into_mercadoria(&fabricantes_por_id, &categorias_por_id))
         .collect();
 
-    let count: i32 = match build_mercadorias_query(&filter, true)
+    let count: i32 = match build_mercadorias_query(&filter, true, false)
         .build_query_scalar()
         .fetch_one(&pool)
         .await
@@ -166,20 +168,30 @@ pub async fn offline_get_mercadorias(
 pub async fn offline_get_single_mercadoria(
     id: i32,
     state: &State<'_, AppState>,
+    get_all: Option<bool>,
 ) -> Result<Mercadoria, RustApiError> {
     let pool = get_db_pool(&state)?;
 
-    let mercadoria: SQLiteMercadoria = match sqlx::query_as(
+    // Por padrão esconde as mercadorias deletadas (espelhando o `paranoid: true`
+    // do modelo). `get_all = true` é usado pelos filtros de auditoria, que
+    // precisam acessar registros deletados.
+    let deleted_clause = if get_all.unwrap_or(false) {
+        ""
+    } else {
+        " AND deletedAt IS NULL"
+    };
+
+    let mercadoria: SQLiteMercadoria = match sqlx::query_as(&format!(
         "SELECT mercadorias.*, \
         (SELECT json_group_array(
             json_object('id', a.id, 'nome', a.nome, 'tipo', a.tipo, 'valor', ma.valor)
         )
         FROM mercadoria_atributos ma
         JOIN atributos a ON a.id = ma.atributoId
-        WHERE ma.mercadoriaId = mercadorias.id) AS caracteristicasJson
-        FROM mercadorias
-        WHERE id = ?",
-    )
+        WHERE ma.mercadoriaId = mercadorias.id) AS caracteristicasJson \
+        FROM mercadorias \
+        WHERE id = ?{deleted_clause}"
+    ))
     .bind(id)
     .fetch_one(&pool)
     .await
@@ -323,7 +335,7 @@ pub async fn offline_get_mercadoria_report(
     state: &State<'_, AppState>,
 ) -> Result<ApiListResponse<MercadoriaReportResponse>, RustApiError> {
     filter.limit = Some(-1); // No Limit
-    let mut builder = build_mercadorias_query(&filter, false);
+    let mut builder = build_mercadorias_query(&filter, false, false);
     let pool = get_db_pool(&state)?;
 
     let query = builder.build_query_as::<SQLiteMercadoria>();
@@ -335,7 +347,7 @@ pub async fn offline_get_mercadoria_report(
         },
     })?;
 
-    let fabricantes = offline_get_fabricantes(&state).await?;
+    let fabricantes = offline_get_fabricantes(&state, None).await?;
 
     let fabricantes_por_id: HashMap<i32, Fabricante> =
         fabricantes.into_iter().map(|f| (f.id, f)).collect();
@@ -345,7 +357,7 @@ pub async fn offline_get_mercadoria_report(
         .filter_map(|m| m.into_report(&fabricantes_por_id))
         .collect();
 
-    let count: i32 = match build_mercadorias_query(&filter, true)
+    let count: i32 = match build_mercadorias_query(&filter, true, false)
         .build_query_scalar()
         .fetch_one(&pool)
         .await
@@ -365,4 +377,26 @@ pub async fn offline_get_mercadoria_report(
         data: mercadorias,
         count: count,
     })
+}
+
+pub async fn offline_get_simple_merc(
+    search: &'_ str,
+    state: &State<'_, AppState>,
+) -> Result<Vec<MercadoriaSimple>, RustApiError> {
+    let pool = get_db_pool(&state)?;
+
+    let simple_mercs: Result<Vec<MercadoriaSimple>, sqlx::Error> =
+        sqlx::query_as("SELECT id,descricao FROM mercadorias WHERE descricao LIKE ? ORDER BY descricao ASC LIMIT 100")
+            .bind(format!("%{}%", search.to_ascii_lowercase()))
+            .fetch_all(&pool)
+            .await;
+
+    match simple_mercs {
+        Ok(simp) => {
+            return Ok(simp)},
+        Err(e) => {
+            println!("{}", e.to_string());
+            return Err("Erro interno ao listar mercadorias.".into());
+        }
+    }
 }

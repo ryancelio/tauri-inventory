@@ -9,19 +9,23 @@ pub struct SQLiteFabricante {
     pub nome: String,
     pub created_at: String,
     pub updated_at: String,
-    pub deleted_at: String,
 }
 
 pub async fn offline_get_fabricantes(
     state: &tauri::State<'_, crate::AppState>,
+    get_deleted: Option<bool>,
 ) -> Result<Vec<Fabricante>, RustApiError> {
     let pool = get_db_pool(&state)?;
 
-    let fabricantes: Vec<SQLiteFabricante> =
-        match sqlx::query_as("SELECT * FROM fabricantes WHERE deletedAt IS NULL")
-            .fetch_all(&pool)
-            .await
-        {
+    // Por padrão esconde os fabricantes deletados (model `paranoid: true`).
+    // `get_deleted = true` é usado pelos filtros de auditoria.
+    let sql = if get_deleted.unwrap_or(false) {
+        "SELECT * FROM fabricantes"
+    } else {
+        "SELECT * FROM fabricantes WHERE deletedAt IS NULL"
+    };
+
+    let fabricantes: Vec<SQLiteFabricante> = match sqlx::query_as(sql).fetch_all(&pool).await {
             Ok(val) => val,
             Err(e) => {
                 return Err(RustApiError {

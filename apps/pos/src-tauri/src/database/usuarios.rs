@@ -151,7 +151,7 @@ pub async fn get_usuarios(
     get_deleted: Option<bool>,
 ) -> Result<Vec<UsuarioListing>, RustApiError> {
     if state.is_offline_mode.load(Ordering::Relaxed) {
-        return offline_get_usuarios(&state).await;
+        return offline_get_usuarios(&state, get_deleted).await;
     }
     let api_url = get_api_url(&app);
     let token = get_token(&state)?;

@@ -6,6 +6,10 @@ use tauri::{AppHandle, State};
 use crate::{
     config::api_url::get_api_url,
     database::{get_body, get_token, try_connection, usuarios::LoggedUser, ApiListResponse},
+    offline::database::off_audit_logs::{
+        offline_get_all_audit_logs, offline_get_fabricante_logs, offline_get_mercadoria_logs,
+        offline_get_usuario_logs,
+    },
     AppState, RustApiError,
 };
 
@@ -40,16 +44,16 @@ pub enum AuditLogLevel {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuditLog {
-    id: i32,
+    pub id: i32,
     #[serde(rename = "Usuario")]
-    usuario: Option<LoggedUser>,
-    alvo_tipo: AuditLogTargetType,
-    alvo_id: Option<i32>,
-    acao: AuditLogAction,
-    nivel: AuditLogLevel,
-    dados: Option<serde_json::Value>,
-    data: String,
-    ip: Option<String>,
+    pub usuario: Option<LoggedUser>,
+    pub alvo_tipo: AuditLogTargetType,
+    pub alvo_id: Option<i32>,
+    pub acao: AuditLogAction,
+    pub nivel: AuditLogLevel,
+    pub dados: Option<serde_json::Value>,
+    pub data: String,
+    pub ip: Option<String>,
 }
 
 #[tauri::command]
@@ -65,10 +69,7 @@ pub async fn get_logs_mercadoria(
     {
         let is_offline_mode = state.is_offline_mode.load(Ordering::Relaxed);
         if is_offline_mode {
-            return Ok(ApiListResponse {
-                count: 0,
-                data: vec![],
-            });
+            return offline_get_mercadoria_logs(state, page, merc_id, user_id, action, level).await;
         }
     }
 
@@ -110,10 +111,7 @@ pub async fn get_logs_all(
     {
         let is_offline_mode = state.is_offline_mode.load(Ordering::Relaxed);
         if is_offline_mode {
-            return Ok(ApiListResponse {
-                count: 0,
-                data: vec![],
-            });
+            return offline_get_all_audit_logs(state, page, user_id, action, level).await;
         }
     }
 
@@ -156,10 +154,10 @@ pub async fn get_logs_usuario(
     {
         let is_offline_mode = state.is_offline_mode.load(Ordering::Relaxed);
         if is_offline_mode {
-            return Ok(ApiListResponse {
-                count: 0,
-                data: vec![],
-            });
+            return offline_get_usuario_logs(
+                state, page, user_id_target, user_id, action, level,
+            )
+            .await;
         }
     }
 
@@ -202,10 +200,8 @@ pub async fn get_logs_fabricante(
     {
         let is_offline_mode = state.is_offline_mode.load(Ordering::Relaxed);
         if is_offline_mode {
-            return Ok(ApiListResponse {
-                count: 0,
-                data: vec![],
-            });
+            return offline_get_fabricante_logs(state, page, fabricante_id, user_id, action, level)
+                .await;
         }
     }
 

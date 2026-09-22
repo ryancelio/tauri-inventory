@@ -11,10 +11,12 @@ pub struct ConditionBuilder<'a, 'args> {
 }
 
 impl<'a, 'args> ConditionBuilder<'a, 'args> {
-    pub fn new(builder: &'a mut QueryBuilder<'args, Sqlite>) -> Self {
+    /// `has_conditions` indica se a query já possui um `WHERE` (ex.: quando o
+    /// filtro de `deletedAt IS NULL` já foi aplicado antes dos filtros do usuário).
+    pub fn new(builder: &'a mut QueryBuilder<'args, Sqlite>, has_conditions: bool) -> Self {
         Self {
             builder,
-            has_conditions: false,
+            has_conditions,
         }
     }
 
@@ -209,6 +211,7 @@ impl<'a, 'args> ConditionBuilder<'a, 'args> {
 pub fn build_mercadorias_query<'args>(
     filter: &'args MercadoriaFilter,
     is_count: bool,
+    include_deleted: bool,
 ) -> QueryBuilder<'args, Sqlite> {
     let mut builder;
     if is_count {
@@ -230,8 +233,16 @@ pub fn build_mercadorias_query<'args>(
         );
     }
 
+    // Por padrão o servidor trabalha com soft delete (model `paranoid: true`),
+    // então a listagem offline deve esconder as linhas deletadas — a menos que
+    // `include_deleted` seja true (ex.: filtros de auditoria).
+    let has_deleted_filter = !include_deleted;
+    if has_deleted_filter {
+        builder.push(" WHERE deletedAt IS NULL");
+    }
+
     if let Some(ref internal_filter) = filter.filter {
-        let mut conditions = ConditionBuilder::new(&mut builder);
+        let mut conditions = ConditionBuilder::new(&mut builder, has_deleted_filter);
 
         if let Some(ref f) = internal_filter.id {
             conditions.apply_number("id", f);

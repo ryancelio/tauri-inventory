@@ -9,8 +9,7 @@ use crate::database::mercadoria::types::{
 };
 use crate::database::{get_body, get_token, try_connection};
 use crate::offline::database::off_mercadorias::{
-    offline_get_mercadoria_report, offline_get_mercadorias, offline_get_similar_mercs,
-    offline_get_single_mercadoria,
+    offline_get_mercadoria_report, offline_get_mercadorias, offline_get_similar_mercs, offline_get_simple_merc, offline_get_single_mercadoria,
 };
 use crate::{database::ApiListResponse, ApiResponse, AppState, RustApiError};
 
@@ -33,11 +32,8 @@ pub async fn get_mercadorias(
 
     let api_url = get_api_url(&app);
 
-    let request = state
-        .http_client
-        .get(format!("{api_url}/mercadorias"))
-        .json(&filter)
-        .bearer_auth(token);
+    let url = format!("{api_url}/mercadorias");
+    let request = state.http_client.get(url).json(&filter).bearer_auth(token);
 
     let identifier = String::from("get_mercadorias");
 
@@ -59,7 +55,7 @@ pub async fn get_single_mercadoria(
         let is_offline_mode = state.is_offline_mode.load(Ordering::Relaxed);
 
         if is_offline_mode {
-            return offline_get_single_mercadoria(id, &state).await;
+            return offline_get_single_mercadoria(id, &state, get_all).await;
         }
     }
 
@@ -318,6 +314,14 @@ pub async fn get_mercadorias_simple_log(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<Vec<MercadoriaSimple>, RustApiError> {
+
+    let is_offline = state.is_offline_mode.load(Ordering::Relaxed);
+
+    if is_offline{
+        return offline_get_simple_merc(search,&state).await;
+    }
+    
+
     let api_url = get_api_url(&app);
     let token = get_token(&state)?;
 

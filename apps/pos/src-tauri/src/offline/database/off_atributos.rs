@@ -16,9 +16,11 @@ pub async fn offline_get_atributos(
 ) -> Result<Vec<Atributo>, RustApiError> {
     let pool = get_db_pool(&state)?;
 
-    let atributos: Vec<SQLiteAtributo> = match sqlx::query_as("SELECT * FROM atributos")
-        .fetch_all(&pool)
-        .await
+    let atributos: Vec<SQLiteAtributo> = match sqlx::query_as(
+        "SELECT * FROM atributos WHERE deletedAt IS NULL",
+    )
+    .fetch_all(&pool)
+    .await
     {
         Ok(val) => val,
         Err(err) => {

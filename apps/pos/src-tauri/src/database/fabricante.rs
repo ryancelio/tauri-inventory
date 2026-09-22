@@ -1,14 +1,13 @@
 use std::sync::atomic::Ordering;
 
 use serde::{Deserialize, Serialize};
-use tauri::utils::acl::identifier;
 use tauri::{AppHandle, State};
 
 use crate::config::api_url::get_api_url;
 use crate::database::mercadoria::types::MercReportFabricante;
-use crate::database::{fabricante, get_body, get_token, try_connection};
+use crate::database::{get_body, get_token, try_connection};
 use crate::offline::database::off_fabricantes::{offline_get_fabricantes, SQLiteFabricante};
-use crate::{log::log_to_default, ApiResponse, AppState, RustApiError};
+use crate::{ApiResponse, AppState, RustApiError};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
@@ -46,7 +45,7 @@ pub async fn get_fabricantes(
     {
         let is_offline_mode = state.is_offline_mode.load(Ordering::Relaxed);
         if is_offline_mode {
-            return offline_get_fabricantes(&state).await;
+            return offline_get_fabricantes(&state, get_deleted).await;
         }
     }
     let api_url = get_api_url(&app);

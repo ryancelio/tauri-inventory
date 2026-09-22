@@ -108,14 +108,19 @@ pub async fn offline_login(
 
 pub async fn offline_get_usuarios(
     state: &tauri::State<'_, AppState>,
+    get_deleted: Option<bool>,
 ) -> Result<Vec<UsuarioListing>, RustApiError> {
+    // Por padrão esconde os usuários deletados (model `paranoid: true`).
+    // `get_deleted = true` é usado pelos filtros de auditoria, que listam
+    // usuários deletados também.
+    let sql = if get_deleted.unwrap_or(false) {
+        "SELECT id,nome, funcao,usuario, local, createdAt,updatedAt FROM usuarios"
+    } else {
+        "SELECT id,nome, funcao,usuario, local, createdAt,updatedAt FROM usuarios WHERE deletedAt IS NULL"
+    };
+
     let db = get_db_pool(state)?;
-    let users: Vec<SQLiteUsuarioListing> = match sqlx::query_as(
-        "SELECT id,nome, funcao,usuario, local, createdAt,updatedAt FROM usuarios",
-    )
-    .fetch_all(&db)
-    .await
-    {
+    let users: Vec<SQLiteUsuarioListing> = match sqlx::query_as(sql).fetch_all(&db).await {
         Ok(val) => val,
         Err(err) => {
             return Err(RustApiError {

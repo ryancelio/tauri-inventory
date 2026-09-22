@@ -14,6 +14,7 @@ pub mod off_filters;
 pub mod off_grupos;
 pub mod off_mercadorias;
 pub mod off_users;
+pub mod off_audit_logs;
 
 pub fn get_db_pool(
     state: &tauri::State<'_, AppState>,
@@ -36,6 +37,7 @@ pub async fn create_db_connection(app: &AppHandle) -> Result<Pool<Sqlite>, RustA
     let db_pass = get_db_pass()?;
 
     let db_path = get_local_db_path(&app).await?;
+    println!("{}",db_path.clone().to_string_lossy());
 
     // println!("{:?}", db_path);
 

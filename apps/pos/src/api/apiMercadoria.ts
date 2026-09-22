@@ -14,12 +14,14 @@ import {
 
 export async function getMercadorias(
   filter: MercadoriaFilter,
+  getDeleted?: boolean,
 ): Promise<ApiListResponse<IMercadoria>> {
   // console.log(JSON.stringify(filter, null, 2));
 
   // console.log(JSON.stringify(filter.filter?.caracteristicas, null, 2));
   return await invoke<ApiListResponse<IMercadoria>>("get_mercadorias", {
     filter,
+    getDeleted,
   });
 }
 

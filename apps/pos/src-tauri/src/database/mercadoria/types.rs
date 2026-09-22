@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use sqlx::prelude::FromRow;
 
 use crate::{
     database::{
@@ -227,8 +228,9 @@ pub struct MercadoriaKeyListing {
     pub descricao: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default,FromRow)]
 #[serde(rename_all = "camelCase")]
+#[sqlx(rename_all="camelCase")]
 pub struct MercadoriaSimple {
     pub id: i32,
     pub descricao: String,
