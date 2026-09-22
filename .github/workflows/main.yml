@@ -47,6 +47,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
 
+      # libsqlite3-sys is built with the `bundled-sqlcipher` feature, which
+      # compiles SQLCipher and needs OpenSSL headers. GitHub's Windows runners
+      # don't ship OpenSSL (that's the "OPENSSL_DIR is not set" error), so
+      # install a prebuilt static OpenSSL via vcpkg (preinstalled on the
+      # runner) and point the openssl-sys crate at it. Static CRT linkage
+      # keeps OpenSSL out of the installer's runtime DLLs.
+      - name: install OpenSSL (windows only)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          $vcpkgRoot = if ($env:VCPKG_INSTALLATION_ROOT) { $env:VCPKG_INSTALLATION_ROOT } else { "C:\vcpkg" }
+          & "$vcpkgRoot\vcpkg.exe" install openssl:x64-windows-static-md
+          "OPENSSL_DIR=$vcpkgRoot\installed\x64-windows-static-md" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          "OPENSSL_STATIC=1" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+
       # This is an npm-workspaces monorepo (package-lock.json at the repo root).
       # Install must run from the root so the shared `@tauri-inventory/types`
       # workspace is linked into node_modules — running `npm ci` inside
@@ -67,6 +81,12 @@ jobs:
           # Required to sign the updater artifacts (createUpdaterArtifacts:
           # true in apps/pos/src-tauri/tauri.conf.json). Add the same key used
           # by `tauri signer generate` as the two repository secrets below.
+          # NOTE: TAURI_SIGNING_PRIVATE_KEY must be the single-line base64
+          # string printed by `tauri signer generate` (e.g.
+          # "dW50cnVzdGVkIGNvbW1lbnQ6..."). It must be valid base64: no PEM
+          # headers (-----BEGIN...), no file path, no quotes, no newlines. A
+          # value that isn't base64 fails the build with "failed to decode
+          # base64 secret key: Invalid symbol <n>, offset <m>".
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
