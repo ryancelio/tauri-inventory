@@ -43,11 +43,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
 
-      # This is an npm-workspaces monorepo (package-lock.json, no yarn.lock).
-      # The Tauri app does not need the API workspace during packaging.
+      # This is an npm-workspaces monorepo (package-lock.json at the repo root).
+      # Install must run from the root so the shared `@tauri-inventory/types`
+      # workspace is linked into node_modules — running `npm ci` inside
+      # apps/pos never materializes it, which breaks every import of
+      # "@tauri-inventory/types". Only the workspaces needed for the Tauri
+      # build are installed; the API workspace (native deps) is skipped.
       - name: install frontend dependencies
-        working-directory: apps/pos
-        run: npm ci
+        run: npm ci -w @tauri-inventory/pos -w @tauri-inventory/types
+
+      # The types package ships from ./dist (its main/types fields point at
+      # dist/*, which is gitignored), so it must be compiled before the build.
+      - name: build shared types
+        run: npm run build:types
 
       - uses: tauri-apps/tauri-action@v1
         env:
