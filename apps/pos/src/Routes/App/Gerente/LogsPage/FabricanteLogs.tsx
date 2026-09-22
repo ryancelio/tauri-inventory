@@ -77,11 +77,11 @@ export function Component() {
           <AutoCompleteDropdown
             items={fabricantesItems}
             name="fabricanteId"
-            label="fabricante"
+            label="Fabricante"
             selectedItem={
               fabricante
                 ? { label: fabricante.nome, value: fabricante.id }
-                : undefined
+                : null
             }
             placeholder="Selecione o Fabricante"
             classNames={{ input: "bg-white" }}

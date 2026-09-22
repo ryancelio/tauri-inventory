@@ -61,11 +61,18 @@ export default function AutoCompleteDropdown({
     defaultValue || null,
   );
 
-  // If user provided controlled options, use theirs, if not, use internal
-  const [currentSelectedItem, setCurrentSelectedItem] =
-    selectedItem !== undefined && setSelectedItem !== undefined
-      ? [selectedItem, setSelectedItem]
-      : [internalSelectedItem, setInternalSelectedItem];
+  // Controlled quando o caller fornece um setter — essa é a intenção explícita
+  // de controlar o valor. `selectedItem` pode ser `null`/`undefined` (nada
+  // selecionado) e ainda assim operar no modo controlado. Checar apenas
+  // `selectedItem !== undefined` fazia o componente cair silenciosamente no
+  // modo uncontrolled quando o valor controlado estava vazio, fazendo o
+  // `setSelectedItem` nunca ser chamado (e.g. filtros de URL que dependiam
+  // dele). Normalizamos `undefined` para `null` porque ambos significam
+  // "nada selecionado" e o Combobox precisa de um valor controlado definido.
+  const isControlled = setSelectedItem !== undefined;
+  const [currentSelectedItem, setCurrentSelectedItem] = isControlled
+    ? [selectedItem ?? null, setSelectedItem]
+    : [internalSelectedItem, setInternalSelectedItem];
 
   const [showCreationModal, setShowCreationModal] = useState<string | null>(
     null,
