@@ -16,7 +16,8 @@
     "better-sqlite3@12.11.1": true,
     "@journeyapps/sqlcipher@6.0.0": true,
     "core-js@3.50.0": true,
-    "esbuild@0.28.2": true
+    "esbuild@0.28.2": true,
+    "@signalapp/sqlcipher@4.1.0": true
   },
   "dependencies": {
     "core-js": "^3.50.0",

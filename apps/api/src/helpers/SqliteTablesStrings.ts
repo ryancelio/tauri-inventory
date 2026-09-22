@@ -108,6 +108,20 @@ const createUsuarios = `CREATE TABLE usuarios (
 const insertUsuariosStatement =
   "INSERT INTO usuarios (id,nome,funcao,usuario,senhaHash,local,createdAt,updatedAt,deletedAt) VALUES (?,?,?,?,?,?,?,?,?)";
 
+  const createAuditLog = `
+  CREATE TABLE AuditLog (
+  id INTEGER NOT NULL PRIMARY KEY,
+  alvoTipo TEXT NOT NULL,
+  alvoId INTEGER DEFAULT NULL,
+  acao TEXT NOT NULL,
+  nivel TEXT NOT NULL,
+  dados TEXT DEFAULT NULL,
+  data TEXT NOT NULL,
+  ip TEXT DEFAULT NULL,
+  usuarioId INTEGER DEFAULT NULL
+);`
+const insertAuditLogStatement = "INSERT INTO AuditLog (id,alvoTipo,alvoId,acao,nivel,dados,data,ip,usuarioId) VALUES (?,?,?,?,?,?,?,?,?)";
+
 const sqliteCreateTable = {
   mercadoria: { create: createMercadoria, insert: insertMercadoriaStatment },
   mercadoriaKey: {
@@ -122,7 +136,8 @@ const sqliteCreateTable = {
   categoria: { create: createCategoria, insert: insertCategoriaStatement },
   fabricante: { create: createFabricantes, insert: insertFabricantesStatement },
   grupos: { create: createGrupos, insert: insertGruposStatement },
-  mercPhotos: { create: createMercPhotos, insert: insertMercPhotosStatement },
+  // mercPhotos: { create: createMercPhotos, insert: insertMercPhotosStatement },
+  auditLogs: {create: createAuditLog, insert: insertAuditLogStatement},
   usuarios: { create: createUsuarios, insert: insertUsuariosStatement },
 };
 
