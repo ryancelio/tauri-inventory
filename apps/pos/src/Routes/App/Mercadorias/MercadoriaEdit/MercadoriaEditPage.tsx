@@ -304,7 +304,7 @@ function MercadoriaEditPageContent({
           <EditSMercSelector
             similarMerc={similarMercadoriasList}
             mercadoria={mercadoria}
-            onClose={setShowSimMercChangeModal}
+            onClose={() => setShowSimMercChangeModal(false)}
             precoCusto={precoCusto.toString()}
             precoVenda={precoVenda.toString()}
           />
@@ -603,6 +603,7 @@ function MercadoriaEditPageContent({
                         Custo
                       </label>
                       <MoneyInput
+                        disabled={isOfflineMode}
                         // valueRef={precoCompraRef}
                         onChange={setPrecoCusto}
                         value={precoCusto}
@@ -621,6 +622,7 @@ function MercadoriaEditPageContent({
                         value={precoVenda}
                         initial={(mercadoria.precoVenda as string) || ""}
                         id="precoVenda"
+                        disabled={isOfflineMode}
                         required
                       />
                     </div>

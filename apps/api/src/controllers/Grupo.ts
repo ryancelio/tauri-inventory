@@ -1,13 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { Grupo } from "../models/models";
 import { IGrupo } from "@tauri-inventory/types";
-import { ApiResponse, ApiListResponse } from "@tauri-inventory/types";
-import { BaseQuery } from "@tauri-inventory/types";
-import {
-  buildWhereClause,
-  getAdditionalFilters,
-} from "../config/utils/whereBuilder";
-import { Order, ValidationError } from "sequelize";
+import { ApiResponse } from "@tauri-inventory/types";
+import { ValidationError } from "sequelize";
 import GrupoModel from "../models/Grupo";
 
 export const criarGrupo = async (

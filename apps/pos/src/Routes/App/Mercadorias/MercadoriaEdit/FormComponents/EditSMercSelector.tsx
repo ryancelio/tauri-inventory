@@ -5,6 +5,7 @@ import FullscreenInfoModal from "../../../SharedComponents/InfoModal";
 import { Check, Minus } from "lucide-react";
 import { useToast } from "../../../../../context/Toast/ToastContext";
 import CheckboxComponent from "./BASE-UI/Checkbox/Checkbox";
+import FullscreenModalWrapper from "../../../SharedComponents/FullscreenModal";
 
 export default function EditSMercSelector({
   similarMerc,
@@ -16,7 +17,7 @@ export default function EditSMercSelector({
   similarMerc: SimilarMerc[];
   precoCusto: string;
   precoVenda: string;
-  onClose: (value: boolean) => void;
+  onClose: () => void;
   mercadoria: IMercadoria;
 }) {
   const fetcher = useFetcher();
@@ -65,7 +66,7 @@ export default function EditSMercSelector({
       },
     );
 
-    onClose(false);
+    onClose();
   }
 
   useEffect(() => {
@@ -78,22 +79,23 @@ export default function EditSMercSelector({
       type: fetcher.data.ok ? "success" : "error",
     });
     if (fetcher.data.ok) {
-      onClose(false);
+      onClose();
     }
   }, [fetcher.data]);
 
   const noPriceSelected = !updateVenda && !updateCusto;
 
   return (
-    <FullscreenInfoModal
-      title="Confirmar Alteração"
-      information={`Alterar as seguintes mercadorias? - Key: ${mercadoria.key}`}
-      onClose={() => onClose(false)}
-      actionLabel="Confirmar"
-      action={handlePrecoKeySubmitConfirm}
-      actionDisabled={noPriceSelected || selectedIds.length === 0}
+    <FullscreenModalWrapper
+      handleClose={onClose}
+
     >
-      <div className="rounded-2xl border border-gray-100 bg-gray-50">
+      <div className="flex flex-col gap-5 p-4 h-3/5">
+        <div className="h-1/5">
+          <h1 className="font-bold text-xl">Confirmar Alterações</h1>
+          <p>Alterar as seguintes mercadorias? - Key: {mercadoria.key}</p>
+        </div>
+      <div className="rounded-2xl border border-gray-100 bg-gray-50 h-3/5">
         <div className="flex w-full justify-center gap-3 p-1">
           <div className="flex items-center">
             <CheckboxComponent
@@ -119,13 +121,11 @@ export default function EditSMercSelector({
           </button> */}
         </div>
 
-        {noPriceSelected && (
-          <p className="px-3 pb-1 text-center text-xs text-red-500">
+          <p className={`px-3 pb-1 h-2 text-center text-xs text-red-500 ${noPriceSelected ? "visible" : "invisible"}`}>
             Selecione ao menos um tipo de preço para atualizar.
           </p>
-        )}
 
-        <div className="flex h-72 flex-col gap-2 overflow-y-auto p-2 px-3 pb-3 text-gray-700">
+        <div className="flex h-96 flex-col gap-2 overflow-y-auto p-2 px-3 pb-3 text-gray-700">
           {/* HEADER */}
           <button
             type="button"
@@ -191,7 +191,12 @@ export default function EditSMercSelector({
           })}
         </div>
       </div>
-    </FullscreenInfoModal>
+      <div className="flex justify-end gap-7 h-1/5">
+          <button className="px-4 py-2 rounded-lg bg-red-500   text-white hover:brightness-95 active:brightness-105 font-semibold" onClick={onClose} >Cancelar</button>
+          <button className="px-4 py-2 rounded-lg bg-green-500 text-white hover:brightness-95 active:brightness-105 font-semibold" onClick={handlePrecoKeySubmitConfirm} disabled={noPriceSelected || selectedIds.length === 0} >Confirmar</button>
+      </div>
+      </div>
+    </FullscreenModalWrapper>
   );
 }
 

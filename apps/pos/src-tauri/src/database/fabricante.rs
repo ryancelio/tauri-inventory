@@ -48,7 +48,7 @@ pub async fn get_fabricantes(
             return offline_get_fabricantes(&state, get_deleted).await;
         }
     }
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let mut url = format!("{api_url}/fabricantes");
@@ -80,7 +80,7 @@ pub async fn get_fabricante_mercadoria_count(
         }
     }
 
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let request = state
@@ -106,7 +106,7 @@ pub async fn criar_fabricante(
     fabricante: FabricantePayload,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let token = get_token(&state)?;
 
@@ -136,7 +136,7 @@ pub async fn editar_fabricante(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let token = get_token(&state)?;
 
@@ -159,7 +159,7 @@ pub async fn deletar_fabricante(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let token = get_token(&state)?;
 
@@ -182,7 +182,7 @@ pub async fn reassign_fabricante(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let token = get_token(&state)?;
 
@@ -207,7 +207,7 @@ pub async fn cascade_delete_fab(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let token = get_token(&state)?;
 

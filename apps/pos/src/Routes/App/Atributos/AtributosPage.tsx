@@ -267,7 +267,7 @@ export function Component() {
           {/* Tabela de Dados */}
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex-1 overflow-auto rounded-lg border border-gray-200">
-              <table className="min-w-full text-left text-sm whitespace-nowrap">
+              <table className="min-w-full text-left text-sm whitespace-nowrap select-none">
                 <thead className="sticky top-0 z-10 border-b border-gray-200 bg-slate-50/95 text-xs text-gray-500 uppercase backdrop-blur-sm">
                   <tr>
                     <th

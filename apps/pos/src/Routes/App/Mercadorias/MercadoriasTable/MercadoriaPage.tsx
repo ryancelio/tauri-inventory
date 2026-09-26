@@ -28,7 +28,7 @@ import MercListForm from "./TableInternalComp/MercListForm";
 import qs from "qs";
 import MercadoriasListSkeleton from "../MercadoriaEdit/Skeleton/MercadoriaListSkeleton";
 import { userContext } from "../../../../context/contexts";
-import { getIsOfflineModeActive } from "../../../../backend/backendHelper";
+import { getApiUrl, getIsOfflineModeActive } from "../../../../backend/backendHelper";
 import { useToast } from "../../../../context/Toast/ToastContext";
 import MercadoriaListVirtual from "./MercadoriaListVirtual";
 import { MercadoriaReport } from "../../../../Reports/MercadoriaReport";
@@ -97,16 +97,6 @@ export const ErrorBoundary = AppError;
 // let cachedGrupos: IGrupo[] | null = null;
 // let cachedAtributos: any[] | null = null;
 
-export interface MercPageLoaderData {
-  mercadorias: Promise<ApiListResponse<IMercadoria>>;
-  fabricantes: IFabricante[];
-  grupos: IGrupo[];
-  atributos: IAtributo[];
-  usuario: UsuarioLogado;
-  isOfflineMode: boolean;
-  filter: MercadoriaFilter;
-}
-
 export const HydrateFallback = () => {
   return (
     <div className="grid size-full place-items-center">
@@ -146,12 +136,13 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
     const fabricantes = await getFabricantes();
     const grupos = await getGrupos();
     const atributos = await getAtributos();
+    const apiUrl = await getApiUrl();
 
     return {
       mercadorias,
       usuario,
       fabricantes,
-      // categorias: cachedCategorias,
+      apiUrl,
       grupos,
       atributos,
       isOfflineMode,

@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::sync::atomic::Ordering;
 
 use serde::{Deserialize, Serialize};
@@ -7,7 +6,7 @@ use tauri::{AppHandle, State};
 use crate::config::api_url::get_api_url;
 use crate::database::{get_body, get_token, try_connection};
 use crate::offline::database::off_atributos::{offline_get_atributos, SQLiteAtributo};
-use crate::{database::filters::PrimitiveValue, ApiResponse, AppState, RustApiError};
+use crate::{ApiResponse, AppState, RustApiError};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "lowercase")]
@@ -75,7 +74,7 @@ pub async fn get_atributos(
         }
     }
 
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let request = state
@@ -96,7 +95,7 @@ pub async fn create_atributo(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let request = state
@@ -119,7 +118,7 @@ pub async fn update_atributo(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let request = state
@@ -141,7 +140,7 @@ pub async fn delete_atributo(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let request = state

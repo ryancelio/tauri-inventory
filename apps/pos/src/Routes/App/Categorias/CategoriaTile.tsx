@@ -144,7 +144,7 @@ export default function CategoriaTile({
                     type="text"
                     name="nome"
                     autoFocus
-                    className="border-b-2 border-slate-200 transition-colors focus:border-blue-500 focus:ring-0"
+                    className="border-b-2 border-slate-200 transition-colors focus:border-blue-500 outline-0"
                     defaultValue={cat.nome}
                   />
                   <div className="flex gap-1">
@@ -174,7 +174,7 @@ export default function CategoriaTile({
                   </div>
                 </fetcher.Form>
               ) : (
-                cat.nome
+                <span className="border-b-2 border-transparent">{cat.nome}</span>
               )}
             </h2>
           </div>

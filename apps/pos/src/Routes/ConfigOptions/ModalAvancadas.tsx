@@ -9,17 +9,15 @@ import { AnimatePresence, motion } from "motion/react";
 
 export default function ConfigAvançada({
   lastBackup,
-  dbPath,
-  setDbPath,
   dbPass,
   setDbPass,
-  updateDbPass, // ADICIONADO
-  setUpdateDbPass, // ADICIONADO
+  updateDbPass,
+  setUpdateDbPass,
   setLastBackupDate,
+  isOffline,
 }: {
   lastBackup: string;
-  dbPath: string;
-  setDbPath: (val: string) => void;
+  isOffline: boolean;
   dbPass: string;
   setDbPass: (val: string) => void;
   updateDbPass: boolean;
@@ -31,7 +29,6 @@ export default function ConfigAvançada({
   const [fetchBackupSuccess, setFetchBackupSuccess] = useState<boolean | null>(
     null,
   );
-
 
   const toaster = useToast();
 
@@ -136,33 +133,22 @@ export default function ConfigAvançada({
                     )}
                   </AnimatePresence>
                 </div>
-                <button
-                  className="flex items-center justify-center rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-70"
-                  onClick={fetchLatestBackup}
-                  disabled={latestBackupLoading}
-                >
-                  Atualizar Banco
-                </button>
+                <div className="flex flex-col gap-1">
+                  <button
+                    className="flex items-center justify-center rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-all not-disabled:hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-70"
+                    onClick={fetchLatestBackup}
+                    disabled={latestBackupLoading || isOffline}
+                  >
+                    Atualizar Banco
+                  </button>
+                  {isOffline && (
+                    <p className="text-xs text-red-600">Desativado em modo offline</p>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Input Caminho */}
-            <div>
-              <label
-                htmlFor="dbPath"
-                className="mb-1.5 block text-sm font-semibold text-slate-700"
-              >
-                Caminho do arquivo local
-              </label>
-              <input
-                id="dbPath"
-                value={dbPath}
-                onChange={(e) => setDbPath(e.target.value)}
-                type="text"
-                placeholder="C:\Caminho\para\o\banco.db"
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
-              />
-            </div>
 
             {/* Info Backup */}
             {/* Backup date, should animate on change */}

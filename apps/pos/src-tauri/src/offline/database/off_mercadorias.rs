@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use sqlx::{prelude::FromRow, Execute};
 use tauri::State;
 
 use crate::{

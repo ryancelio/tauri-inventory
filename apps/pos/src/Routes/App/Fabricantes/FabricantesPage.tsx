@@ -147,7 +147,7 @@ export function Component() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex h-full w-full flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-xl shadow-slate-200/50 backdrop-blur-sm"
+          className="flex h-full w-full flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-xl shadow-slate-200/50"
         >
           {/* Cabeçalho Aprimorado */}
           <div className="shrink-0 border-b border-slate-200 bg-linear-to-r from-slate-50 via-white to-blue-50 p-6">
@@ -212,7 +212,7 @@ export function Component() {
           <div className="custom-scrollbar grow overflow-auto">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="sticky top-0 z-10 bg-linear-to-b from-white to-slate-50/95 backdrop-blur-sm">
+                <tr className="sticky top-0 z-10 bg-linear-to-b from-white to-slate-50/95">
                   <th
                     className="cursor-pointer border-b-2 border-slate-200 px-6 py-4 text-left text-xs font-bold tracking-wider text-slate-500 uppercase transition-colors hover:text-slate-700"
                     onClick={() => handleSort("id")}

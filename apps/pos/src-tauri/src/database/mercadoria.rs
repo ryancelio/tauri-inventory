@@ -2,9 +2,9 @@ use std::sync::atomic::Ordering;
 
 use tauri::{AppHandle, State};
 
-use crate::config::api_url::{self, get_api_url};
+use crate::config::api_url::{get_api_url};
 use crate::database::mercadoria::types::{
-    Mercadoria, MercadoriaKeyListing, MercadoriaReportResponse, MercadoriaSimple, PartialMercDB,
+    MercadoriaKeyListing, MercadoriaReportResponse, MercadoriaSimple, PartialMercDB,
     SimilarMercCreate,
 };
 use crate::database::{get_body, get_token, try_connection};
@@ -30,7 +30,7 @@ pub async fn get_mercadorias(
     }
     let token = get_token(&state)?;
 
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let url = format!("{api_url}/mercadorias");
     let request = state.http_client.get(url).json(&filter).bearer_auth(token);
@@ -59,7 +59,7 @@ pub async fn get_single_mercadoria(
         }
     }
 
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let token = get_token(&state)?;
 
@@ -91,7 +91,7 @@ pub async fn get_mercadoria_report(
         return offline_get_mercadoria_report(filter, &state).await;
     }
 
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let token = get_token(&state)?;
 
@@ -115,7 +115,7 @@ pub async fn get_mercadoria_key_listing(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<Vec<MercadoriaKeyListing>, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let url = match query {
@@ -145,7 +145,7 @@ pub async fn get_similar_mercs(
             return offline_get_similar_mercs(key, state).await;
         }
     }
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let token = get_token(&state)?;
 
@@ -170,7 +170,7 @@ pub async fn get_similar_mercs(
 //     key: i32,
 //     app: AppHandle,
 // ) -> Result<ApiResponse, RustApiError> {
-//     let api_url = get_api_url(&app);
+//     let api_url = get_api_url(&app)?;
 
 //     let token = get_token(&state)?;
 
@@ -197,7 +197,7 @@ pub async fn update_similar_by_id(
     selected_ids: Vec<String>,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let payload = types::UpdateSimMercIdPayload {
@@ -225,7 +225,7 @@ pub async fn update_mercadoria(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
     println!("{:?}", mercadoria.clone());
 
@@ -250,7 +250,7 @@ pub async fn create_mercadoria(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<PartialMercDB, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let request = state
@@ -272,7 +272,7 @@ pub async fn delete_mercadoria(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let request = state
@@ -293,7 +293,7 @@ pub async fn get_mercadorias_simple(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<Vec<MercadoriaSimple>, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let request = state
@@ -314,7 +314,6 @@ pub async fn get_mercadorias_simple_log(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<Vec<MercadoriaSimple>, RustApiError> {
-
     let is_offline = state.is_offline_mode.load(Ordering::Relaxed);
 
     if is_offline{
@@ -322,7 +321,7 @@ pub async fn get_mercadorias_simple_log(
     }
     
 
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let request = state

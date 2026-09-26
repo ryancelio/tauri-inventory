@@ -51,7 +51,7 @@ pub async fn upload_merc_photo(
     id: i32,
 ) -> Result<ApiResponse, RustApiError> {
     let token = get_token(&state)?;
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let mut form = Form::new();
 
@@ -80,7 +80,7 @@ pub async fn upload_key_photo(
     merc_key: i32,
 ) -> Result<ApiResponse, RustApiError> {
     let token = get_token(&state)?;
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let mut form = Form::new();
 
@@ -119,7 +119,7 @@ pub async fn get_merc_photos(
         }
     }
     let token = get_token(&state)?;
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let request = state
         .http_client
@@ -150,7 +150,7 @@ pub async fn get_key_photos(
         }
     }
     let token = get_token(&state)?;
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let request = state
         .http_client
@@ -174,7 +174,7 @@ pub async fn delete_merc_photo(
     state: tauri::State<'_, crate::AppState>,
 ) -> Result<ApiResponse, RustApiError> {
     let token = get_token(&state)?;
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let request = state
         .http_client
@@ -196,7 +196,7 @@ pub async fn delete_key_photo(
     state: tauri::State<'_, crate::AppState>,
 ) -> Result<ApiResponse, RustApiError> {
     let token = get_token(&state)?;
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let request = state
         .http_client

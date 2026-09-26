@@ -12,31 +12,13 @@ import { Op } from "sequelize";
 import fs from "fs/promises";
 import path from "path";
 import MercadoriaModel from "../models/Mercadoria";
-import sqliteCreateTable from "./SqliteTablesStrings";
 import AtributoModel from "../models/Atributo";
-import {
-  CategoriaDB,
-  CategoriaUpdate,
-  FabricanteDB,
-  GrupoDB,
-  IAtributo,
-  IAtributoDB,
-  IFabricante,
-  IGrupo,
-  IMercadoriaPhotos,
-  IUsuario,
-  MercadoriaDB,
-  MercadoriaPhotosListing,
-} from "@tauri-inventory/types";
 import CategoriaModel from "../models/Categoria";
 import FabricanteModel from "../models/Fabricante";
 import GrupoModel from "../models/Grupo";
-import MercadoriaPhotosModel from "../models/MercadoriaPhotos";
 import UsuarioModel from "../models/Usuario";
 import MercadoriaAtributosModel from "../models/MercadoriaAtributos";
-import { UsuarioDB } from "@tauri-inventory/types";
 import { MercadoriaKey } from "../models/MercadoriaKeys";
-import Database from "@signalapp/sqlcipher";
 import AuditLogModel from "../models/AuditLogs";
 
 const BACKUP_PATH = path.join(__dirname, "..", "..", "backups");

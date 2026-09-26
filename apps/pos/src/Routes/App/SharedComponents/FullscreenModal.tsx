@@ -113,7 +113,7 @@ export default function FullscreenModalWrapper({
       initial={{ opacity: 0.7 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0.3 }}
-      className="fixed inset-0 z-50 mt-8 flex items-center justify-center bg-black/40 p-4 backdrop-blur-md outline-none"
+      className="fixed inset-0 z-50 mt-8 h-full flex items-center justify-center bg-black/40 p-4 outline-none"
       onClick={closeOnBackdropClick ? handleClose : undefined}
     >
       <motion.div
@@ -125,7 +125,7 @@ export default function FullscreenModalWrapper({
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 10, opacity: 0.9 }}
         onClick={(e) => e.stopPropagation()}
-        className={`relative w-full max-w-lg transform overflow-x-hidden overflow-y-auto rounded-3xl border border-white/50 bg-white shadow-2xl transition-colors duration-200 ease-out ${
+        className={`relative w-full max-w-lg max-h-full transform overflow-x-hidden overflow-y-auto rounded-3xl border border-white/50 bg-white shadow-2xl transition-colors duration-200 ease-out ${
           cardWrapperClass ?? ""
         }`}
         style={{ maxHeight: "calc(100vh - 2rem)" }}

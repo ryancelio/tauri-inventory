@@ -40,7 +40,6 @@ export function MoneyInput({
   required?: boolean;
   disabled?: boolean
 }) {
-  // const [value, setValue] = useState(() => parseToNumber(initial));
   // Used when uncontrolled
   const [internalValue, setInternalValue] = useState<number>(
     parseToNumber(initial),

@@ -1,8 +1,7 @@
 use bcrypt::verify;
-use tauri::AppHandle;
 
 use crate::{
-    database::usuarios::{LoggedUser, LoginPayload, UsuarioListing},
+    database::usuarios::{LoggedUser, UsuarioListing},
     offline::database::get_db_pool,
     AppState, RustApiError,
 };
@@ -122,7 +121,7 @@ pub async fn offline_get_usuarios(
     let db = get_db_pool(state)?;
     let users: Vec<SQLiteUsuarioListing> = match sqlx::query_as(sql).fetch_all(&db).await {
         Ok(val) => val,
-        Err(err) => {
+        Err(_) => {
             return Err(RustApiError {
                 code: 500,
                 message: crate::ApiResponse {

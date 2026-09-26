@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  LoaderFunction,
+  LoaderFunctionArgs,
   Outlet,
   isRouteErrorResponse,
   useLoaderData,
@@ -8,7 +8,7 @@ import {
   useRevalidator,
   useRouteError,
 } from "react-router";
-import { ApiStatusCheck, apiStatusContext } from "../../../context/contexts";
+import { apiStatusContext } from "../../../context/contexts";
 import { TitleBar } from "../../App/Components/TitleBar";
 import { listen } from "@tauri-apps/api/event";
 import OfflineOverlay from "../../App/SharedComponents/OfflineOverlay";
@@ -17,17 +17,20 @@ import FullscreenInfoModal from "../../App/SharedComponents/InfoModal";
 import { useToast } from "../../../context/Toast/ToastContext";
 import {
   checkApiStatus,
+  automaticCheckUpdate,
   getApiStatusCheck,
   getIsOfflineModeActive,
+  getPendingUpdate,
 } from "../../../backend/backendHelper";
 import { Loader2, TriangleAlert } from "lucide-react";
 
-export const loader: LoaderFunction = async ({ context }) => {
-  const initialApiStatus = context.get(apiStatusContext);
+export async function loader({ context }: LoaderFunctionArgs){
+  const initialApiStatus = context.get(apiStatusContext) ?? {isChecking: true, isOnline: false};
 
   const isOfflineMode = await getIsOfflineModeActive();
+  const availableUpdate = await getPendingUpdate();
 
-  return { initialApiStatus, isOfflineMode };
+  return { initialApiStatus, isOfflineMode, availableUpdate };
 };
 
 export function ErrorBoundary() {
@@ -45,7 +48,7 @@ export function ErrorBoundary() {
 
   return (
     <div className="z-100 flex h-screen w-screen flex-col overflow-hidden bg-white">
-      <TitleBar isOfflineMode={false} setSuccessConnection={() => {}} />
+      <TitleBar isOfflineMode={false} setSuccessConnection={() => {}}/>
       <div className="grid grow place-items-center p-8">
         <div className="flex max-w-md flex-col items-center gap-4 text-center">
           <TriangleAlert className="size-12 text-red-500" strokeWidth={1.5} />
@@ -71,16 +74,13 @@ export function ErrorBoundary() {
 export const HydrateFallback = () => {
   return (
     <div className="grid size-full place-items-center">
-      <Loader2 />
+      <Loader2 className="animate-spin" />
     </div>
   );
 };
 
 export function Component() {
-  const { initialApiStatus, isOfflineMode } = useLoaderData<{
-    initialApiStatus: ApiStatusCheck;
-    isOfflineMode: boolean;
-  }>();
+  const { initialApiStatus, isOfflineMode } = useLoaderData<typeof loader>();
 
   const isOnlineRef = useRef(initialApiStatus.isOnline);
   const revalidator = useRevalidator();
@@ -88,9 +88,24 @@ export function Component() {
   const toaster = useToast();
 
   const [successConnection, setSuccessConnection] = useState(false);
+
   // Se a verificação inicial ainda estava em andamento ao montar, a primeira
   // resolução do estado não é uma "reconexão" e não deve exibir toast.
   const wasInitiallyCheckingRef = useRef(initialApiStatus.isChecking);
+
+  // INITIAL CHECKS
+  useEffect(() => {
+    (async () => {
+      try {
+        await automaticCheckUpdate();
+        // if (update) {
+        //   setUpdateModal(update);
+        // }
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     isOnlineRef.current = initialApiStatus.isOnline;
@@ -100,7 +115,7 @@ export function Component() {
 
     (async () => {
       // Se a verificação inicial terminou entre o middleware e este mount,
-      // os eventos já foram emitidos e não virão mais → resolve direto.
+      // os eventos já foram emitidos e não virão mais -> resolve direto.
       if (wasInitiallyCheckingRef.current) {
         try {
           const status = await getApiStatusCheck();
@@ -184,6 +199,12 @@ export function Component() {
             // lastBackupDate={lastBackupDate}
           />
         )}
+      {/*{updateModal !== null && (
+        <AppUpdateModal
+          onClose={() => setUpdateModal(null)}
+          update={updateModal}
+        />
+      )}*/}
       {successConnection && (
         <FullscreenInfoModal
           title="Conexão Reestabelecida"

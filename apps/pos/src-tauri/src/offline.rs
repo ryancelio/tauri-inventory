@@ -1,6 +1,5 @@
 use std::{fs, sync::atomic::Ordering};
 
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use tauri::{AppHandle, State};
 
 use crate::{
@@ -49,7 +48,7 @@ pub async fn check_db_exists(app: AppHandle) -> Result<bool, RustApiError> {
     let db_path = get_local_db_path(&app).await?;
     match fs::exists(db_path) {
         Ok(val) => return Ok(val),
-        Err(e) => {
+        Err(_) => {
             return Err(RustApiError {
                 code: 404,
                 message: ApiResponse {

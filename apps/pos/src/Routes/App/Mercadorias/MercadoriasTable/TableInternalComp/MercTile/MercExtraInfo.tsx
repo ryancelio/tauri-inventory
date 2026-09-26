@@ -10,11 +10,11 @@ import { getKeyPhotos, getMercPhotos } from "../../../../../../api/apiHelper";
 import FullscreenImageViewer from "../../../../SharedComponents/ImagesContainers/FullscreenImageViewer";
 import { AnimatePresence } from "motion/react";
 import { useLoaderData } from "react-router";
-import { MercPageLoaderData } from "../../MercadoriaPage";
+import { loader } from "../../MercadoriaPage";
 import { useToast } from "../../../../../../context/Toast/ToastContext";
 
 // TODO - Use persisted value
-const API_URL = "http://localhost:8080";
+// const API_URL = "http://localhost:8080";
 
 function objectToGrid(
   caract: Caracteristica[],
@@ -60,8 +60,10 @@ export default function MercExtraInfo({
   const [mercPhotos, setMercPhotos] = useState<MercadoriaPhotosListing[]>([]);
   const [keyPhotos, setKeyPhotos] = useState<MercadoriaPhotosListing[]>([]);
   const [isPhotoFullscreenOpen, setPhotoFullscreenOpen] = useState(false);
-  const { isOfflineMode } = useLoaderData<MercPageLoaderData>();
+  const { isOfflineMode, apiUrl } = useLoaderData<typeof loader>();
   const toaster = useToast();
+
+  console.log(apiUrl)
 
   // const atributosMap = useMemo(() => {
   //   const map = new Map<string, string>();
@@ -99,13 +101,13 @@ export default function MercExtraInfo({
               {
                 label: getMercadoriaCor(mercadoria),
                 items: mercPhotos,
-                baseUrl: `${API_URL}/mercadorias-fotos/${mercadoria.id}`,
+                baseUrl: `${apiUrl}/mercadorias-fotos/${mercadoria.id}`,
                 deleteAction: "/gerente/mercadorias/photos",
               },
               {
                 label: mercadoria.descricao.split(" ")[0],
                 items: keyPhotos,
-                baseUrl: `${API_URL}/mercadorias-fotos/key/${mercadoria.key}`,
+                baseUrl: `${apiUrl}/mercadorias-fotos/key/${mercadoria.key}`,
                 deleteAction: "/gerente/mercadorias/photos/key",
               },
             ]}

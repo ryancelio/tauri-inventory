@@ -1,8 +1,6 @@
-use std::process::id;
 use std::sync::atomic::Ordering;
 
 use serde::{Deserialize, Serialize};
-use tauri::http::request;
 use tauri::{AppHandle, State};
 
 use crate::config::api_url::get_api_url;
@@ -10,7 +8,7 @@ use crate::database::{get_body, get_token, try_connection};
 use crate::offline::database::off_users::{
     offline_get_usuarios, offline_login, SQLiteLoggedUser, SQLiteUsuarioListing,
 };
-use crate::{log::log_to_default, ApiResponse, AppState, RustApiError};
+use crate::{ApiResponse, AppState, RustApiError};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "lowercase")]
@@ -153,7 +151,7 @@ pub async fn get_usuarios(
     if state.is_offline_mode.load(Ordering::Relaxed) {
         return offline_get_usuarios(&state, get_deleted).await;
     }
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let mut url = format!("{api_url}/usuarios/");
@@ -188,7 +186,7 @@ pub async fn criar_usuario(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let request = state
@@ -212,7 +210,7 @@ pub async fn deletar_usuario(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let request = state
@@ -257,7 +255,7 @@ pub async fn update_usuario(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     // println!("{:?}", &usuario);
@@ -302,7 +300,7 @@ pub async fn login(
         return Ok(user);
     }
 
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let payload = LoginPayload {
         usuario: usuario,
         senha: senha,

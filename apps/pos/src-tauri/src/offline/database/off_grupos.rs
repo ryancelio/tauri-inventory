@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use tauri::State;
 
 use crate::{
-    database::grupo::{Grupo, GrupoDB},
+    database::grupo::{Grupo},
     offline::database::{get_db_pool, off_categorias::SQLiteCategoria},
     AppState, RustApiError,
 };

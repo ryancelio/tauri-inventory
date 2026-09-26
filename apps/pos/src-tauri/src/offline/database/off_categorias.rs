@@ -5,7 +5,7 @@ use tauri::State;
 use crate::{
     database::{
         categoria::Categoria,
-        grupo::{Grupo, GrupoDB},
+        grupo::{GrupoDB},
     },
     offline::database::{get_db_pool, off_grupos::SQLiteGrupo},
     AppState, RustApiError,

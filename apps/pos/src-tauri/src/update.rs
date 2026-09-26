@@ -1,10 +1,13 @@
 use std::sync::Mutex;
 
-use serde::Serialize;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder};
+use tauri_plugin_store::StoreExt;
 use tauri_plugin_updater::{Update, UpdaterExt};
 
-use crate::{ApiResponse, AppState, RustApiError};
+use crate::{config::CONFIG_PATH, ApiResponse, RustApiError};
 
 #[derive(Clone, Copy, Serialize, Default, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -24,10 +27,12 @@ pub struct UpdateState {
     message: Option<String>,
 }
 
+// In-memory state used only to report download progress to the progress
+// window. The update info itself is persisted in config.json.
 #[derive(Default)]
 pub struct UpdateStateStore(Mutex<UpdateState>);
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct UpdateMetadata {
     version: String,
     current_version: String,
@@ -46,43 +51,94 @@ impl UpdateMetadata {
     }
 }
 
-pub async fn check_update_internal(app: &AppHandle) {
-    let updater = match app.updater() {
-        Ok(u) => u,
-        Err(e) => {
-            eprintln!("Updater not configured: {e}");
-            return;
-        }
-    };
-
-    match updater.check().await {
-        Ok(Some(update)) => {
-            let metadata = UpdateMetadata::from_update(&update);
-            if let Some(state) = app.try_state::<AppState>() {
-                *state.pending_update.lock().unwrap() = Some(update);
-            }
-            let _ = app.emit("update://available", metadata);
-        }
-        Ok(None) => {}
-        Err(e) => {
-            eprintln!("Update check failed: {e}");
-            let _ = app.emit("update://check-error", e.to_string());
-        }
+/// Returns true when the last check happened on a calendar day before today,
+/// i.e. it is time to check again. Does not care about 24h having passed.
+fn should_update(string: &str) -> bool {
+    match DateTime::parse_from_rfc3339(string) {
+        Ok(parsed_value) => parsed_value.date_naive() < Utc::now().date_naive(),
+        Err(_) => true,
     }
 }
 
-#[tauri::command]
-pub async fn check_for_update(app: AppHandle) -> Result<Option<UpdateMetadata>, RustApiError> {
-    check_update_internal(&app).await;
-    let state = app.state::<AppState>();
-    let guard = state.pending_update.lock().unwrap();
-    Ok(guard.as_ref().map(UpdateMetadata::from_update))
+/// Saved update info from config.json. Used **only** so the user can view the
+/// available update; downloading always uses a freshly fetched `Update`.
+fn get_saved_update(app: &AppHandle) -> Option<UpdateMetadata> {
+    let store = app.store(CONFIG_PATH).ok()?;
+    let value = store.get("last_update")?;
+    serde_json::from_value::<UpdateMetadata>(value).ok()
+}
+
+/// Asks GitHub for the latest release, persists the result in config.json and
+/// records the date of the check so the automatic flow runs at most once a
+/// day. Returns the raw `Update` so callers that want to install it get a
+/// fresh object confirming it still exists and is the latest version.
+async fn check_update(app: &AppHandle) -> Result<Option<Update>, RustApiError> {
+    let updater = app.updater().map_err(|e| {
+        eprintln!("Updater not configured: {e}");
+        let _ = app.emit("update://check-error", e.to_string());
+        RustApiError::from(e.to_string())
+    })?;
+
+    let store = app.store(CONFIG_PATH).map_err(|_| "Falha ao abrir store")?;
+
+    let result: Result<Option<Update>, tauri_plugin_updater::Error> = match updater.check().await {
+        Ok(Some(update)) => {
+            let metadata = UpdateMetadata::from_update(&update);
+            store.set("last_update", json!(metadata));
+            let _ = app.emit("update://available", metadata);
+            Ok(Some(update))
+        }
+        Ok(None) => {
+            // Already up to date: drop any previously saved update info so the
+            // UI does not keep offering an obsolete version.
+            store.delete("last_update");
+            Ok(None)
+        }
+        Err(e) => {
+            eprintln!("Update check failed: {e}");
+            let _ = app.emit("update://check-error", e.to_string());
+            Err(e)
+        }
+    };
+
+    // Only one github check per day, no matter the outcome.
+    store.set("last_update_date", Utc::now().to_rfc3339());
+    let _ = store.save();
+
+    result.map_err(|e| RustApiError::from(e.to_string()))
 }
 
 #[tauri::command]
-pub fn get_pending_update(state: State<AppState>) -> Option<UpdateMetadata> {
-    let guard = state.pending_update.lock().unwrap();
-    guard.as_ref().map(UpdateMetadata::from_update)
+pub async fn automatic_update_check(
+    app: AppHandle,
+) -> Result<Option<UpdateMetadata>, RustApiError> {
+    let store = app.store(CONFIG_PATH).map_err(|_| "Falha ao abrir store")?;
+
+    let last_check = store
+        .get("last_update_date")
+        .and_then(|value| value.as_str().map(str::to_owned));
+
+    // Skip the github check when one already happened today. With no saved
+    // date (first run) we check, otherwise a fresh install would never look.
+    if let Some(date) = last_check.as_deref() {
+        if !should_update(date) {
+            return Ok(get_saved_update(&app));
+        }
+    }
+
+    let result = check_update(&app).await?;
+    Ok(result.as_ref().map(UpdateMetadata::from_update))
+}
+
+#[tauri::command]
+pub async fn force_check_update(app: AppHandle) -> Result<Option<UpdateMetadata>, RustApiError> {
+    let result = check_update(&app).await?;
+    Ok(result.as_ref().map(UpdateMetadata::from_update))
+}
+
+#[tauri::command]
+pub fn command_get_pending_update(app: AppHandle) -> Option<UpdateMetadata> {
+    get_saved_update(&app)
 }
 
 #[tauri::command]
@@ -91,7 +147,7 @@ pub fn get_update_state(state: State<UpdateStateStore>) -> UpdateState {
 }
 
 #[tauri::command]
-pub fn start_update(app: AppHandle) -> Result<(), RustApiError> {
+pub async fn start_update(app: AppHandle) -> Result<(), RustApiError> {
     // Stop repeated windows
     if app.get_webview_window("update-progress").is_some() {
         return Err(RustApiError {
@@ -102,12 +158,20 @@ pub fn start_update(app: AppHandle) -> Result<(), RustApiError> {
         });
     }
 
-    let update = {
-        let state = app.state::<AppState>();
-        let mut guard = state.pending_update.lock().unwrap();
-        guard.take()
-    }
-    .ok_or_else(|| "No update available to install")?;
+    // Ask github again before downloading to confirm the update still exists
+    // and is the latest version available.
+    let update = match check_update(&app).await {
+        Ok(Some(update)) => update,
+        Ok(None) => {
+            return Err(RustApiError {
+                code: 400,
+                message: ApiResponse {
+                    response: "Nenhuma atualização disponível no momento.".to_string(),
+                },
+            })
+        }
+        Err(e) => return Err(e),
+    };
 
     if let Err(err) = WebviewWindowBuilder::new(
         &app,
@@ -121,9 +185,6 @@ pub fn start_update(app: AppHandle) -> Result<(), RustApiError> {
     .closable(false)
     .build()
     {
-        // Restore the pending update so the user can retry, and do not leave
-        // the app in a half-updated state.
-        *app.state::<AppState>().pending_update.lock().unwrap() = Some(update);
         eprintln!("Failed to open update window: {err}");
         return Err(RustApiError {
             code: 500,

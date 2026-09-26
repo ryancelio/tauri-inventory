@@ -18,7 +18,7 @@ pub async fn health_check(state: &State<'_, AppState>, app: &AppHandle) {
     state.is_checking.store(true, Ordering::Relaxed);
     app.emit("API://checking", true).unwrap();
 
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app).unwrap_or("localhost".to_string());
     let response = match state
         .http_client
         .get(format!("{api_url}/health"))
@@ -60,11 +60,8 @@ pub async fn health_check(state: &State<'_, AppState>, app: &AppHandle) {
 
     state.is_checking.store(false, Ordering::Relaxed);
     app.emit("API://checking", false).unwrap();
-    app.emit(
-        "API://available",
-        state.is_online.load(Ordering::Relaxed),
-    )
-    .unwrap();
+    app.emit("API://available", state.is_online.load(Ordering::Relaxed))
+        .unwrap();
 }
 
 #[tauri::command]

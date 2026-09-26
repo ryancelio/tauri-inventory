@@ -291,7 +291,7 @@ export function Component() {
                               {totalCategorias !== 1 && "s"}
                             </p>
                           </div>
-                          {usuario.funcao !== "vendedor" && (
+                          {usuario.funcao !== "vendedor" && !isOfflineMode && (
                             <button
                               className="ml-4 cursor-pointer rounded-lg p-2 text-red-500 opacity-75 transition-colors hover:bg-red-100 hover:opacity-100"
                               onClick={() => setDeleteGrupo(selectedGrupo)}

@@ -6,7 +6,6 @@ import {
   AuditLog,
   AuditLogTargetType,
 } from "@tauri-inventory/types";
-import { Usuario } from "../models/models";
 
 const LOG_PAGE_LIMIT = 100;
 

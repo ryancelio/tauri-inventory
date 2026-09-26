@@ -1,4 +1,3 @@
-"use client";
 import * as React from "react";
 import { Combobox, Separator } from "@base-ui/react";
 import { getMercadoriaKeyListing } from "../../../../../../../api/apiHelper";

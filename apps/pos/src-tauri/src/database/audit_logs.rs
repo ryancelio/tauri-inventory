@@ -73,7 +73,7 @@ pub async fn get_logs_mercadoria(
         }
     }
 
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let mut url = format!("{api_url}/logs/mercadoria/{merc_id}?page={page}");
@@ -115,7 +115,7 @@ pub async fn get_logs_all(
         }
     }
 
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let mut url = format!("{api_url}/logs/all/?page={page}");
@@ -161,7 +161,7 @@ pub async fn get_logs_usuario(
         }
     }
 
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let mut url = format!("{api_url}/logs/usuario/{user_id_target}?page={page}");
@@ -205,7 +205,7 @@ pub async fn get_logs_fabricante(
         }
     }
 
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let mut url = format!("{api_url}/logs/fabricante/{fabricante_id}?page={page}");

@@ -32,12 +32,12 @@ pub struct DateFilter {
     pub lte: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
-#[serde(deny_unknown_fields)]
-pub struct ArrayFilter<T> {
-    #[serde(rename = "in")] // Traduz `in_val` do Rust para `in` no JSON
-    pub in_val: Option<Vec<T>>,
-}
+// #[derive(Debug, Serialize, Deserialize, Clone, Default)]
+// #[serde(deny_unknown_fields)]
+// pub struct ArrayFilter<T> {
+//     #[serde(rename = "in")] // Traduz `in_val` do Rust para `in` no JSON
+//     pub in_val: Option<Vec<T>>,
+// }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(deny_unknown_fields)]

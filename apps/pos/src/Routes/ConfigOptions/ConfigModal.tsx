@@ -4,20 +4,20 @@ import { X, Save, Server, Loader2, RotateCw } from "lucide-react";
 import { ApiResponse } from "@tauri-inventory/types";
 import { useToast } from "../../context/Toast/ToastContext";
 import {
+  getApiUrl,
   getIsOfflineModeActive,
   getLastBackupDate,
   setLocalDbPassword,
-  setLocalDbPath,
 } from "../../backend/backendHelper";
 import ConfigAvançada from "./ModalAvancadas";
 import FullscreenModalWrapper from "../App/SharedComponents/FullscreenModal";
 import { setApiUrl as RustSetApiUrl } from "../../backend/backendHelper";
 import { confirm } from "@tauri-apps/plugin-dialog";
+import VersionConfig from "./VersionConfig";
 
 // 1. Criamos uma tipagem para guardar o estado inicial
 interface InitialState {
   apiUrl: string;
-  dbPath: string;
 }
 
 export default function ConfigModal({ onClose }: { onClose: () => void }) {
@@ -26,22 +26,20 @@ export default function ConfigModal({ onClose }: { onClose: () => void }) {
   // Estado Inicial para comparação (Dirty Checking)
   const [initialData, setInitialData] = useState<InitialState>({
     apiUrl: "",
-    dbPath: "",
   });
 
   // Estados principais
   const [apiUrl, setApiUrl] = useState("");
-  const [dbPath, setDbPath] = useState("");
   const [updateDbPass, setUpdateDbPass] = useState(false);
   const [dbPass, setDbPass] = useState("");
   const [lastBackup, setLastBackup] = useState("");
 
+
   const hasChanged = useMemo(() => {
     const urlChanged = apiUrl !== initialData.apiUrl;
-    const pathChanged = dbPath !== initialData.dbPath;
     const passChanged = updateDbPass && dbPass.trim() !== "";
-    return urlChanged || pathChanged || passChanged;
-  }, [apiUrl, dbPath, updateDbPass, dbPass, initialData]);
+    return urlChanged || passChanged;
+  }, [apiUrl, updateDbPass, dbPass, initialData]);
 
   const handleClose = useCallback(() => {
     if (!hasChanged) {
@@ -60,7 +58,7 @@ export default function ConfigModal({ onClose }: { onClose: () => void }) {
 
   // Estados de loading da tela
   const [isLoading, setIsLoading] = useState(true);
-  const [, setIsOffline] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isApiChecking, setIsApiChecking] = useState(false);
 
@@ -70,26 +68,26 @@ export default function ConfigModal({ onClose }: { onClose: () => void }) {
     message: "",
   });
 
+
   useEffect(() => {
     let isMounted = true; // Previne atualizações de estado caso o componente desmonte
 
     const fetchInitialData = async () => {
       setIsLoading(true);
       try {
-        const [url, db, offline, backup] = await Promise.all([
-          invoke<string>("command_get_api_url"),
-          invoke<string>("command_get_db_path"),
-          getIsOfflineModeActive(),
-          getLastBackupDate(false),
-        ]);
+        const [url, offline, backup] =
+          await Promise.all([
+            getApiUrl(),
+            getIsOfflineModeActive(),
+            getLastBackupDate(false),
+          ]);
 
         if (isMounted) {
           setApiUrl(url);
-          setDbPath(db);
           setIsOffline(offline);
           setLastBackup(backup);
         }
-        setInitialData({ apiUrl: url, dbPath: db });
+        setInitialData({ apiUrl: url });
       } catch (e: any) {
         console.error(e);
         if (isMounted) {
@@ -140,11 +138,6 @@ export default function ConfigModal({ onClose }: { onClose: () => void }) {
         promessasDeSalvamento.push(RustSetApiUrl(apiUrl));
       }
 
-      // Só envia o Caminho do DB se ele foi alterado
-      if (dbPath !== initialData.dbPath) {
-        promessasDeSalvamento.push(setLocalDbPath(dbPath));
-      }
-
       // Só envia a senha se o usuário ativou o switch (garantindo que ele quer mudar)
       if (updateDbPass) {
         promessasDeSalvamento.push(setLocalDbPassword(dbPass));
@@ -165,7 +158,7 @@ export default function ConfigModal({ onClose }: { onClose: () => void }) {
       });
 
       // Atualiza o estado inicial para o novo estado (caso o modal continue aberto)
-      setInitialData({ apiUrl, dbPath });
+      setInitialData({ apiUrl });
 
       // Reseta o switch de senha por segurança
       setUpdateDbPass(false);
@@ -290,12 +283,12 @@ export default function ConfigModal({ onClose }: { onClose: () => void }) {
                 >
                   {apiCheckResponse.message}
                 </p>
+                <VersionConfig />
               </div>
 
               <ConfigAvançada
-                dbPath={dbPath}
                 lastBackup={lastBackup}
-                setDbPath={setDbPath}
+                isOffline={isOffline}
                 dbPass={dbPass}
                 setDbPass={setDbPass}
                 updateDbPass={updateDbPass}

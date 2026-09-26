@@ -33,7 +33,6 @@ pub fn get_db_pool(
 }
 
 pub async fn create_db_connection(app: &AppHandle) -> Result<Pool<Sqlite>, RustApiError> {
-    // let db_pass = "password4312";
     let db_pass = get_db_pass()?;
 
     let db_path = get_local_db_path(&app).await?;
@@ -49,7 +48,7 @@ pub async fn create_db_connection(app: &AppHandle) -> Result<Pool<Sqlite>, RustA
         .max_connections(5)
         .connect_with(options)
         .await
-        .map_err(|e| RustApiError {
+        .map_err(|_| RustApiError {
             code: 400,
             message: ApiResponse {
                 response: "Banco de dados nao disponivel. Não é possivel entrar em modo offline"

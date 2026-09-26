@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, State};
 
 use crate::config::api_url::get_api_url;
-use crate::database::categoria::CategoriaDB;
 use crate::database::{get_body, get_token, try_connection};
 use crate::offline::database::off_categorias::SQLiteCategoria;
 use crate::offline::database::off_grupos::{offline_get_grupos, SQLiteGrupo};
@@ -78,7 +77,7 @@ pub async fn get_grupos(
             return offline_get_grupos(&state).await;
         }
     }
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let request = state
@@ -100,7 +99,7 @@ pub async fn create_grupo(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let token = get_token(&state)?;
 
@@ -124,7 +123,7 @@ pub async fn update_grupo(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let token = get_token(&state)?;
 
@@ -147,7 +146,7 @@ pub async fn delete_grupo(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let token = get_token(&state)?;
 

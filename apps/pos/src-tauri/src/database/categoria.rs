@@ -3,11 +3,10 @@ use std::sync::atomic::Ordering;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, State};
 
-use crate::config::api_url::{self, get_api_url};
-use crate::database::grupo::{Grupo, GrupoDB};
+use crate::config::api_url::get_api_url;
+use crate::database::grupo::GrupoDB;
 use crate::database::{get_body, get_token, try_connection};
-use crate::log::log_to_default;
-use crate::offline::database::off_categorias::{offline_get_categorias, SQLiteCategoria};
+use crate::offline::database::off_categorias::{offline_get_categorias};
 use crate::{ApiResponse, AppState, RustApiError};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -19,26 +18,27 @@ pub struct Categoria {
     pub created_at: String,
     pub updated_at: String,
 }
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct CategoriaDB {
-    pub id: i32,
-    pub nome: String,
-    pub grupo_id: i32,
-    pub updated_at: String,
-    pub created_at: String,
-}
-impl From<SQLiteCategoria> for CategoriaDB {
-    fn from(value: SQLiteCategoria) -> Self {
-        Self {
-            id: value.id,
-            nome: value.nome,
-            grupo_id: value.grupo_id,
-            created_at: value.created_at,
-            updated_at: value.updated_at,
-        }
-    }
-}
+// #[derive(Debug, Serialize, Deserialize, Clone, Default)]
+// #[serde(rename_all = "camelCase")]
+// pub struct CategoriaDB {
+//     pub id: i32,
+//     pub nome: String,
+//     pub grupo_id: i32,
+//     pub updated_at: String,
+//     pub created_at: String,
+// }
+
+// impl From<SQLiteCategoria> for CategoriaDB {
+//     fn from(value: SQLiteCategoria) -> Self {
+//         Self {
+//             id: value.id,
+//             nome: value.nome,
+//             grupo_id: value.grupo_id,
+//             created_at: value.created_at,
+//             updated_at: value.updated_at,
+//         }
+//     }
+// }
 
 /*
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -63,7 +63,7 @@ pub async fn create_categoria(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let token = get_token(&state)?;
 
@@ -91,7 +91,7 @@ pub async fn get_categorias(
         return offline_get_categorias(&state).await;
     }
 
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let token = get_token(&state)?;
 
@@ -114,7 +114,7 @@ pub async fn update_categoria(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let token = get_token(&state)?;
 
@@ -137,7 +137,7 @@ pub async fn delete_categoria(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let request = state
@@ -159,7 +159,7 @@ pub async fn reassign_categoria(
     old_cat_id: i32,
     new_cat_id: i32,
 ) -> Result<ApiResponse, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let token = get_token(&state)?;
 
@@ -183,7 +183,7 @@ pub async fn get_categoria_merc_count(
     app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<i32, RustApiError> {
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
 
     let token = get_token(&state)?;
 

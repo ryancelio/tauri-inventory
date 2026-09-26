@@ -55,9 +55,9 @@ export async function setLocalDbPassword(novaSenha: string) {
   return await invoke<ApiResponse>("set_db_pass", { pass: novaSenha });
 }
 
-export async function setLocalDbPath(newPath: string) {
-  return await invoke<ApiResponse>("set_db_path", { newPath: newPath });
-}
+// export async function setLocalDbPath(newPath: string) {
+//   return await invoke<ApiResponse>("set_db_path", { newPath: newPath });
+// }
 
 export async function setApiUrl(newUrl: string) {
   return await invoke<ApiResponse>("change_api_url", {
@@ -65,14 +65,21 @@ export async function setApiUrl(newUrl: string) {
   });
 }
 
-export async function checkUpdate(): Promise<UpdateMetadata | null> {
-  return await invoke("check_for_update");
+export async function automaticCheckUpdate(): Promise<UpdateMetadata | null> {
+  return await invoke("automatic_update_check");
+}
+
+export async function forceUpdateCheck(): Promise<UpdateMetadata | null> {
+  return await invoke("force_check_update");
 }
 
 export async function getPendingUpdate(): Promise<UpdateMetadata | null> {
-  return await invoke("get_pending_update");
+  return await invoke("command_get_pending_update");
 }
 
-export async function startUpdate(){
-  await invoke("start_update")
+export async function startUpdate() {
+  await invoke("start_update");
+}
+export async function getApiUrl() {
+  return await invoke<string>("command_get_api_url");
 }

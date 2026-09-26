@@ -8,7 +8,6 @@ use crate::{
         fabricante::Fabricante,
         filters::{BaseQuery, DateFilter, JsonFilter, NumberFilter, PrimitiveValue, StringFilter},
     },
-    offline::database::off_mercadorias::SQLiteMercadoria,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone, sqlx::FromRow)]
@@ -57,32 +56,6 @@ pub struct SimilarMerc {
     pub estoque04: i32,
     pub preco_venda: String,
     pub caracteristicas: Option<Vec<Caracteristicas>>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct CaracteristicaSend {
-    pub key: String,
-    pub value: PrimitiveValue,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct MercadoriaDBSent {
-    pub id: Option<i32>,
-    pub key: Option<i32>,
-    pub descricao: String,
-    pub fabricante_id: i32,
-    pub categoria_id: i32,
-    pub estoque02: Option<i32>,
-    pub estoque03: Option<i32>,
-    pub estoque04: Option<i32>,
-    pub caracteristicas: Option<Vec<CaracteristicaSend>>,
-    pub observacoes: Option<String>,
-    pub preco_custo: f64,
-    pub preco_venda: f64,
-    pub created_at: Option<String>,
-    pub updated_at: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

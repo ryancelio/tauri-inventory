@@ -1,9 +1,5 @@
-use std::{
-    fs,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::fs;
 
-use chrono::{DateTime, Utc};
 use tauri::{AppHandle, State};
 
 use crate::{
@@ -49,7 +45,7 @@ pub async fn get_latest_backup(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse, RustApiError> {
     let db_file_path = get_local_db_path(&app).await?;
-    let api_url = get_api_url(&app);
+    let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
     let request = state

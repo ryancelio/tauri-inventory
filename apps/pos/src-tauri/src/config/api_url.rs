@@ -1,27 +1,27 @@
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, State};
 use tauri_plugin_store::StoreExt;
 
-use crate::{log::log_to_default, ApiResponse, AppState, RustApiError};
+use crate::{config::CONFIG_PATH, log::log_to_default, ApiResponse, AppState, RustApiError};
 
 pub const DEFAULT_API_URL: &'static str = "http://localhost:8080";
 
-pub fn get_api_url(app: &AppHandle) -> String {
-    let store = app.store("config.json").expect("Falha ao abrir store");
+pub fn get_api_url(app: &AppHandle) -> Result<String, RustApiError> {
+    let store = app.store(CONFIG_PATH).map_err(|_| "Falha ao abrir store")?;
 
     // Já existe
     if let Some(value) = store.get("api_url") {
         if let Some(url) = value.as_str() {
-            return url.to_string();
+            return Ok(url.to_string());
         }
     }
 
     // Cria valor default
     store.set("api_url", serde_json::json!(DEFAULT_API_URL));
 
-    store.save().expect("Falha ao salvar config");
+    store.save().map_err(|_| "Falha ao salvar config")?;
 
-    DEFAULT_API_URL.to_string()
+    Ok(DEFAULT_API_URL.to_string())
 }
 
 #[tauri::command]

@@ -45,7 +45,7 @@ export default function LoginPage() {
 
   return (
     <>
-      <div className="relative flex min-h-screen w-full items-center justify-center bg-slate-50 p-4">
+      <div className="relative flex size-full items-center justify-center bg-slate-50 p-4">
         {/* Card Principal */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}

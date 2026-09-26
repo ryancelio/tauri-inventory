@@ -4,7 +4,6 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Mutex;
 use tauri::Manager;
 use tauri_plugin_http::reqwest::Client;
-use tauri_plugin_updater::{Update};
 
 mod api_checks;
 mod auth;
@@ -33,9 +32,6 @@ pub struct AppState {
     // Connection to local DB, for offline access
     pub db: Mutex<Option<Pool<Sqlite>>>,
     pub is_offline_mode: AtomicBool,
-
-    // Updates
-    pub pending_update: Mutex<Option<Update>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -88,7 +84,6 @@ pub fn run() {
                 is_online: AtomicBool::new(false),
                 is_checking: AtomicBool::new(false),
                 is_offline_mode: AtomicBool::new(false),
-                pending_update: Mutex::new(None),
             });
 
             handle.manage(update::UpdateStateStore::default());
@@ -98,7 +93,6 @@ pub fn run() {
                 let state = async_handle.state::<AppState>();
                 tokio::join!(api_checks::health_check(&state, &async_handle));
             });
-            // Possible slowdown
             Ok(())
         })
         .plugin(tauri_plugin_store::Builder::new().build())
@@ -107,7 +101,6 @@ pub fn run() {
             database::mercadoria::get_mercadorias,
             database::mercadoria::get_single_mercadoria,
             database::mercadoria::get_similar_mercs,
-            // database::mercadoria::update_all_similar_mercs,
             database::mercadoria::update_similar_by_id,
             database::mercadoria::get_mercadoria_report,
             database::mercadoria::update_mercadoria,
@@ -157,8 +150,8 @@ pub fn run() {
             config::api_url::command_get_api_url,
             config::api_url::change_api_url,
             config::api_url::check_api_url,
-            config::local_db_path::command_get_db_path,
-            config::local_db_path::set_db_path,
+            // config::local_db_path::command_get_db_path,
+            // config::local_db_path::set_db_path,
             api_checks::get_api_status,
             api_checks::get_api_status_check,
             api_checks::recheck_api_status,
@@ -172,9 +165,10 @@ pub fn run() {
             printers::get_printers,
             printers::print_pdf,
             update::start_update,
-            update::check_for_update,
-            update::get_pending_update,
+            update::automatic_update_check,
+            update::command_get_pending_update,
             update::get_update_state,
+            update::force_check_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

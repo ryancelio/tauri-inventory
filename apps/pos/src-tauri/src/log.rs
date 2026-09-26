@@ -3,8 +3,6 @@ use std::fs::File;
 use std::io::Write;
 use tauri::{AppHandle, Manager};
 
-const LOG_FILE_PATH: &str = "/home/zen/inventory.log"; // TODO - Default log target folder
-
 pub async fn log_to_default(app: &AppHandle, content: &str) {
     match app.path().app_log_dir() {
         Ok(log_file_path) => {
