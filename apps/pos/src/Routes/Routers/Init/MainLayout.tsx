@@ -21,6 +21,7 @@ import {
   getApiStatusCheck,
   getIsOfflineModeActive,
   getPendingUpdate,
+  automaticBackupDownload,
 } from "../../../backend/backendHelper";
 import { Loader2, TriangleAlert } from "lucide-react";
 
@@ -98,9 +99,8 @@ export function Component() {
     (async () => {
       try {
         await automaticCheckUpdate();
-        // if (update) {
-        //   setUpdateModal(update);
-        // }
+        await automaticBackupDownload();
+
       } catch (e) {
         console.error(e);
       }

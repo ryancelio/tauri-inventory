@@ -39,5 +39,3 @@ export async function reassignFabricante(oldFabId: number, newFabId: number) {
 export async function fabricanteCascadeDelete(fabId: number) {
   return await invoke<ApiResponse>("cascade_delete_fab", { fabId });
 }
-
-

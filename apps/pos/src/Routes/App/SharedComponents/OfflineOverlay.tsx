@@ -5,6 +5,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { useRevalidator } from "react-router";
 import FullscreenModalWrapper from "./FullscreenModal";
 import {
+  checkConfigIsComplete,
+  ConfigCheckResult,
   getLastBackupDate,
   setOfflineMode,
 } from "../../../backend/backendHelper";
@@ -22,6 +24,8 @@ export default function OfflineOverlay({
   const [failedOpenOfflineDB, setFailedOpenOfflineDB] = useState(false);
   const [configOverlayOpen, setconfigOverlayOpen] = useState(false);
 
+  const [cfgError, setCfgError] = useState<ConfigCheckResult>({});
+
   const reconnectButtonRef = useRef<HTMLButtonElement>(null);
   const revalidator = useRevalidator();
   const toaster = useToast();
@@ -35,6 +39,10 @@ export default function OfflineOverlay({
   // (if any) is visible *before* the user decides whether to go offline.
   useEffect(() => {
     checkLastBackupDate();
+    (async () => {
+      const res = await checkConfigIsComplete();
+      setCfgError(res);
+    })()
   }, []);
 
   async function checkConnection() {
@@ -151,15 +159,13 @@ export default function OfflineOverlay({
                 )}
 
                 <div className="mt-1 flex items-center justify-end gap-3">
-                  {/* {failedOpenOfflineDB && ( */}
                   <button
                     className="mr-auto ml-2 text-gray-400 transition-all hover:text-gray-800"
-                    hidden={!failedOpenOfflineDB}
+                    hidden={failedOpenOfflineDB || cfgError.apiUrl === undefined}
                     onClick={() => setconfigOverlayOpen(true)}
                   >
                     <Bolt />
                   </button>
-                  {/* )} */}
                   <button
                     onClick={() => changeOfflineMode(true)}
                     disabled={isEnteringOffline}

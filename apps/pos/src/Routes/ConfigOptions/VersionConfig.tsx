@@ -2,15 +2,17 @@ import { getVersion } from "@tauri-apps/api/app";
 import { useEffect, useState } from "react";
 import {
   forceUpdateCheck,
+  getLastUpdateCheckDate,
   getPendingUpdate,
 } from "../../backend/backendHelper";
 import { UpdateMetadata } from "../Routers/Init/UpdateTypes";
 import { useToast } from "../../context/Toast/ToastContext";
-import { Loader2 } from "lucide-react";
 import { confirm } from "@tauri-apps/plugin-dialog";
 
 export default function VersionConfig() {
   const [appVersion, setAppVersion] = useState("");
+  const [lastUpdateCheckDate, setLastUpdateCheckDate] = useState("");
+
   const [updateDisponivel, setUpdateDisponivel] =
     useState<UpdateMetadata | null>(null);
   const toaster = useToast();
@@ -21,9 +23,17 @@ export default function VersionConfig() {
     (async () => {
       const verionRes = await getVersion();
       const update = await getPendingUpdate();
+      let updateCheck = await getLastUpdateCheckDate();
+
+      if (updateCheck) {
+        updateCheck = new Date(updateCheck).toLocaleDateString("pt-BR");
+      } else {
+        updateCheck = "nunca";
+      }
 
       setAppVersion(verionRes);
       setUpdateDisponivel(update);
+      setLastUpdateCheckDate(updateCheck);
     })();
   }, []);
 
@@ -57,7 +67,7 @@ export default function VersionConfig() {
     <div className="flex justify-between">
       <div className="flex flex-col gap-1">
         <p>
-          Versão Atual: <span className="font-bold ml-auto">{appVersion}</span>
+          Versão Atual: <span className="ml-auto font-bold">{appVersion}</span>
         </p>
         {updateDisponivel !== null && (
           <div>
@@ -73,26 +83,29 @@ export default function VersionConfig() {
                   }
                 });
               }}
-              className="focus:ring-0 text-blue-500 cursor-pointer hover:text-blue-600"
+              className="cursor-pointer text-blue-500 hover:text-blue-600 focus:ring-0"
             >
               Atualiação Disponível:{" "}
-              <span className="font-bold ml-auto">{updateDisponivel.version}</span>
+              <span className="ml-auto font-bold">
+                {updateDisponivel.version}
+              </span>
             </button>
           </div>
         )}
       </div>
-      <button
-        className="flex h-10 gap-2 rounded-lg bg-blue-500 px-3 py-2 text-white not-disabled:hover:brightness-95 active:brightness-105 disabled:brightness-90 disabled:contrast-75"
-        onClick={handleForceUpdateCheck}
-        disabled={isChecking}
-      >
-        {isChecking && (
-          <span>
-            <Loader2 className="animate-spin" />
-          </span>
-        )}
-        Checar Atualização
-      </button>
+
+      <div className="w-fit gap-1">
+        <button
+          className={`flex h-10 w-fit gap-2 rounded-lg bg-blue-500 px-3 py-2 text-right text-white not-disabled:hover:brightness-95 active:brightness-105 disabled:brightness-90 disabled:contrast-75 ${isChecking && "animate-pulse"}`}
+          onClick={handleForceUpdateCheck}
+          disabled={isChecking}
+        >
+          <span className={`ml-auto`}>Checar Atualização</span>
+        </button>
+        <p className="w-full text-center text-xs">
+          Ultima verificação: {lastUpdateCheckDate}
+        </p>
+      </div>
     </div>
   );
 }

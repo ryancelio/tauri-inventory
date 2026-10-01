@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useFetcher, useLoaderData } from "react-router";
 import {
   AlertCircle,
@@ -13,16 +13,20 @@ import {
 import { loader } from "./LoginLayout";
 import { AnimatePresence, motion } from "motion/react";
 import ConfigModal from "../ConfigOptions/ConfigModal";
+import {
+  checkConfigIsComplete,
+  ConfigCheckResult,
+} from "../../backend/backendHelper";
 
 export default function LoginPage() {
+  const { isOfflineMode } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
 
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
-  const [hasError, setHasError] = useState<boolean>(false);
+  const [hasLoginError, setHasLoginError] = useState<boolean>(false);
   const [cfgModal, setCfgModal] = useState(false);
-
-  const { isOfflineMode } = useLoaderData<typeof loader>();
+  const [cfgErrors, setCfgErrors] = useState<ConfigCheckResult>({});
 
   // Extrai mensagens de erro de múltiplos formatos possíveis do backend
   const getErrorMessage = (data: any): string => {
@@ -39,9 +43,18 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (fetcher.data) {
-      setHasError(true);
+      setHasLoginError(true);
     }
   }, [fetcher.data]);
+
+  const checkConfigComplete = useCallback(async () => {
+    const errors = await checkConfigIsComplete();
+    setCfgErrors(errors);
+  }, [checkConfigIsComplete, setCfgErrors]);
+
+  useEffect(() => {
+    checkConfigComplete();
+  }, []);
 
   return (
     <>
@@ -51,12 +64,12 @@ export default function LoginPage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="w-full max-w-md rounded-2xl p-8 "
+          className="w-full max-w-md rounded-2xl p-8"
         >
           {/* Cabeçalho */}
           <div className="mb-6 flex flex-col items-center gap-2 text-center">
             <h1 className="text-2xl font-bold tracking-tight text-slate-800">
-              Acesso de Funcionário
+              Login
             </h1>
             <p className="text-sm text-slate-500">
               Digite suas credenciais para continuar
@@ -67,7 +80,7 @@ export default function LoginPage() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-700 border border-amber-200"
+                className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-700"
               >
                 <WifiOff className="size-3.5" />
                 <span>Modo de Operação Offline</span>
@@ -85,10 +98,10 @@ export default function LoginPage() {
               inputValue={usuario}
               setInputValue={(val) => {
                 setUsuario(val);
-                setHasError(false);
+                setHasLoginError(false);
               }}
               autoFocus
-              hasError={hasError}
+              hasError={hasLoginError}
               disabled={isSubmitting}
             />
 
@@ -101,15 +114,15 @@ export default function LoginPage() {
               inputValue={senha}
               setInputValue={(val) => {
                 setSenha(val);
-                setHasError(false);
+                setHasLoginError(false);
               }}
-              hasError={hasError}
+              hasError={hasLoginError}
               disabled={isSubmitting}
             />
 
             {/* Banner de Erro Animado */}
             <AnimatePresence mode="wait">
-              {hasError && errorMessage && (
+              {hasLoginError && errorMessage && (
                 <motion.div
                   initial={{ opacity: 0, height: 0, y: -6 }}
                   animate={{ opacity: 1, height: "auto", y: 0 }}
@@ -118,8 +131,8 @@ export default function LoginPage() {
                   className="overflow-hidden"
                 >
                   <div className="flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-600">
-                    <AlertCircle className="size-4 shrink-0 text-red-500 mt-0.5" />
-                    <span className="font-medium leading-relaxed">
+                    <AlertCircle className="mt-0.5 size-4 shrink-0 text-red-500" />
+                    <span className="leading-relaxed font-medium">
                       {errorMessage}
                     </span>
                   </div>
@@ -146,19 +159,32 @@ export default function LoginPage() {
         </motion.div>
 
         {/* Botão de Configurações */}
-        <button
-          type="button"
-          onClick={() => setCfgModal(true)}
-          title="Configurações do Sistema"
-          className="absolute bottom-5 left-5 flex size-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95"
-        >
-          <Bolt className="size-5" />
-        </button>
+        {cfgErrors.apiUrl !== undefined && (
+            <div className="absolute bottom-5 left-5 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCfgModal(true)}
+                title="Configurações do Sistema"
+                className="flex size-10 items-center justify-center rounded-full border border-red-500 bg-red-50 text-slate-600 shadow-sm transition-all hover:bg-red-100 hover:text-slate-900 active:scale-95"
+              >
+                <Bolt className="size-5" />
+              </button>
+              <div className="flex h-7.5 items-center">
+                <div className="h-0 w-0 shrink-0 border-t-15 border-r-30 border-b-15 border-transparent border-r-red-500"/>
+                <div className="h-7.5 w-fit min-w-32 rounded-lg rounded-l-none bg-red-500 p-1.5 text-sm font-semibold text-white">
+                  {cfgErrors.apiUrl}
+                </div>
+              </div>
+            </div>
+          )}
       </div>
 
       {/* Modal de Configuração */}
       <AnimatePresence>
-        {cfgModal && <ConfigModal onClose={() => setCfgModal(false)} />}
+        {cfgModal && <ConfigModal onClose={() => {
+          checkConfigComplete();
+          setCfgModal(false);
+        }} />}
       </AnimatePresence>
     </>
   );
@@ -221,7 +247,7 @@ function SecureInput({
           autoFocus={autoFocus}
           placeholder=" "
           aria-invalid={hasError}
-          className={`w-full rounded-xl border bg-slate-50/50 py-3 text-slate-800 transition-all focus:bg-white focus:outline-none disabled:opacity-60 ${
+          className={`w-full peer rounded-xl border bg-slate-50/50 py-3 text-slate-800 transition-all focus:bg-white focus:outline-none disabled:opacity-60 ${
             Icon ? "pl-11" : "pl-4"
           } ${isPasswordType ? "pr-11" : "pr-4"} ${
             hasError
@@ -235,9 +261,9 @@ function SecureInput({
           htmlFor={inputId}
           className={`pointer-events-none absolute transition-all duration-150 ease-out ${
             Icon ? "left-11" : "left-4"
-          } peer-focus:text-xs peer-focus:font-semibold peer-focus:-translate-y-3.5 peer-focus:text-blue-600 ${
+          } peer-focus:-translate-y-6 px-1 peer-focus:text-xs peer-focus:font-semibold peer-focus:bg-linear-to-b from-gray-50 to-white peer-focus:text-blue-600 ${
             String(inputValue).length > 0
-              ? "-translate-y-3.5 text-xs font-semibold text-slate-500"
+              ? "-translate-y-6 text-[13px]  font-semibold text-slate-500 bg-gray-50 "
               : "text-slate-400"
           } ${hasError ? "peer-focus:text-red-500" : ""}`}
         >

@@ -370,7 +370,6 @@ export const alterarMercadoria = async (
     }
 
     let mercadoria = req.body;
-    
     const caracteristicas = caracteristicasParser(mercadoria, id);
 
     // Negative merc Key, assigns new

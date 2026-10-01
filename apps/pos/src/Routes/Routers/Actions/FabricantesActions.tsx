@@ -5,7 +5,7 @@ import {
   editarFabricante,
   fabricanteCascadeDelete,
 } from "../../../api/apiHelper";
-import { ApiResponse } from "../../../../../../packages/types/database/ApiResponses";
+import { ApiResponse } from "@tauri-inventory/types";
 
 export async function createFabricanteAction(formData: FormData) {
   const nome = formData.get("nome") as string;

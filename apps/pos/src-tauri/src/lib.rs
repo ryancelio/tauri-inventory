@@ -38,6 +38,18 @@ pub struct AppState {
 pub struct ApiResponse {
     pub response: String,
 }
+impl From<String> for ApiResponse {
+    fn from(value: String) -> Self {
+        ApiResponse { response: value }
+    }
+}
+impl From<&str> for ApiResponse {
+    fn from(value: &str) -> Self {
+        ApiResponse {
+            response: value.to_string(),
+        }
+    }
+}
 #[derive(Serialize, Deserialize)]
 pub struct RustApiError {
     pub code: u16,
@@ -162,6 +174,7 @@ pub fn run() {
             offline::check_db_exists,
             offline::backups::get_backup_date,
             offline::backups::get_latest_backup,
+            offline::backups::automatic_backup_download,
             printers::get_printers,
             printers::print_pdf,
             update::start_update,

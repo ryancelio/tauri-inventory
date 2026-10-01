@@ -36,7 +36,7 @@ export default function FotosCard({
           className="ml-auto"
         />
       </div>
-      {photos.id.length == 0 ? (
+      {photos.id.length == 0 && photos.key.length == 0 ? (
         <div
           className={`grid h-48 w-full cursor-pointer place-items-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/50 text-slate-400 transition-all hover:border-blue-400 hover:bg-slate-100 hover:text-blue-500 ${(isOfflineMode || !isEdit) && "pointer-events-none"}`}
           onClick={() => setShowAddPhotoModal((prev) => !prev)}

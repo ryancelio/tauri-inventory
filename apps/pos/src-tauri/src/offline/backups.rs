@@ -1,5 +1,6 @@
 use std::fs;
 
+use chrono::{DateTime, Utc};
 use tauri::{AppHandle, State};
 
 use crate::{
@@ -8,6 +9,7 @@ use crate::{
         local_db_path::{get_last_backup_date, get_local_db_path, set_backup_date},
     },
     database::{get_token, try_connection},
+    log::log_to_default,
     ApiResponse, AppState, RustApiError,
 };
 
@@ -16,27 +18,27 @@ pub async fn get_backup_date(
     app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<String, RustApiError> {
-    // let db_file_path = get_local_db_path(&app);
-    // let metadata: fs::Metadata = fs::metadata(db_file_path).map_err(|err| RustApiError {
-    //     code: 500,
-    //     message: crate::ApiResponse {
-    //         response: format!("{err}"),
-    //     },
-    // })?;
+    get_last_backup_date(&app, &state).await
+}
 
-    // if let Ok(created_time) = metadata.created() {
-    //     let since: DateTime<Utc> = created_time.into();
-    //     Ok(since.to_rfc3339().to_string())
-    // } else {
-    //     Err(RustApiError {
-    //         code: 500,
-    //         message: crate::ApiResponse {
-    //             response: "Erro ao receber tempo do arquivo".to_string(),
-    //         },
-    //     })
-    // }
+/// Checks if a backup was download today, and downloads if not.
+#[tauri::command]
+pub async fn automatic_backup_download(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<(), RustApiError> {
+    let last_backup_date = get_last_backup_date(&app, &state).await?;
 
-    get_last_backup_date(app, state).await
+    let should_redownload = match DateTime::parse_from_rfc3339(&last_backup_date) {
+        Ok(last_backup) => last_backup.date_naive() < Utc::now().date_naive(),
+        Err(_) => true,
+    };
+
+    if should_redownload {
+        let _ = get_latest_backup(app, state).await?;
+    }
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -71,7 +73,9 @@ pub async fn get_latest_backup(
         },
     })?;
 
-    set_backup_date(app).await?;
+    set_backup_date(&app).await?;
+
+    let _ = log_to_default(&app, &format!("Database backup download sucessful!")).await;
     Ok(ApiResponse {
         response: String::from("Backup salvo com sucesso!"),
     })

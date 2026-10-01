@@ -8,13 +8,13 @@ use crate::{
     log::log_to_default, offline::backups::get_latest_backup, ApiResponse, AppState, RustApiError,
 };
 
-pub const DEFAULT_LOCAL_DB_PATH: &'static str = "sqlchipher.db";
+pub const DEFAULT_LOCAL_DB_FILENAME: &'static str = "sqlchipher.db";
 
 pub async fn get_local_db_path(app: &AppHandle) -> Result<PathBuf, RustApiError> {
     let file_path = app.path().app_local_data_dir();
 
     return match file_path {
-        Ok(val) => Ok(val.join(DEFAULT_LOCAL_DB_PATH)),
+        Ok(val) => Ok(val.join(DEFAULT_LOCAL_DB_FILENAME)),
         Err(error) => {
             {
                 log_to_default(
@@ -34,8 +34,8 @@ pub async fn get_local_db_path(app: &AppHandle) -> Result<PathBuf, RustApiError>
 }
 
 pub async fn get_last_backup_date(
-    app: AppHandle,
-    state: State<'_, AppState>,
+    app: &AppHandle,
+    state: &State<'_, AppState>,
 ) -> Result<String, RustApiError> {
     let store = match app.store("config.json") {
         Ok(val) => val,
@@ -82,7 +82,7 @@ pub async fn get_last_backup_date(
     }
 }
 
-pub async fn set_backup_date(app: AppHandle) -> Result<ApiResponse, RustApiError> {
+pub async fn set_backup_date(app: &AppHandle) -> Result<ApiResponse, RustApiError> {
     let store = match app.store("config.json") {
         Ok(val) => val,
         Err(e) => {

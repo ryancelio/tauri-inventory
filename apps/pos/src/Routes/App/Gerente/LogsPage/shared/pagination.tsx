@@ -47,7 +47,7 @@ export function Pagination({
   if (total <= pageSize) return null;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4 text-sm text-slate-500">
+    <div className="flex flex-wrap h-1 items-center justify-between gap-3 border-t border-slate-200 pt-4 text-sm text-slate-500">
       <p>
         Mostrando{" "}
         <span className="font-medium text-slate-700">

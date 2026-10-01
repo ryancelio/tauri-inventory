@@ -35,8 +35,8 @@ export const criarGrupo = async (
             break;
         }
       }
-      res.status(status).json({ response: error });
     }
+    res.status(status).json({ response: error });
   }
 };
 

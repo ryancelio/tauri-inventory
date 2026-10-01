@@ -43,20 +43,12 @@ export async function updateSimilarMerc({
   mercadoria,
   selectedIds,
 }: {
-  // all: boolean;
   mercadoria: SimilarMercUpdate;
   key: number;
-  selectedIds?: string[];
+  selectedIds?: string[] | number[];
 }) {
   console.log({ key, mercadoria, selectedIds });
-  // if (all) {
-  //   // Update many by KEY
-  //   return await invoke<ApiResponse>("update_all_similar_mercs", {
-  //     mercadoria,
-  //     key,
-  //   });
-  // } else {
-  // Update many where id in idList
+  return;
   return await invoke<ApiResponse>("update_similar_by_id", {
     key: key,
     mercadoria: mercadoria,

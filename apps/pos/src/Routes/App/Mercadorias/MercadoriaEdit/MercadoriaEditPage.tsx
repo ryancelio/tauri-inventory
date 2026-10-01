@@ -33,7 +33,6 @@ import FullscreenInfoModal from "../../SharedComponents/InfoModal";
 import { CaracteristicasCard } from "./FormComponents/CaracteristicasCard";
 import MercadoriaFormSkeleton from "./Skeleton/MercEditFormSkeleton";
 import SimilarMercInfoCard from "./FormComponents/SimilarMercInfoCard";
-import EditSMercSelector from "./FormComponents/EditSMercSelector";
 import { SimpleAddPhotoModal } from "./FormComponents/AddPhotoModal";
 import { useToast } from "../../../../context/Toast/ToastContext";
 import { AnimatePresence } from "motion/react";
@@ -46,6 +45,7 @@ import CreateButton from "./FormComponents/CreateButton";
 import { uploadMercPhoto } from "../../../../api/apiHelper";
 import ChangeKeyModal from "./FormComponents/ChangeKeyModal";
 import FotosCard from "./FormComponents/FotosCard";
+import SimMercPriceEdit from "./FormComponents/SimMercPriceEdit";
 
 export interface MercEditLoader {
   pageData: Promise<{
@@ -301,7 +301,7 @@ function MercadoriaEditPageContent({
         )}
         {/* Similar Merc Change Modal */}
         {showSimMercChangeModal && (
-          <EditSMercSelector
+          <SimMercPriceEdit
             similarMerc={similarMercadoriasList}
             mercadoria={mercadoria}
             onClose={() => setShowSimMercChangeModal(false)}
@@ -549,6 +549,7 @@ function MercadoriaEditPageContent({
               />
               {/* Card: Características Dinâmicas */}
               <CaracteristicasCard
+                similarMercs={similarMercadoriasList}
                 atributos={atributos}
                 mercadoria={mercadoria}
                 readOnly={isOfflineMode}

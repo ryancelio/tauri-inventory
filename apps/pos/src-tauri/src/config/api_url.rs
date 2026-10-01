@@ -4,7 +4,7 @@ use tauri_plugin_store::StoreExt;
 
 use crate::{config::CONFIG_PATH, log::log_to_default, ApiResponse, AppState, RustApiError};
 
-pub const DEFAULT_API_URL: &'static str = "http://localhost:8080";
+// pub const DEFAULT_API_URL: &'static str = "http://localhost:8080";
 
 pub fn get_api_url(app: &AppHandle) -> Result<String, RustApiError> {
     let store = app.store(CONFIG_PATH).map_err(|_| "Falha ao abrir store")?;
@@ -15,59 +15,24 @@ pub fn get_api_url(app: &AppHandle) -> Result<String, RustApiError> {
             return Ok(url.to_string());
         }
     }
+    Err("URL da API não configurada".into())
+}
 
-    // Cria valor default
-    store.set("api_url", serde_json::json!(DEFAULT_API_URL));
+/// Returns stored api_url value, if no value is stored, returns an empty string
+#[tauri::command]
+pub async fn command_get_api_url(app: AppHandle) -> Result<String, RustApiError> {
+    let store = app.store("config.json").expect("Error opening store");
+    if let Some(api_url) = store.get("api_url") {
+        if let Some(url) = api_url.as_str() {
+            return Ok(url.to_string());
+        }
+    }
 
-    store.save().map_err(|_| "Falha ao salvar config")?;
-
-    Ok(DEFAULT_API_URL.to_string())
+    Ok(String::new())
 }
 
 #[tauri::command]
-pub async fn command_get_api_url(app: AppHandle) -> Result<String, ApiResponse> {
-    let store = match app.store("config.json") {
-        Ok(val) => val,
-        Err(e) => {
-            println!("[commang_get_api_url]: {e}");
-            return Err(ApiResponse {
-                response: "Erro ao acessar url da api, entre em contato com um administrador."
-                    .to_string(),
-            });
-        }
-    };
-
-    let val = match store.get("api_url") {
-        Some(val) => match val.as_str() {
-            Some(val) => val.to_string(),
-            None => {
-                let _ = log_to_default(
-                    &app,
-                    &format!("[command_get_api_url]: api_url key found but isn't stringfiable??."),
-                )
-                .await;
-                return Err(ApiResponse {
-                    response: "Erro interno, entre em contato com um administrador.".to_string(),
-                });
-            }
-        },
-        None => {
-            let _ = log_to_default(
-                &app,
-                &format!("[command_get_api_url]: api_url key not found."),
-            )
-            .await;
-            return Err(ApiResponse {
-                response: "Erro interno, entre em contato com um administrador.".to_string(),
-            });
-        }
-    };
-
-    Ok(val)
-}
-
-#[tauri::command]
-pub async fn change_api_url(new_url: String, app: AppHandle) -> Result<ApiResponse, ApiResponse> {
+pub async fn change_api_url(new_url: String, app: AppHandle) -> Result<ApiResponse, RustApiError> {
     let store = app.store("config.json").expect("Falha ao abrir store");
 
     if let Some(value) = store.get("api_url") {
@@ -82,9 +47,7 @@ pub async fn change_api_url(new_url: String, app: AppHandle) -> Result<ApiRespon
 
     store.set("api_url", serde_json::json!(new_url));
 
-    Ok(ApiResponse {
-        response: "Nova api definida com sucesso".to_string(),
-    })
+    Ok("Nova api definida com sucesso".into())
 }
 
 #[derive(Serialize, Deserialize)]

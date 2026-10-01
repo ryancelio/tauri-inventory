@@ -4,6 +4,7 @@ import {
   AtributoTypesType,
   IAtributo,
   IMercadoria,
+  SimilarMerc,
 } from "@tauri-inventory/types";
 import AutoCompleteDropdown, {
   Item,
@@ -12,22 +13,21 @@ import { flushSync } from "react-dom";
 import UISelect from "../../../Components/BASE-UI/Select";
 import { useFetcher } from "react-router";
 import FormTextInput from "./FormTextInput";
+import SimMercEditButton from "./SimMercEditButton";
+import BulkCaracEditModal from "./BulkCaracEditModal";
+import { AnimatePresence } from "motion/react";
 
 export function CaracteristicasCard({
   mercadoria,
   atributos,
   readOnly,
+  similarMercs,
 }: {
   mercadoria: IMercadoria;
   atributos: IAtributo[];
-  readOnly?: boolean;
+  readOnly: boolean;
+  similarMercs: SimilarMerc[];
 }) {
-  //  const atributosMap = useMemo(() => {
-  //   const map = new Map<string, string>();
-  //   atributos.forEach((at) => map.set(at.id.toString(), at.nome));
-  //   return map;
-  // }, [atributos]);
-
   const [caracteristicas, setCaracteristicas] = useState(() => {
     if (!mercadoria.caracteristicas) return [];
     // Cada item já vem da tabela de junção (Mercadoria_Atributos) como
@@ -40,6 +40,7 @@ export function CaracteristicasCard({
       value: String(c.valor),
     }));
   });
+  const [showBulkCaracEditModal, setShowBulkCaracEditModal] = useState(false);
 
   const corAtributoId = useMemo(
     () => atributos.find((a) => a.nome.toLowerCase() === "cor"),
@@ -74,98 +75,125 @@ export function CaracteristicasCard({
     );
   };
 
+  const handleBulkEdit = () => {
+    setShowBulkCaracEditModal(true);
+  };
+
   const overflowRef = useRef<HTMLDivElement>(null);
   const lastElementRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-slate-200/60 bg-white p-6 shadow-sm">
-      <div className="mb-1 flex items-center justify-between border-b border-slate-100 pb-3">
-        <div className="flex items-center gap-2">
-          <Tags className="text-slate-400" size={20} />
-          <h2 className="text-lg font-semibold text-slate-800">
-            Características
-          </h2>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            flushSync(() => {
-              setCaracteristicas([
-                ...caracteristicas,
-                { id: Date.now(), key: "", value: "" },
-              ]);
-            });
+    <>
+      <AnimatePresence mode="wait">
+        {showBulkCaracEditModal && (
+          <BulkCaracEditModal
+            onClose={() => setShowBulkCaracEditModal(false)}
+            caracteristicas={caracteristicasFiltradas}
+            mercadoria={mercadoria}
+            similarMercs={similarMercs}
+          />
+        )}
+      </AnimatePresence>
+      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200/60 bg-white p-6 shadow-sm">
+        <div className="mb-1 flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <Tags className="text-slate-400" size={20} />
+            <h2 className="text-lg font-semibold text-slate-800">
+              Características
+            </h2>
 
-            lastElementRef.current?.scrollIntoView({
-              behavior: "smooth",
-              block: "nearest",
-              inline: "nearest",
-            });
-          }}
-          className="flex items-center justify-center rounded-md bg-blue-500 p-1.5 text-white shadow-sm transition-colors not-disabled:hover:brightness-95 disabled:bg-blue-300"
-          disabled={readOnly}
-          title="Adicionar Característica"
-        >
-          <Plus size={18} />
-        </button>
-      </div>
-
-      <div
-        ref={overflowRef}
-        className="flex max-h-75 min-h-28 flex-col gap-2 overflow-y-auto overscroll-contain pr-4"
-      >
-        {caracteristicasFiltradas.map((caracteristica, index) => (
-          <div
-            ref={
-              index === caracteristicasFiltradas.length - 1
-                ? lastElementRef
-                : undefined
-            }
-            key={caracteristica.id}
-            className="group relative grid h-full w-full grid-cols-12 items-center gap-2 rounded-lg border border-slate-200/80 bg-slate-50 p-2 transition-colors hover:bg-slate-100"
-          >
-            <CaracteristicaRow
-              atributos={atributos}
-              atributosItems={atributosItems}
-              caracteristica={caracteristica}
-              index={index}
-              readOnly={readOnly}
-              usedKeys={usedKeys}
-              onKeyChange={(newKey) =>
-                handleKeyChange(caracteristica.id, newKey)
-              }
-              onValueChange={(newValue) =>
-                handleValueChange(caracteristica.id, newValue)
-              }
-              onRemove={() =>
-                setCaracteristicas(
-                  caracteristicas.filter((c) => c.id !== caracteristica.id),
-                )
-              }
-            />
-          </div>
-        ))}
-        {caracteristicasFiltradas.length === 0 && (
-          <div className="flex h-28 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 text-slate-400">
-            <p className="text-sm italic">Nenhuma característica adicionada.</p>
-            {!readOnly && (
-              <button
-                type="button"
-                onClick={() =>
-                  setCaracteristicas([
-                    ...caracteristicas,
-                    { id: Date.now(), key: "", value: "" },
-                  ])
-                }
-                className="text-sm font-medium text-blue-500 hover:text-blue-600 hover:underline"
-              >
-                Adicionar primeira característica
-              </button>
+            {caracteristicasFiltradas.length > 0 && (
+              <div className="ml-3">
+                <SimMercEditButton
+                  disabled={readOnly}
+                  onClick={handleBulkEdit}
+                />
+              </div>
             )}
           </div>
-        )}
+          <button
+            type="button"
+            onClick={() => {
+              flushSync(() => {
+                setCaracteristicas([
+                  ...caracteristicas,
+                  { id: Date.now(), key: "", value: "" },
+                ]);
+              });
+
+              lastElementRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "nearest",
+                inline: "nearest",
+              });
+            }}
+            className="flex items-center justify-center rounded-md bg-blue-500 p-1.5 text-white shadow-sm transition-colors not-disabled:hover:brightness-95 disabled:bg-blue-300"
+            disabled={readOnly}
+            title="Adicionar Característica"
+          >
+            <Plus size={18} />
+          </button>
+        </div>
+
+        <div
+          ref={overflowRef}
+          className="flex max-h-75 min-h-28 flex-col gap-2 overflow-y-auto overscroll-contain pr-4"
+        >
+          {caracteristicasFiltradas.map((caracteristica, index) => (
+            <div
+              ref={
+                index === caracteristicasFiltradas.length - 1
+                  ? lastElementRef
+                  : undefined
+              }
+              key={caracteristica.id}
+              className="group relative grid h-full w-full grid-cols-12 items-center gap-2 rounded-lg border border-slate-200/80 bg-slate-50 p-2 transition-colors hover:bg-slate-100"
+            >
+              <CaracteristicaRow
+                atributos={atributos}
+                atributosItems={atributosItems}
+                caracteristica={caracteristica}
+                index={index}
+                readOnly={readOnly}
+                usedKeys={usedKeys}
+                onKeyChange={(newKey) =>
+                  handleKeyChange(caracteristica.id, newKey)
+                }
+                onValueChange={(newValue) =>
+                  handleValueChange(caracteristica.id, newValue)
+                }
+                onRemove={() =>
+                  setCaracteristicas(
+                    caracteristicas.filter((c) => c.id !== caracteristica.id),
+                  )
+                }
+              />
+            </div>
+          ))}
+          {caracteristicasFiltradas.length === 0 && (
+            <div className="flex h-28 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 text-slate-400">
+              <p className="text-sm italic">
+                Nenhuma característica adicionada.
+              </p>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCaracteristicas([
+                      ...caracteristicas,
+                      { id: Date.now(), key: "", value: "" },
+                    ])
+                  }
+                  className="text-sm font-medium text-blue-500 hover:text-blue-600 hover:underline"
+                >
+                  Adicionar primeira característica
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -199,8 +227,14 @@ const getAtributoValorInput = (
             disabled={readOnly}
             name={`caracteristicas[${index}][value]`}
             id={`caracteristicas[${index}][value]`}
-            value={caracteristicaValue === "" ? null : {label: caracteristicaValue, value: caracteristicaValue}}
-            onValueChange={(val) => setCaracteristicaValue(val?.value?.toString() || "")}
+            value={
+              caracteristicaValue === ""
+                ? null
+                : { label: caracteristicaValue, value: caracteristicaValue }
+            }
+            onValueChange={(val) =>
+              setCaracteristicaValue(val?.value?.toString() || "")
+            }
           />
         </>
       );

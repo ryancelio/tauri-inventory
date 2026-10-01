@@ -112,7 +112,7 @@ export default function ConfigModal({ onClose }: { onClose: () => void }) {
   const onSave = async () => {
     if (
       apiCheckResponse.error &&
-      !window.confirm("Não foi possível conectar à URL. Salvar mesmo assim?")
+      !(await confirm("Não foi possível conectar à URL. Salvar mesmo assim?"))
     ) {
       return;
     }
@@ -163,6 +163,8 @@ export default function ConfigModal({ onClose }: { onClose: () => void }) {
       // Reseta o switch de senha por segurança
       setUpdateDbPass(false);
       setDbPass("");
+
+      onClose();
     } catch (e: any) {
       console.error("Erro ao salvar:", e);
       toast.toast({
@@ -177,7 +179,10 @@ export default function ConfigModal({ onClose }: { onClose: () => void }) {
 
   const checkApiURL = async () => {
     const trimmedUrl = apiUrl.trim();
-    if (!trimmedUrl) return; // Não verifica se o input estiver vazio
+    if (!trimmedUrl) {
+      setApiCheckResponse({ error: true, message: "URL da API é Necessária." })
+      return;
+    };
 
     setIsApiChecking(true);
 

@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { ApiResponse } from "@tauri-inventory/types";
 import { UpdateMetadata } from "../Routes/Routers/Init/UpdateTypes";
+import { load } from "@tauri-apps/plugin-store";
 
 export type { UpdateMetadata };
 
@@ -68,6 +69,9 @@ export async function setApiUrl(newUrl: string) {
 export async function automaticCheckUpdate(): Promise<UpdateMetadata | null> {
   return await invoke("automatic_update_check");
 }
+export async function automaticBackupDownload() {
+  return await invoke<null>("automatic_backup_download");
+}
 
 export async function forceUpdateCheck(): Promise<UpdateMetadata | null> {
   return await invoke("force_check_update");
@@ -82,4 +86,31 @@ export async function startUpdate() {
 }
 export async function getApiUrl() {
   return await invoke<string>("command_get_api_url");
+}
+
+export interface ConfigCheckResult{
+  apiUrl?: string;
+}
+export async function checkConfigIsComplete() {
+  const store = await load("config.json");
+
+  const apiUrl = await store.get<string>("api_url");
+  const dbFilename = await store.get<string>("db_filename");
+
+  let errors: ConfigCheckResult = {};
+
+  if (dbFilename === undefined) {
+    await store.set("db_filename", "sqlcipher.db");
+  }
+
+  if (apiUrl === undefined || apiUrl === "") {
+    errors.apiUrl = "URL da API não configurada."
+  }
+
+  return errors;
+}
+
+export async function getLastUpdateCheckDate() {
+  const store = await load("config.json");
+  return store.get<string>("last_update_date");
 }

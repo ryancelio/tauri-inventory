@@ -108,7 +108,7 @@ export function AuditLogList({
   const [expanded, setExpanded] = useState(hasFilter);
 
   return (
-    <div className="mx-auto flex h-full max-w-4xl flex-col gap-6 px-4 py-8">
+    <div className="mx-auto flex h-full max-w-4xl flex-col gap-1 px-4 py-8">
       <header
         className={`relative flex w-full shrink-0 flex-col gap-4 overflow-clip border-b border-slate-200 transition-[max-height] duration-300 ease-out ${
           expanded ? "max-h-56 pb-12" : "max-h-36 pb-4"
@@ -161,9 +161,7 @@ export function AuditLogList({
         </div>
 
         <Form
-          // ref={formRef}
           method="GET"
-          // key={location.pathname.split("/")[3] + location.search}
           className="grid w-full grid-cols-4 items-center gap-2"
         >
           {actions && (
@@ -191,7 +189,6 @@ export function AuditLogList({
               updateFilters({ action: item?.value?.toString() })}
             }
             label="Ação"
-            // defaultValue={}
             value={actionItem}
             allowEmpty
             disabled={actions !== undefined && !expanded}
@@ -205,7 +202,6 @@ export function AuditLogList({
               updateFilters({ level: item?.value?.toString() })
             }
             allowEmpty
-            // defaultValue={level ? LEVEL_ITEMS.find((item) => item.value == level) : null}
             value={levelItem}
             disabled={actions !== undefined && !expanded}
             name="level"
@@ -250,7 +246,7 @@ export function AuditLogList({
               </div>
             </div>
 
-            <div className="shrink-0">
+            <div className="shrink-0 h-fit">
               <Pagination
                 page={page}
                 pageSize={AUDIT_LOG_PAGE_SIZE}
