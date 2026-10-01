@@ -1,13 +1,12 @@
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 
-use crate::{
-    database::{
-        atributo::AtributoTipo,
-        categoria::Categoria,
-        fabricante::Fabricante,
-        filters::{BaseQuery, DateFilter, JsonFilter, NumberFilter, PrimitiveValue, StringFilter},
-    },
+use crate::database::{
+    atributo::AtributoTipo,
+    categoria::Categoria,
+    estoque::Estoque,
+    fabricante::Fabricante,
+    filters::{BaseQuery, DateFilter, JsonFilter, NumberFilter, PrimitiveValue, StringFilter},
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone, sqlx::FromRow)]
@@ -31,6 +30,7 @@ pub struct Mercadoria {
     pub estoque02: i32,
     pub estoque03: i32,
     pub estoque04: i32,
+    pub estoque: Vec<Estoque>,
     pub observacoes: Option<String>,
     pub preco_custo: String,
     pub preco_venda: String,
@@ -201,9 +201,9 @@ pub struct MercadoriaKeyListing {
     pub descricao: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default,FromRow)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, FromRow)]
 #[serde(rename_all = "camelCase")]
-#[sqlx(rename_all="camelCase")]
+#[sqlx(rename_all = "camelCase")]
 pub struct MercadoriaSimple {
     pub id: i32,
     pub descricao: String,

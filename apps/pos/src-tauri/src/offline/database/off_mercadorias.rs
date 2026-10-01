@@ -6,6 +6,7 @@ use tauri::State;
 use crate::{
     database::{
         categoria::Categoria,
+        estoque::Estoque,
         fabricante::Fabricante,
         mercadoria::types::{
             Mercadoria, MercadoriaFilter, MercadoriaReportResponse, MercadoriaSimple, SimilarMerc,
@@ -34,6 +35,7 @@ pub struct SQLiteMercadoria {
     estoque04: i32,
     // caracteristicas: Option<Caracteristicas>,
     caracteristicas_json: Option<String>,
+    estoque_array_json: Vec<String>,
     observacoes: Option<String>,
     preco_custo: f64,
     preco_venda: f64,
@@ -53,6 +55,7 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for SQLiteMercadoria {
             estoque02: row.try_get("estoque02")?,
             estoque03: row.try_get("estoque03")?,
             estoque04: row.try_get("estoque04")?,
+            estoque_array_json: row.try_get("estoqueArrayJson")?,
             observacoes: row.try_get("observacoes")?,
             preco_custo: row.try_get("precoCusto")?,
             preco_venda: row.try_get("precoVenda")?,
@@ -76,6 +79,13 @@ impl SQLiteMercadoria {
             .transpose()
             .ok()?;
 
+        let estoque = self
+            .estoque_array_json
+            .as_deref()
+            .map(serde_json::from_str)
+            .transpose()
+            .ok()?;
+
         Some(Mercadoria {
             id: self.id,
             key: self.key,
@@ -85,6 +95,7 @@ impl SQLiteMercadoria {
             estoque02: self.estoque02,
             estoque03: self.estoque03,
             estoque04: self.estoque04,
+            estoque: estoque,
             observacoes: self.observacoes,
             preco_custo: format!("{:.2}", self.preco_custo),
             preco_venda: format!("{:.2}", self.preco_venda),
@@ -230,6 +241,7 @@ pub async fn offline_get_single_mercadoria(
         estoque02: mercadoria.estoque02,
         estoque03: mercadoria.estoque03,
         estoque04: mercadoria.estoque04,
+        estoque: mercadoria.estoque,
         observacoes: mercadoria.observacoes,
         preco_custo: format!("{:.2}", mercadoria.preco_custo),
         preco_venda: format!("{:.2}", mercadoria.preco_venda),
@@ -391,8 +403,7 @@ pub async fn offline_get_simple_merc(
             .await;
 
     match simple_mercs {
-        Ok(simp) => {
-            return Ok(simp)},
+        Ok(simp) => return Ok(simp),
         Err(e) => {
             println!("{}", e.to_string());
             return Err("Erro interno ao listar mercadorias.".into());

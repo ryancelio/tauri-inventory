@@ -11,6 +11,7 @@ import {
   PrimaryKey,
   AutoIncrement,
   ForeignKey,
+  HasMany,
 } from "sequelize-typescript";
 import MercadoriaPhotosModel from "./MercadoriaPhotos";
 import FabricanteModel from "./Fabricante";
@@ -26,6 +27,8 @@ import {
 import Atributo from "./Atributo";
 import CategoriaModel from "./Categoria";
 import { MercadoriaKey } from "./MercadoriaKeys";
+import EstoqueModel from "./Estoque";
+import LojasModel from "./Lojas";
 
 @Table({
   tableName: "mercadorias",
@@ -102,6 +105,9 @@ export default class MercadoriaModel extends Model {
 
   @BelongsTo(() => CategoriaModel)
   declare categoria: CategoriaModel;
+
+  @HasMany(() => EstoqueModel)
+  declare estoque: EstoqueModel[];
 
   @BelongsToMany(() => AtributoModel, () => MercadoriaAtributosModel)
   declare caracteristicas: AtributoModel[];

@@ -197,7 +197,8 @@ export const router = createHashRouter([
                     let response = { response: "Resposta desconhecida" };
                     switch (method) {
                       case "POST":
-                        response = await createFabricanteAction(formData);
+                        let res = await createFabricanteAction(formData);
+                        return {ok: true, response: res}
                         break;
                       case "DELETE":
                         response = await deletarFabricanteAction(formData);

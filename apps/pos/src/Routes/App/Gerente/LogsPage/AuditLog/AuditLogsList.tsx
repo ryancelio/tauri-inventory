@@ -85,7 +85,7 @@ export function AuditLogList({
   const hasFilter = action !== undefined || level !== undefined || userId !== undefined;
 
   useEffect(() => {
-  if (hasFilter) {
+  if (hasFilter && actions !== undefined) {
     setExpanded(true);
   }
 }, [hasFilter]);

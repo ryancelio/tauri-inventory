@@ -76,12 +76,6 @@ function sequelizeResponseParser(mercadoria: Mercadoria) {
   return merc;
 }
 
-// function mercIntoLog(mercadoria: Mercadoria): MercadoriaLog{
-//   return{
-//     ...mercadoria
-//   }
-// }
-
 // POST mercadorias/
 export const criarMercadoria = async (
   req: Request<{}, {}, MercadoriaCreate>,
@@ -121,7 +115,7 @@ export const criarMercadoria = async (
     }
 
     const logData: AuditData<MercadoriaLog> = {
-      criacao: merc.get({plain: true}),
+      criacao: merc.get({ plain: true }),
     };
 
     const log: Omit<AuditCreate, "id"> = {
@@ -172,9 +166,8 @@ export const listarMercadorias = async (
             attributes: { exclude: ["grupoId"] },
           },
           {
-            association: "caracteristicas",
-            attributes: ["id", "nome", "tipo"],
-            through: { attributes: ["valor"] },
+            association: "estoque",
+            include: [{ association: "loja" }],
           },
         ],
         attributes: { exclude: ["grupoId", "categoriaId", "fabricanteId"] },
@@ -222,6 +215,10 @@ export const listarMercadorias = async (
               association: "caracteristicas",
               attributes: ["id", "nome", "tipo"],
               through: { attributes: ["valor"] },
+            },
+            {
+              association: "estoque",
+              include: [{ association: "loja" }],
             },
           ],
       attributes: include
@@ -365,8 +362,8 @@ export const alterarMercadoria = async (
   try {
     const id = Number(req.params.id);
 
-    if(isNaN(id)){
-      return res.status(400).json({response: "Id da mercadoria inválido!"})
+    if (isNaN(id)) {
+      return res.status(400).json({ response: "Id da mercadoria inválido!" });
     }
 
     let mercadoria = req.body;
@@ -393,7 +390,7 @@ export const alterarMercadoria = async (
       );
     }
 
-    const oldMercadoria =  await Mercadoria.findByPk(id, {
+    const oldMercadoria = await Mercadoria.findByPk(id, {
       transaction: t,
       include: [
         {

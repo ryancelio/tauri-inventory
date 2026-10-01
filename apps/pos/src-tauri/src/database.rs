@@ -7,9 +7,11 @@ use crate::{api_checks::health_check, log::log_to_default, ApiResponse, AppState
 pub mod atributo;
 pub mod audit_logs;
 pub mod categoria;
+pub mod estoque;
 pub mod fabricante;
 pub mod filters;
 pub mod grupo;
+pub mod loja;
 pub mod mercadoria;
 pub mod mercadoria_photos;
 pub mod usuarios;

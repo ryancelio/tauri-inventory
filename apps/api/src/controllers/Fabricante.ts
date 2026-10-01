@@ -20,7 +20,7 @@ import AuditLog, { getAuditChanges } from "../models/AuditLogs";
 
 export const criarFabricante = async (
   req: Request<{}, {}, CreationAttributes<FabricanteModel>>,
-  res: Response<ApiResponse>,
+  res: Response<IFabricante | ApiResponse>,
   next: NextFunction,
 ) => {
   const t = await sequelize.transaction();
@@ -53,7 +53,7 @@ export const criarFabricante = async (
     );
 
     await t.commit();
-    res.status(201).json({ response: "Fabricante criado com sucesso!" });
+    res.status(201).json({ id: newFab.id, nome: newFab.nome, createdAt: newFab.createdAt, updatedAt: newFab.updatedAt });
   } catch (e: unknown) {
     await t.rollback();
     console.error("Failed to create fabricante: ", e);

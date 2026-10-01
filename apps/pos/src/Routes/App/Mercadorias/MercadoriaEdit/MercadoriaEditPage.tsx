@@ -200,14 +200,16 @@ function MercadoriaEditPageContent({
         });
       }
     }
+  }, [updateFetcher.data]);
+  useEffect(() => {
     if (createFabricanteFetcher.data) {
       toaster.toast({
         title: "Criar Fabricante",
-        message: createFabricanteFetcher.data.response,
+        message: "Fabricante criado com sucesso!",
         type: "success",
       });
     }
-  }, [updateFetcher.data]);
+  },[createFabricanteFetcher.data])
 
   function handlePrecoKeySubmitClick(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();

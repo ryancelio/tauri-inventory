@@ -105,7 +105,7 @@ pub async fn criar_fabricante(
     state: State<'_, AppState>,
     fabricante: FabricantePayload,
     app: AppHandle,
-) -> Result<ApiResponse, RustApiError> {
+) -> Result<Fabricante, RustApiError> {
     let api_url = get_api_url(&app)?;
 
     let token = get_token(&state)?;

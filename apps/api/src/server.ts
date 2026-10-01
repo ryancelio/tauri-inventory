@@ -15,6 +15,8 @@ import {
 import mercPhotosRouter from "./routes/MercPhotos";
 import path from "path";
 import logsRouter from "./routes/Logs";
+import MercadoriaModel from "./models/Mercadoria";
+import { Sequelize } from "sequelize-typescript";
 
 const app = express();
 
@@ -44,8 +46,32 @@ app.use("/photos/mercadorias", mercPhotosRouter);
 
 app.use("", authRouter);
 
+app.use("/test", async (req, res) => {
+  return res.status(202).json(
+    await MercadoriaModel.findAndCountAll({
+      limit: 50,
+      include: [
+        { association: "fabricante" },
+        {
+          association: "categoria",
+          include: ["grupo"],
+        },
+        {
+          association: "caracteristicas",
+          attributes: ["id", "nome", "tipo"],
+          through: { attributes: ["valor"] },
+        },
+        {
+          association: "estoque",
+          include:[{association: "loja"}]
+        }
+      ],
+      attributes: { exclude: ["grupoId", "categoriaId", "fabricanteId"] },
+    })
+  );
+});
 const PORT = 8080;
 
-app.listen(PORT,'0.0.0.0', () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running at port ${PORT}`);
 });

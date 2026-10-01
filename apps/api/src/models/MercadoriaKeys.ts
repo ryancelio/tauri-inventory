@@ -9,6 +9,7 @@ import {
 } from "sequelize-typescript";
 import KeyPhotosModel from "./KeyPhotos";
 import Mercadoria from "./Mercadoria";
+import EstoqueModel from "./Estoque";
 
 @Table({
   tableName: "MercadoriaKeys",

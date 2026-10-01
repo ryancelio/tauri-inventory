@@ -7,7 +7,7 @@ export async function getFabricantes(getDeleted?: boolean) {
 }
 
 export async function criarFabricante(fabricante: { nome: string }) {
-  return await invoke<ApiResponse>("criar_fabricante", { fabricante });
+  return await invoke<IFabricante>("criar_fabricante", { fabricante });
 }
 
 export async function editarFabricante(fabricante: {

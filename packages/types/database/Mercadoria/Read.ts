@@ -8,12 +8,21 @@ import {
   NumberFilter,
   StringFilter,
 } from "../FilterBase.js";
+import { ILoja } from "../Loja.js";
 
 export interface Caracteristica {
   id: number;
   nome: string;
   tipo: AtributoTypesType;
   valor: string | number | boolean;
+}
+
+export interface Estoque{
+  id: number;
+  estoque: number;
+  loja: ILoja;
+  createdAt: string;
+  updatedAt: string;
 }
 
 
@@ -27,6 +36,7 @@ export interface IMercadoria {
   estoque02: number;
   estoque03: number;
   estoque04: number;
+  estoque: Estoque[];
   caracteristicas: Caracteristica[];
   observacoes: string;
   precoCusto: number | string;

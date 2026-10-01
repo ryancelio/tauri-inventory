@@ -1,12 +1,6 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
-  ApiListResponse,
-  IAtributo,
-  IFabricante,
-  IGrupo,
-  IMercadoria,
   MercadoriaFilter,
-  UsuarioLogado,
 } from "@tauri-inventory/types";
 import {
   getAtributos,

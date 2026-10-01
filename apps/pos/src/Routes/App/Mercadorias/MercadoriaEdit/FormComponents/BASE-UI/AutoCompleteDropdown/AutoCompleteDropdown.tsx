@@ -83,6 +83,20 @@ export default function AutoCompleteDropdown({
       onValueChange?.(currentSelectedItem);
     }
   }, [currentSelectedItem]);
+  const handledCreation = useRef<unknown>(creationFetcher?.data);
+
+  useEffect(() => {
+    if (!creationFetcher || creationFetcher.state !== "idle") return;
+
+    const data = creationFetcher?.data?.response;
+    if (!data || handledCreation.current === data) return;
+    handledCreation.current = data;
+
+
+    // const created = parseCreatedItem(data);
+    const created = { label: data.nome, value: data.id };
+    if (created) setCurrentSelectedItem(created);
+  },[creationFetcher?.data, creationFetcher?.state])
 
   const trimmedInput = inputValue.trim();
   const loweredInput = trimmedInput.toLocaleLowerCase();

@@ -173,7 +173,8 @@ export default function DeleteFabModal({
               </button>
               <button
                 onClick={handleSimpleDelete}
-                className="rounded-lg bg-red-500 px-4 py-2 font-medium text-white transition hover:bg-red-700"
+                className="rounded-lg bg-red-500 px-4 py-2 font-medium text-white transition hover:bg-red-700 focus:ring-2 ring-red-200 focus:font-semibold"
+                autoFocus
               >
                 Excluir
               </button>
@@ -218,7 +219,12 @@ export default function DeleteFabModal({
                   </option>
                 ))}
               </select> */}
-              <AutoCompleteDropdown items={fabricantesDisponiveis.map((fab) => ({label: fab.nome,value: fab.id}))}/>
+              <AutoCompleteDropdown
+                items={fabricantesDisponiveis.map((fab) => ({
+                  label: fab.nome,
+                  value: fab.id,
+                }))}
+              />
 
               <button
                 onClick={handleReassignDelete}

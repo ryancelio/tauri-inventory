@@ -20,6 +20,8 @@ import Caracteristicas from "./MercadoriaAtributos";
 import { MercadoriaKey } from "./MercadoriaKeys";
 import MercadoriaPhotosModel from "./MercadoriaPhotos";
 import UsuarioModel from "./Usuario";
+import LojasModel from "./Lojas";
+import EstoqueModel from "./Estoque";
 
 // // ---- Um fabricante pode ter várias mercadorias ----
 // // Criando a coluna fabricanteId na tabela mercadoria,
@@ -83,6 +85,8 @@ sequelize.addModels([
   MercadoriaKey,
   KeyPhotosModel,
   AuditLog,
+  LojasModel,
+  EstoqueModel
 ]);
 
 sequelize
