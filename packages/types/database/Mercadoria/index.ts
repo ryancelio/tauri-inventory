@@ -16,6 +16,7 @@ export {
   getDescricaoCompleta,
   getEstoqueTotal,
   getMercadoriaCor,
+  Estoque,
 } from "./Read.js";
 
 export type { MercadoriaUpdate, SimilarMercUpdate } from "./Atualizar.js";

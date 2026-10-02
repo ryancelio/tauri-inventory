@@ -7,6 +7,7 @@ import {
   getSimilarMerc,
   getAtributos,
   createMercadoria,
+  getLojas,
 } from "../../../../api/apiHelper";
 import { userContext } from "../../../../context/contexts";
 import {
@@ -40,8 +41,9 @@ export const loader: LoaderFunction = async ({ request, context }) => {
       ? getSimilarMerc(Number(mercadoriaParams.key))
       : Promise.resolve([]),
     getAtributos(),
+    getLojas(),
   ]).then(
-    ([fabricantes, grupos, categorias, similarMercadoriasList, atributos]) => {
+    ([fabricantes, grupos, categorias, similarMercadoriasList, atributos,lojas]) => {
       // const mercGrupo = grupos.filter((g) => g.id == mercadoriaParams.grupoId);
       const mercCat = categorias.filter(
         (c) => c.id == mercadoriaParams.categoriaId,
@@ -64,11 +66,11 @@ export const loader: LoaderFunction = async ({ request, context }) => {
         mercadoria,
         fabricantes,
         grupos,
-        // categorias,
         similarMercadoriasList,
         atributos,
         mercPhotos: [] as MercadoriaPhotosListing[],
         keyPhotos: [] as MercadoriaPhotosListing[],
+        lojas,
       };
     },
   );

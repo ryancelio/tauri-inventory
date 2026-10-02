@@ -12,12 +12,12 @@ use crate::{
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Loja {
-    id: i32,
-    nome: String,
+    pub id: i32,
+    pub nome: String,
     #[serde(rename = "CNPJ")]
-    cnpj: String,
-    created_at: String,
-    updated_at: String,
+    pub cnpj: String,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[tauri::command]

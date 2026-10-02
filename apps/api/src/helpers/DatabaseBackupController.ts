@@ -20,6 +20,8 @@ import UsuarioModel from "../models/Usuario";
 import MercadoriaAtributosModel from "../models/MercadoriaAtributos";
 import { MercadoriaKey } from "../models/MercadoriaKeys";
 import AuditLogModel from "../models/AuditLogs";
+import EstoqueModel from "../models/Estoque";
+import LojasModel from "../models/Lojas";
 
 const BACKUP_PATH = path.join(__dirname, "..", "..", "backups");
 
@@ -131,6 +133,8 @@ async function generateFullBackup() {
     const categorias = await CategoriaModel.findAll({ raw: true, paranoid: false });
     const fabricantes = await FabricanteModel.findAll({ raw: true, paranoid: false });
     const grupos = await GrupoModel.findAll({ raw: true, paranoid: false });
+    const lojas = await LojasModel.findAll({ raw: true, paranoid: false });
+    const estoques = await EstoqueModel.findAll({ raw: true, paranoid: false });
     // const mercPhotos = await MercadoriaPhotosModel.findAll({ raw: true, paranoid: false });
     const usuarios = await UsuarioModel.findAll({ raw: true, paranoid: false });
     const auditLogs = await AuditLogModel.findAll({raw: true, paranoid: false});
@@ -145,6 +149,8 @@ async function generateFullBackup() {
       categorias,
       fabricantes,
       grupos,
+      lojas,
+      estoques,
       usuarios,
       auditLogs,
     });

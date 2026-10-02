@@ -5,6 +5,49 @@ use crate::database::{
     mercadoria::types::MercadoriaFilter,
 };
 
+/// Projeção usada por todas as consultas de mercadoria.
+///
+/// Espelha os `include` do Sequelize em
+/// `apps/api/src/controllers/Mercadoria.ts` (`caracteristicas`, `estoque` +
+/// `loja`), serializando as associações em colunas JSON para que cada linha
+/// continue sendo um único registro de `mercadorias` (o Rust então desserializa
+/// em `Vec<Caracteristicas>` / `Vec<Estoque>`).
+///
+/// * `caracteristicasJson`: `[{ id, nome, tipo, valor }]`
+/// * `estoqueJson`: `[{ id, estoque, createdAt, updatedAt, loja: {...} }]`, onde
+///   `loja` é `{ id, nome, CNPJ, createdAt, updatedAt }`
+///
+/// Os `deletedAt IS NULL` reproduzem o `paranoid: true` dos models `Estoque` e
+/// `Lojas`, que faz o Sequelize descartar as linhas apagadas nos `include`.
+pub const MERCADORIAS_SELECT: &str = "SELECT mercadorias.*, \
+    (SELECT json_group_array(
+        json_object('id', a.id, 'nome', a.nome, 'tipo', a.tipo, 'valor', ma.valor)
+    )
+    FROM Mercadoria_Atributos ma
+    JOIN atributos a ON a.id = ma.atributoId
+    WHERE ma.mercadoriaId = mercadorias.id) AS caracteristicasJson, \
+    (SELECT json_group_array(
+        json_object(
+            'id', e.id,
+            'estoque', e.estoque,
+            'createdAt', e.createdAt,
+            'updatedAt', e.updatedAt,
+            'loja', json_object(
+                'id', l.id,
+                'nome', l.nome,
+                'CNPJ', l.CNPJ,
+                'createdAt', l.createdAt,
+                'updatedAt', l.updatedAt
+            )
+        )
+    )
+    FROM estoques e
+    JOIN lojas l ON l.id = e.lojaId
+    WHERE e.mercadoriaId = mercadorias.id
+        AND e.deletedAt IS NULL
+        AND l.deletedAt IS NULL) AS estoqueJson \
+    FROM mercadorias ";
+
 pub struct ConditionBuilder<'a, 'args> {
     builder: &'a mut QueryBuilder<'args, Sqlite>,
     has_conditions: bool,
@@ -217,20 +260,9 @@ pub fn build_mercadorias_query<'args>(
     if is_count {
         builder = QueryBuilder::new("SELECT COUNT(id) FROM mercadorias");
     } else {
-        // Agrega os atributos relacionados (via tabela de junção) em um JSON array
-        // usando uma subquery correlacionada, para manter o formato esperado por
-        // SQLiteMercadoria::caracteristicas_json (Option<String>).
-        builder = QueryBuilder::new(
-            "SELECT mercadorias.*, \
-            (SELECT json_group_array(
-                json_object('id', a.id, 'nome', a.nome, 'tipo', a.tipo, 'valor', ma.valor)
-            )
-            FROM Mercadoria_Atributos ma
-            JOIN atributos a ON a.id = ma.atributoId
-            WHERE ma.mercadoriaId = mercadorias.id) AS caracteristicasJson \
-            FROM mercadorias
-            ",
-        );
+        // Reaproveita a projeção compartilhada com `offline_get_single_mercadoria`
+        // para que ambas devolvam exatamente o mesmo objeto.
+        builder = QueryBuilder::new(MERCADORIAS_SELECT);
     }
 
     // Por padrão o servidor trabalha com soft delete (model `paranoid: true`),

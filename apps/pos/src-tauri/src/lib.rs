@@ -50,7 +50,7 @@ impl From<&str> for ApiResponse {
         }
     }
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RustApiError {
     pub code: u16,
     pub message: ApiResponse,
@@ -169,7 +169,7 @@ pub fn run() {
             database::audit_logs::get_logs_mercadoria,
             database::audit_logs::get_logs_usuario,
             database::audit_logs::get_logs_fabricante,
-            database::lojas::get_lojas,
+            database::loja::get_lojas,
             config::api_url::command_get_api_url,
             config::api_url::change_api_url,
             config::api_url::check_api_url,

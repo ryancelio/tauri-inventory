@@ -1,10 +1,10 @@
 import { LoaderFunction, ActionFunction } from "react-router";
 import {
   getAtributos,
-  getCategorias,
   getFabricantes,
   getGrupos,
   getKeyPhotos,
+  getLojas,
   getMercPhotos,
   getSimilarMerc,
   getSingleMercadoria,
@@ -38,17 +38,17 @@ export const loader: LoaderFunction = async ({
     getSingleMercadoria({ id: Number(id) }),
     getFabricantes(),
     getGrupos(),
-    getCategorias(),
     getAtributos(),
     getMercPhotos(Number(id)),
+    getLojas(),
   ]).then(
     async ([
       mercadoria,
       fabricantes,
       grupos,
-      categorias,
       atributos,
       mercPhotos,
+      lojas,
     ]) => {
       const similarMercadoriasList = await getSimilarMerc(mercadoria.key);
       const keyPhotos = await getKeyPhotos(mercadoria.key);
@@ -57,11 +57,11 @@ export const loader: LoaderFunction = async ({
         mercadoria,
         fabricantes,
         grupos,
-        categorias,
         atributos,
         similarMercadoriasList,
         mercPhotos,
         keyPhotos,
+        lojas,
       };
     },
   );

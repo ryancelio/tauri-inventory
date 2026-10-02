@@ -1,7 +1,8 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db";
-import { AllowNull, Column, Model, Table } from "sequelize-typescript";
+import { AllowNull, Column, ForeignKey, Model, Table } from "sequelize-typescript";
 import { Funcao, Local } from "@tauri-inventory/types";
+import LojasModel from "./Lojas";
 
 @Table({
   tableName: "usuarios",
@@ -24,8 +25,9 @@ export default class UsuarioModel extends Model {
   @Column(DataTypes.ENUM("vendedor", "gerente", "admin"))
   declare funcao: Funcao;
 
-  @AllowNull(false)
-  @Column(DataTypes.ENUM("02", "03", "04"))
+  // @Column(DataTypes.ENUM("02", "03", "04"))
+  @ForeignKey(() => LojasModel)
+  @Column({type: DataTypes.STRING, allowNull: false})
   declare local: Local;
 
   @AllowNull(false)

@@ -25,7 +25,7 @@ import {
 } from "../../../backend/backendHelper";
 import { Loader2, TriangleAlert } from "lucide-react";
 
-export async function loader({ context }: LoaderFunctionArgs){
+export async function loader({ context }: LoaderFunctionArgs) {
   const initialApiStatus = context.get(apiStatusContext) ?? {isChecking: true, isOnline: false};
 
   const isOfflineMode = await getIsOfflineModeActive();
@@ -118,6 +118,7 @@ export function Component() {
       // os eventos já foram emitidos e não virão mais -> resolve direto.
       if (wasInitiallyCheckingRef.current) {
         try {
+          await checkApiStatus();
           const status = await getApiStatusCheck();
           if (!active) return;
           if (!status.isChecking) {

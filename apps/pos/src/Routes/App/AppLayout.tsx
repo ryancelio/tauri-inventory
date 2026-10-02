@@ -18,6 +18,7 @@ import {
   Package,
   PlusCircle,
   ScrollText,
+  StoreIcon,
   Timeline,
   Truck,
   Users,
@@ -85,8 +86,13 @@ export function Component() {
               to: "/gerente/logs",
               label: "Logs",
               icon: ScrollText,
-              disabled: isOfflineMode,
-            },
+              // disabled: isOfflineMode,
+          },
+          {
+            to: "/gerente/lojas",
+            label: "Lojas",
+            icon: StoreIcon,
+          }
           ]
         : [];
 

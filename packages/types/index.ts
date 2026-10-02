@@ -19,3 +19,5 @@ export type {
 export { createUsuarioSchema } from "./database/Usuario.js";
 
 export * from "./database/MercadoriaPhotos.js";
+
+export * from "./database/Loja.js"

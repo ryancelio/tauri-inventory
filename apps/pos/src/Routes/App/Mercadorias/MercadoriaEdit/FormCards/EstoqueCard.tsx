@@ -1,17 +1,47 @@
 import { Layers } from "lucide-react";
 import EstoqueDisplay from "../FormComponents/FormEstoqueDisplay";
-import { IMercadoria, UsuarioLogado } from "@tauri-inventory/types";
+import { ILoja, IMercadoria, UsuarioLogado } from "@tauri-inventory/types";
 
-export default function EstoqueCard({ mercadoria, usuario,isEdit,isOfflineMode }: { mercadoria: IMercadoria, usuario: UsuarioLogado, isEdit: boolean; isOfflineMode: boolean }) {
+export default function EstoqueCard({
+  mercadoria,
+  usuario,
+  isEdit,
+  isOfflineMode,
+  lojas,
+}: {
+  mercadoria: IMercadoria;
+  usuario: UsuarioLogado;
+  isEdit: boolean;
+  isOfflineMode: boolean;
+  lojas: ILoja[];
+}) {
   return (
     <div>
       <div className="mb-1 flex items-center gap-2 border-b border-slate-100 pb-3">
         <Layers className="text-slate-400" size={20} />
-        <h2 className="text-lg font-semibold text-slate-800">
-          Estoque
-        </h2>
+        <h2 className="text-lg font-semibold text-slate-800">Estoque</h2>
       </div>
       <div className="flex flex-col items-center gap-3">
+        {lojas.length === 0 ? (
+          <div>Nenhuma loja cadastrada</div>
+        ) : (
+          lojas.map((loja) => (
+            <EstoqueDisplay
+              id={loja.id.toString()}
+              label={loja.nome}
+              disabled={
+                (usuario.local !== loja.nome &&
+                  usuario.funcao !== "admin" &&
+                  isEdit) ||
+                isOfflineMode
+              }
+              defaultValue={
+                mercadoria.estoque.find((est) => est.loja.id === est.loja.id)
+                  ?.estoque || 0
+              }
+            />
+          ))
+        )}
         {/*<EstoqueDisplay
           label="Loja 02"
           id="estoque02"
@@ -45,8 +75,7 @@ export default function EstoqueCard({ mercadoria, usuario,isEdit,isOfflineMode }
             isOfflineMode
           }
         />*/}
-
       </div>
     </div>
-  )
+  );
 }

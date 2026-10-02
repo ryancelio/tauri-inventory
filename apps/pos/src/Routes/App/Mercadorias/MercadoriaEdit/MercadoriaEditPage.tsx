@@ -21,13 +21,13 @@ import {
   getMercadoriaCor,
   IFabricante,
   IGrupo,
+  ILoja,
   IMercadoria,
   MercadoriaPhotosListing,
   SimilarMerc,
   UsuarioLogado,
 } from "@tauri-inventory/types";
 import FormTextInput from "./FormComponents/FormTextInput";
-import EstoqueDisplay from "./FormComponents/FormEstoqueDisplay";
 import { MoneyInput } from "./FormComponents/MoneyInput";
 import FullscreenInfoModal from "../../SharedComponents/InfoModal";
 import { CaracteristicasCard } from "./FormComponents/CaracteristicasCard";
@@ -53,11 +53,11 @@ export interface MercEditLoader {
     mercadoria: IMercadoria;
     fabricantes: IFabricante[];
     grupos: IGrupo[];
-    // categorias: ICategoria[];
     atributos: any[];
     similarMercadoriasList: SimilarMerc[];
     mercPhotos: MercadoriaPhotosListing[];
     keyPhotos: MercadoriaPhotosListing[];
+    lojas: ILoja[],
   }>;
   usuario: UsuarioLogado;
   isOfflineMode: boolean;
@@ -110,6 +110,7 @@ function MercadoriaEditPageContent({
     similarMercadoriasList,
     mercPhotos,
     keyPhotos,
+    lojas,
   } = pageData;
 
   const [showModal, setShowModal] = useState(false);
@@ -640,7 +641,7 @@ function MercadoriaEditPageContent({
                     </p>
                   </div>
                 </div>
-                <EstoqueCard isEdit={isEdit} isOfflineMode={isOfflineMode} mercadoria={mercadoria} usuario={usuario} />
+                <EstoqueCard isEdit={isEdit} lojas={lojas} isOfflineMode={isOfflineMode} mercadoria={mercadoria} usuario={usuario} />
               </div>
 
               {/* Card: Variações (Mesma Key) */}

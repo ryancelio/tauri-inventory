@@ -93,6 +93,32 @@ const createMercPhotos = `CREATE TABLE mercadoriaPhotos (
 const insertMercPhotosStatement =
   "INSERT INTO mercadoriaPhotos (id,url,mercadoriaId,createdAt,updatedAt,deletedAt) VALUES (?,?,?,?,?,?)";
 
+const createLojas = `CREATE TABLE lojas (
+  id INTEGER NOT NULL PRIMARY KEY,
+  nome TEXT NOT NULL,
+  CNPJ TEXT NOT NULL,
+  createdAt TEXT NOT NULL,
+  updatedAt TEXT NOT NULL,
+  deletedAt TEXT DEFAULT NULL
+);`;
+
+const insertLojasStatement =
+  "INSERT INTO lojas (id,nome,CNPJ,createdAt,updatedAt,deletedAt) VALUES (?,?,?,?,?,?)";
+
+const createEstoques = `CREATE TABLE estoques (
+  id INTEGER NOT NULL PRIMARY KEY,
+  mercadoriaId INTEGER NOT NULL,
+  lojaId INTEGER NOT NULL,
+  estoque INTEGER NOT NULL DEFAULT 0,
+  createdAt TEXT NOT NULL,
+  updatedAt TEXT NOT NULL,
+  deletedAt TEXT DEFAULT NULL
+);
+CREATE INDEX idx_estoques_mercadoriaId ON estoques (mercadoriaId);`;
+
+const insertEstoquesStatement =
+  "INSERT INTO estoques (id,mercadoriaId,lojaId,estoque,createdAt,updatedAt,deletedAt) VALUES (?,?,?,?,?,?,?)";
+
 const createUsuarios = `CREATE TABLE usuarios (
   id INTEGER NOT NULL PRIMARY KEY,
   nome TEXT NOT NULL,
@@ -137,6 +163,8 @@ const sqliteCreateTable = {
   fabricante: { create: createFabricantes, insert: insertFabricantesStatement },
   grupos: { create: createGrupos, insert: insertGruposStatement },
   // mercPhotos: { create: createMercPhotos, insert: insertMercPhotosStatement },
+  lojas: { create: createLojas, insert: insertLojasStatement },
+  estoques: { create: createEstoques, insert: insertEstoquesStatement },
   auditLogs: {create: createAuditLog, insert: insertAuditLogStatement},
   usuarios: { create: createUsuarios, insert: insertUsuariosStatement },
 };

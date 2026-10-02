@@ -28,6 +28,8 @@ function run() {
     sqliteDb.exec(sqliteCreateTable.categoria.create);
     sqliteDb.exec(sqliteCreateTable.fabricante.create);
     sqliteDb.exec(sqliteCreateTable.grupos.create);
+    sqliteDb.exec(sqliteCreateTable.lojas.create);
+    sqliteDb.exec(sqliteCreateTable.estoques.create);
     sqliteDb.exec(sqliteCreateTable.usuarios.create);
     sqliteDb.exec(sqliteCreateTable.auditLogs.create);
 
@@ -50,6 +52,8 @@ function run() {
       sqliteCreateTable.fabricante.insert,
     );
     const insertGrupos = sqliteDb.prepare(sqliteCreateTable.grupos.insert);
+    const insertLojas = sqliteDb.prepare(sqliteCreateTable.lojas.insert);
+    const insertEstoques = sqliteDb.prepare(sqliteCreateTable.estoques.insert);
     const insertUsuarios = sqliteDb.prepare(sqliteCreateTable.usuarios.insert);
     const insertAuditLogs = sqliteDb.prepare(sqliteCreateTable.auditLogs.insert);
 
@@ -145,6 +149,27 @@ function run() {
           safeValue(grupo.deletedAt),
         ]);
       }
+      for (const loja of data.lojas) {
+        insertLojas.run([
+          safeValue(loja.id),
+          safeValue(loja.nome),
+          safeValue(loja.CNPJ),
+          safeValue(loja.createdAt),
+          safeValue(loja.updatedAt),
+          safeValue(loja.deletedAt),
+        ]);
+      }
+      for (const estoque of data.estoques) {
+        insertEstoques.run([
+          safeValue(estoque.id),
+          safeValue(estoque.mercadoriaId),
+          safeValue(estoque.lojaId),
+          safeValue(estoque.estoque),
+          safeValue(estoque.createdAt),
+          safeValue(estoque.updatedAt),
+          safeValue(estoque.deletedAt),
+        ]);
+      }
     });
     insertAll();
 
@@ -156,6 +181,8 @@ function run() {
       insertCategorias,
       insertFabricantes,
       insertGrupos,
+      insertLojas,
+      insertEstoques,
       insertAuditLogs,
       insertUsuarios,
     ].forEach((s) => s.close());
