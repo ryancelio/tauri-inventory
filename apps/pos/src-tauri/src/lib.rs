@@ -55,6 +55,16 @@ pub struct RustApiError {
     pub code: u16,
     pub message: ApiResponse,
 }
+impl RustApiError {
+    pub fn from_str(str: &str) -> Self {
+        RustApiError {
+            code: 500,
+            message: ApiResponse {
+                response: str.to_string(),
+            },
+        }
+    }
+}
 impl From<String> for RustApiError {
     fn from(value: String) -> Self {
         RustApiError {
@@ -86,9 +96,9 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
-            let handle = app.handle().clone();
+            // let handle = app.handle().clone();
 
-            handle.manage(AppState {
+            app.manage(AppState {
                 jws_token: Mutex::new(None),
                 http_client: client,
                 user_data: Mutex::new(None),
@@ -98,13 +108,13 @@ pub fn run() {
                 is_offline_mode: AtomicBool::new(false),
             });
 
-            handle.manage(update::UpdateStateStore::default());
+            app.manage(update::UpdateStateStore::default());
 
-            let async_handle = handle.clone();
-            tauri::async_runtime::spawn(async move {
-                let state = async_handle.state::<AppState>();
-                tokio::join!(api_checks::health_check(&state, &async_handle));
-            });
+            // let async_handle = handle.clone();
+            // tauri::async_runtime::spawn(async move {
+            //     let state = async_handle.state::<AppState>();
+            //     tokio::join!(api_checks::health_check(&state, &async_handle));
+            // });
             Ok(())
         })
         .plugin(tauri_plugin_store::Builder::new().build())
@@ -159,6 +169,7 @@ pub fn run() {
             database::audit_logs::get_logs_mercadoria,
             database::audit_logs::get_logs_usuario,
             database::audit_logs::get_logs_fabricante,
+            database::lojas::get_lojas,
             config::api_url::command_get_api_url,
             config::api_url::change_api_url,
             config::api_url::check_api_url,

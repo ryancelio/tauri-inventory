@@ -225,11 +225,13 @@ export const listarMercadorias = async (
         ? include
         : { exclude: ["grupoId", "categoriaId", "fabricanteId"] },
     });
+    const mercadorias = rows.map((r) =>
+      sequelizeResponseParser(r),
+    );
+    console.log(mercadorias[0]);
+    console.log(mercadorias[0].estoque[0].loja)
     res.status(200).json({
-      data: rows.map((r) =>
-        // r.get({ plain: true }),
-        sequelizeResponseParser(r),
-      ),
+      data: mercadorias,
       count: count,
     });
   } catch (e) {
@@ -334,6 +336,10 @@ export const obterMercadoria = async (
           association: "caracteristicas",
           attributes: ["id", "nome", "tipo"],
           through: { attributes: ["valor"] },
+        },
+        {
+          association: "estoque",
+          include: [{ association: "loja" }],
         },
       ],
       attributes: { exclude: ["grupoId", "categoriaId", "fabricanteId"] },

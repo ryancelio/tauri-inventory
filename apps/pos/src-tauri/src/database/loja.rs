@@ -1,11 +1,49 @@
+use std::sync::atomic::Ordering;
+
 use serde::{Deserialize, Serialize};
+use tauri::{AppHandle, State};
+
+use crate::{
+    config::api_url::get_api_url,
+    database::{get_body, get_token, try_connection},
+    AppState, RustApiError,
+};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Loja {
     id: i32,
     nome: String,
+    #[serde(rename = "CNPJ")]
     cnpj: String,
     created_at: String,
     updated_at: String,
+}
+
+#[tauri::command]
+pub async fn get_lojas(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<Vec<Loja>, RustApiError> {
+    let is_offline = state.is_offline_mode.load(Ordering::Relaxed);
+
+    if is_offline {
+        return Ok(vec![]);
+    }
+
+    let token = get_token(&state)?;
+    let api_url = get_api_url(&app)?;
+
+    let request = state
+        .http_client
+        .get(format!("{api_url}/lojas"))
+        .bearer_auth(token);
+
+    let identifier = String::from("get_lojas");
+
+    let response = try_connection(request, &identifier, &state, &app).await?;
+
+    let body = get_body(&app, response, &identifier).await?;
+
+    Ok(body)
 }

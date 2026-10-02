@@ -17,6 +17,7 @@ import path from "path";
 import logsRouter from "./routes/Logs";
 import MercadoriaModel from "./models/Mercadoria";
 import { Sequelize } from "sequelize-typescript";
+import lojasRouter from "./routes/Loja";
 
 const app = express();
 
@@ -30,6 +31,8 @@ app.use("/grupos", requiresAuth, grupoRouter);
 app.use("/usuarios", requiresAuth, usuarioRouter);
 app.use("/atributos", requiresAuth, atributosRouter);
 app.use("/logs", logsRouter);
+app.use("/lojas", lojasRouter);
+
 app.get("/health", (req, res, next) => {
   res.status(200).json({ response: "Ok", timestamp: new Date().toISOString() });
 });

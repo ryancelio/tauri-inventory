@@ -35,7 +35,7 @@ pub struct SQLiteMercadoria {
     estoque04: i32,
     // caracteristicas: Option<Caracteristicas>,
     caracteristicas_json: Option<String>,
-    estoque_array_json: Vec<String>,
+    estoque_array_json: Option<String>,
     observacoes: Option<String>,
     preco_custo: f64,
     preco_venda: f64,
@@ -79,12 +79,20 @@ impl SQLiteMercadoria {
             .transpose()
             .ok()?;
 
-        let estoque = self
+        let estoque_option = self
             .estoque_array_json
             .as_deref()
             .map(serde_json::from_str)
             .transpose()
             .ok()?;
+
+        let estoque;
+
+        if let Some(est) = estoque_option {
+            estoque = est;
+        } else {
+            estoque = vec![]
+        }
 
         Some(Mercadoria {
             id: self.id,
@@ -232,6 +240,21 @@ pub async fn offline_get_single_mercadoria(
             },
         })?;
 
+    let estoque_option = mercadoria
+        .estoque_array_json
+        .as_deref()
+        .map(serde_json::from_str)
+        .transpose()
+        .map_err(|_| RustApiError::from_str("Erro interno"))?;
+
+    let estoque;
+
+    if let Some(est) = estoque_option {
+        estoque = est;
+    } else {
+        estoque = vec![]
+    }
+
     Ok(Mercadoria {
         id,
         key: mercadoria.key,
@@ -241,7 +264,7 @@ pub async fn offline_get_single_mercadoria(
         estoque02: mercadoria.estoque02,
         estoque03: mercadoria.estoque03,
         estoque04: mercadoria.estoque04,
-        estoque: mercadoria.estoque,
+        estoque: estoque,
         observacoes: mercadoria.observacoes,
         preco_custo: format!("{:.2}", mercadoria.preco_custo),
         preco_venda: format!("{:.2}", mercadoria.preco_venda),
