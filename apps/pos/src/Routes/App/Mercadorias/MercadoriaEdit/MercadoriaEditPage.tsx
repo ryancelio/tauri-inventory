@@ -66,9 +66,7 @@ export interface MercEditLoader {
 const criandoMercadoriaPlaceholder: SimilarMerc = {
   caracteristicas: [],
   descricao: "Criando Mercadoria",
-  estoque02: 0,
-  estoque03: 0,
-  estoque04: 0,
+  estoque: [],
   id: Date.now(),
   key: 999,
   precoVenda: "0",
@@ -76,7 +74,6 @@ const criandoMercadoriaPlaceholder: SimilarMerc = {
 
 export function MercadoriaEditPage() {
   const { pageData, usuario, isOfflineMode } = useLoaderData<MercEditLoader>();
-
   return (
     <Suspense fallback={<MercadoriaFormSkeleton />}>
       <Await resolve={pageData}>
@@ -112,6 +109,8 @@ function MercadoriaEditPageContent({
     keyPhotos,
     lojas,
   } = pageData;
+
+
 
   const [showModal, setShowModal] = useState(false);
   // const [showToast, setShowToast] = useState(false);

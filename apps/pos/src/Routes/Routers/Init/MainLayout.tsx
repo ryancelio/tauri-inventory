@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  LoaderFunctionArgs,
   Outlet,
   isRouteErrorResponse,
   useLoaderData,
@@ -8,7 +7,6 @@ import {
   useRevalidator,
   useRouteError,
 } from "react-router";
-import { apiStatusContext } from "../../../context/contexts";
 import { TitleBar } from "../../App/Components/TitleBar";
 import { listen } from "@tauri-apps/api/event";
 import OfflineOverlay from "../../App/SharedComponents/OfflineOverlay";
@@ -18,20 +16,18 @@ import { useToast } from "../../../context/Toast/ToastContext";
 import {
   checkApiStatus,
   automaticCheckUpdate,
-  getApiStatusCheck,
   getIsOfflineModeActive,
   getPendingUpdate,
   automaticBackupDownload,
 } from "../../../backend/backendHelper";
+import { ApiStatusCheck, ApiStatusContext } from "../../../context/contexts";
 import { Loader2, TriangleAlert } from "lucide-react";
 
-export async function loader({ context }: LoaderFunctionArgs) {
-  const initialApiStatus = context.get(apiStatusContext) ?? {isChecking: true, isOnline: false};
-
+export async function loader() {
   const isOfflineMode = await getIsOfflineModeActive();
   const availableUpdate = await getPendingUpdate();
 
-  return { initialApiStatus, isOfflineMode, availableUpdate };
+  return { isOfflineMode, availableUpdate };
 };
 
 export function ErrorBoundary() {
@@ -81,18 +77,52 @@ export const HydrateFallback = () => {
 };
 
 export function Component() {
-  const { initialApiStatus, isOfflineMode } = useLoaderData<typeof loader>();
+  const { isOfflineMode } = useLoaderData<typeof loader>();
 
-  const isOnlineRef = useRef(initialApiStatus.isOnline);
   const revalidator = useRevalidator();
   const navigate = useNavigate();
   const toaster = useToast();
 
   const [successConnection, setSuccessConnection] = useState(false);
 
-  // Se a verificação inicial ainda estava em andamento ao montar, a primeira
-  // resolução do estado não é uma "reconexão" e não deve exibir toast.
-  const wasInitiallyCheckingRef = useRef(initialApiStatus.isChecking);
+  // A verificação de conexão é disparada pelo front (efeito abaixo) e o
+  // resultado é aplicado aqui, em vez de ler o valor salvo no Rust.
+  const [apiStatus, setApiStatus] = useState<ApiStatusCheck>({
+    isOnline: false,
+    isChecking: true,
+  });
+
+  const isOnlineRef = useRef(false);
+
+  // Enquanto uma verificação disparada pelo front está em andamento, o evento
+  // "API://available" é apenas sincronização: o resultado já chega pelo await,
+  // então não deve gerar toast de "reconexão" durante o startup.
+  const checkInFlightRef = useRef(false);
+
+  const applyApiStatus = useCallback(
+    (isOnline: boolean, silent: boolean) => {
+      const wasOnline = isOnlineRef.current;
+      isOnlineRef.current = isOnline;
+      setApiStatus({ isOnline, isChecking: false });
+
+      // Primeira resolução da verificação inicial: apenas sincroniza o estado,
+      // sem toast e sem revalidar, para não anunciar "reconectado" no startup.
+      if (silent) return;
+
+      // Se a conexão VOLTOU (estava offline e agora está online)
+      if (isOnline && !wasOnline) {
+        toaster.toast({
+          title: "Conexão",
+          message: "Conexão Reestabelecida.",
+          type: "success",
+        });
+        revalidator.revalidate();
+      } else if (!isOnline && wasOnline) {
+        revalidator.revalidate();
+      }
+    },
+    [revalidator, toaster],
+  );
 
   // INITIAL CHECKS
   useEffect(() => {
@@ -100,64 +130,22 @@ export function Component() {
       try {
         await automaticCheckUpdate();
         await automaticBackupDownload();
-
       } catch (e) {
         console.error(e);
       }
     })();
   }, []);
 
+  // Fica escutando os eventos do Tauri em background (verificações disparadas
+  // pelo Rust, ex.: falhas de requisição em `try_connection`).
   useEffect(() => {
-    isOnlineRef.current = initialApiStatus.isOnline;
-
     let active = true;
     let stop: (() => void) | undefined;
 
     (async () => {
-      // Se a verificação inicial terminou entre o middleware e este mount,
-      // os eventos já foram emitidos e não virão mais -> resolve direto.
-      if (wasInitiallyCheckingRef.current) {
-        try {
-          await checkApiStatus();
-          const status = await getApiStatusCheck();
-          if (!active) return;
-          if (!status.isChecking) {
-            wasInitiallyCheckingRef.current = false;
-            isOnlineRef.current = status.isOnline;
-            revalidator.revalidate();
-            return;
-          }
-        } catch {}
-      }
-
-      // Fica escutando os eventos do Tauri em background
       const unlistenOnline = listen<boolean>("API://available", (event) => {
         if (!active) return;
-        const isNowOnline = event.payload;
-
-        // Primeira resolução da verificação inicial: apenas sincroniza o estado,
-        // sem toast, para não exibir "offline"/"reconectado" durante o startup.
-        if (wasInitiallyCheckingRef.current) {
-          wasInitiallyCheckingRef.current = false;
-          isOnlineRef.current = isNowOnline;
-          revalidator.revalidate();
-          return;
-        }
-
-        const wasOnline = isOnlineRef.current;
-        isOnlineRef.current = isNowOnline;
-
-        // Se a conexão VOLTOU (estava offline e agora está online)
-        if (isNowOnline && !wasOnline) {
-          toaster.toast({
-            title: "Conexão",
-            message: "Conexão Reestabelecida.",
-            type: "success",
-          });
-          revalidator.revalidate();
-        } else if (!isNowOnline && wasOnline) {
-          revalidator.revalidate();
-        }
+        applyApiStatus(event.payload, checkInFlightRef.current);
       });
       stop = await unlistenOnline;
     })();
@@ -167,7 +155,33 @@ export function Component() {
       active = false;
       stop?.();
     };
-  }, [initialApiStatus.isOnline, revalidator]);
+  }, [applyApiStatus]);
+
+  // VERIFICAÇÃO INICIAL DE CONEXÃO
+  // Dispara a checagem no mount e usa o retorno dela (resolve = online,
+  // reject = offline) como estado inicial, sem depender do valor salvo no Rust.
+  useEffect(() => {
+    let active = true;
+    checkInFlightRef.current = true;
+
+    (async () => {
+      let isOnline = false;
+      try {
+        await checkApiStatus();
+        isOnline = true;
+      } catch (e) {
+        console.log("Falha na verificação inicial de conexão:", e);
+      }
+
+      if (!active) return;
+      checkInFlightRef.current = false;
+      applyApiStatus(isOnline, true);
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [applyApiStatus]);
 
   useEffect(() => {
     if (!isOfflineMode || successConnection) return;
@@ -191,15 +205,13 @@ export function Component() {
   }, [isOfflineMode, successConnection]);
 
   return (
-    <>
-      {!initialApiStatus.isOnline &&
-        !initialApiStatus.isChecking &&
-        !isOfflineMode && (
-          <OfflineOverlay
-            apiStatus={initialApiStatus}
-            // lastBackupDate={lastBackupDate}
-          />
-        )}
+    <ApiStatusContext.Provider value={apiStatus}>
+      {!apiStatus.isOnline && !apiStatus.isChecking && !isOfflineMode && (
+        <OfflineOverlay
+          apiStatus={apiStatus}
+          // lastBackupDate={lastBackupDate}
+        />
+      )}
       {/*{updateModal !== null && (
         <AppUpdateModal
           onClose={() => setUpdateModal(null)}
@@ -227,6 +239,6 @@ export function Component() {
         />
         <Outlet />
       </div>
-    </>
+    </ApiStatusContext.Provider>
   );
 }

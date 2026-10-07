@@ -33,9 +33,7 @@ export interface IMercadoria {
   descricao: string;
   fabricante: IFabricante;
   categoria: ICategoria;
-  estoque02: number;
-  estoque03: number;
-  estoque04: number;
+  /** Estoque por loja. Substitui as antigas colunas `estoque02/03/04`. */
   estoque: Estoque[];
   caracteristicas: Caracteristica[];
   observacoes: string;
@@ -52,9 +50,6 @@ export interface MercadoriaDB {
   descricao: string;
   fabricanteId: number;
   categoriaId: number;
-  estoque02: number;
-  estoque03: number;
-  estoque04: number;
   caracteristicas: Caracteristica[];
   observacoes: string;
   precoCusto: number | string;
@@ -68,12 +63,16 @@ export interface MercadoriaDB {
 export interface MercadoriaReport {
   id: number;
   descricao: string;
-  estoque02: number;
-  estoque03: number;
-  estoque04: number;
+  /** Um item por loja com estoque cadastrado. */
+  estoque: ReportEstoque[];
   precoCusto: string;
   precoVenda: string;
   fabricante: MercReportFabricante;
+}
+
+export interface ReportEstoque {
+  loja: ILoja;
+  estoque: number;
 }
 
 interface MercReportFabricante {
@@ -87,6 +86,26 @@ export interface MercadoriaSimple {
 }
 
 
+/**
+ * Filtro de estoque por loja.
+ *
+ * A chave é o **id** da loja (`lojas.id`) e o valor é um `NumberFilter`
+ * aplicado à coluna `Estoque.estoque` daquela loja.
+ *
+ * Substitui os campos fixos `estoque02`/`estoque03`/`estoque04`, que eram
+ * colunas de `mercadorias`. Como as lojas agora são entidades, o número de
+ * lojas é variável e não caberia em chaves fixas.
+ *
+ * Lojas selecionadas são combinadas com **AND**: `{ "1": { gt: 0 }, "2": { gt: 0 } }`
+ * devolve mercadorias com estoque positivo na loja 1 **e** na loja 2 — o mesmo
+ * comportamento do `estoque02 > 0 AND estoque03 > 0` anterior.
+ *
+ * @example
+ * // "estoque positivo na loja 1" (checkbox `estoque1Positivo`)
+ * { "1": { gt: 0 } }
+ */
+export type EstoqueFilter = Record<string, NumberFilter>;
+
 export interface MercadoriaInternalFilter {
   id?: NumberFilter;
   key?: NumberFilter;
@@ -94,9 +113,7 @@ export interface MercadoriaInternalFilter {
   fabricanteId?: NumberFilter;
   categoriaId?: NumberFilter;
   grupoId?: NumberFilter;
-  estoque02?: NumberFilter;
-  estoque03?: NumberFilter;
-  estoque04?: NumberFilter;
+  estoque?: EstoqueFilter;
   caracteristicas?: JsonFilter;
   observacoes?: StringFilter;
   precoCusto?: NumberFilter;
@@ -109,9 +126,7 @@ export interface SimilarMerc {
   id: number;
   key: number;
   descricao: string;
-  estoque02: number;
-  estoque03: number;
-  estoque04: number;
+  estoque: Estoque[];
   caracteristicas: Caracteristica[];
   precoVenda: string;
 }
@@ -124,8 +139,35 @@ export interface MercadoriaKeyListing {
   descricao: string;
 }
 
-export function getEstoqueTotal(mercadoria: IMercadoria | SimilarMerc) {
-  return mercadoria.estoque02 + mercadoria.estoque03 + mercadoria.estoque04;
+/**
+ * Qualquer coisa que carregue estoque por loja: `IMercadoria`,
+ * `SimilarMerc` e `MercadoriaReport` têm todos um array `estoque`, mas cada um
+ * com um item levemente diferente. Só o que os helpers abaixo usam é comum.
+ */
+type ComEstoquePorLoja = {
+  estoque?: { estoque: number | null; loja?: ILoja | null }[];
+};
+
+/** Soma o estoque da mercadoria em todas as lojas. */
+export function getEstoqueTotal(mercadoria: ComEstoquePorLoja) {
+  return (mercadoria.estoque ?? []).reduce(
+    (total, item) => total + (item.estoque ?? 0),
+    0,
+  );
+}
+
+/**
+ * Estoque da mercadoria numa loja específica, ou `0` se ela não tiver linha
+ * em `Estoque` para essa loja.
+ */
+export function getEstoqueNaLoja(
+  mercadoria: ComEstoquePorLoja,
+  lojaId: number,
+) {
+  return (
+    (mercadoria.estoque ?? []).find((item) => item.loja?.id === lojaId)
+      ?.estoque ?? 0
+  );
 }
 
 export function getDescricaoCompleta(mercadoria: IMercadoria | SimilarMerc) {

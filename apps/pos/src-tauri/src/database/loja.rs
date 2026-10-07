@@ -6,15 +6,18 @@ use tauri::{AppHandle, State};
 use crate::{
     config::api_url::get_api_url,
     database::{get_body, get_token, try_connection},
+    offline::database::off_lojas::offline_get_lojas,
     AppState, RustApiError,
 };
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
+#[sqlx(rename_all = "camelCase")]
 pub struct Loja {
     pub id: i32,
     pub nome: String,
     #[serde(rename = "CNPJ")]
+    #[sqlx(rename = "CNPJ")]
     pub cnpj: String,
     pub created_at: String,
     pub updated_at: String,
@@ -28,7 +31,7 @@ pub async fn get_lojas(
     let is_offline = state.is_offline_mode.load(Ordering::Relaxed);
 
     if is_offline {
-        return Ok(vec![]);
+        return offline_get_lojas(&state).await;
     }
 
     let token = get_token(&state)?;

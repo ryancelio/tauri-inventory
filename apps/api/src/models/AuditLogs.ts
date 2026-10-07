@@ -8,13 +8,6 @@ import {
 } from "sequelize-typescript";
 import { Usuario } from "./models";
 import {
-  AtributoLog,
-  GrupoLog,
-  KeyPhotoLog,
-  CategoriaLog,
-  FabricanteLog,
-  MercadoriaLog,
-  MercadoriaPhotoLog,
   AuditChanges,
   AuditData,
   AuditLogAction,
@@ -22,7 +15,6 @@ import {
   AuditLogTargetType,
   PossibleLogs,
   Caracteristica,
-  CaracteristicaCreate,
   AtributoTypesType,
 } from "@tauri-inventory/types";
 

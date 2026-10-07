@@ -1,6 +1,7 @@
 import {
   getDescricaoCompleta,
   getEstoqueTotal,
+  ILoja,
   IMercadoria,
   UsuarioLogado,
 } from "@tauri-inventory/types";
@@ -13,9 +14,11 @@ import { motion, AnimatePresence } from "framer-motion"; // <-- Import adicionad
 export default function MercadoriaTile({
   mercadoria,
   usuario,
+  lojas,
 }: {
   mercadoria: IMercadoria;
   usuario: UsuarioLogado;
+  lojas: ILoja[];
 }) {
   const [expanded, setExpanded] = useState(false);
   const estoqueTotal = getEstoqueTotal(mercadoria);
@@ -161,7 +164,11 @@ export default function MercadoriaTile({
             className="overflow-hidden"
           >
             <div className="border-t border-gray-100 bg-gray-50/50 p-2 sm:p-4">
-              <MercExtraInfo mercadoria={mercadoria} isExpanded={expanded} />
+              <MercExtraInfo
+                mercadoria={mercadoria}
+                isExpanded={expanded}
+                lojas={lojas}
+              />
             </div>
           </motion.div>
         )}

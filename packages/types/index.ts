@@ -9,7 +9,6 @@ export * from "./database/Mercadoria/index.js"
 export * from "./database/Logs.js";
 export type {
   Funcao,
-  Local,
   IUsuario,
   CriarUsuarioPayload,
   UsuarioLogado,

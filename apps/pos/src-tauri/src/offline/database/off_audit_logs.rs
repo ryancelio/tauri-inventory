@@ -10,7 +10,10 @@ use crate::{
         usuarios::LoggedUser,
         ApiListResponse,
     },
-    offline::database::{get_db_pool, off_users::SQLiteLoggedUser},
+    offline::database::{
+        get_db_pool,
+        off_users::{SQLiteLoggedUser, USUARIOS_SELECT},
+    },
     ApiResponse, AppState, RustApiError,
 };
 
@@ -125,13 +128,18 @@ fn apply_log_filters<'args>(
 
 /// Carrega os usuários ativos para resolver o `usuario` (Option<LoggedUser>)
 /// de cada log, espelhando o `include` da API.
-async fn load_usuarios_por_id(
+///
+/// Reusa [`USUARIOS_SELECT`] para que o log offline e a listagem de usuários
+/// devolvam exatamente o mesmo `LoggedUser` — inclusive a loja aninhada.
+pub async fn usuarios_por_id(
     pool: &sqlx::Pool<sqlx::Sqlite>,
 ) -> Result<HashMap<i32, LoggedUser>, RustApiError> {
     let usuarios: Vec<SQLiteLoggedUser> =
-        match sqlx::query_as("SELECT id, nome, funcao, local FROM usuarios WHERE deletedAt IS NULL")
-            .fetch_all(pool)
-            .await
+        match sqlx::query_as(&format!(
+            "{USUARIOS_SELECT}WHERE usuarios.deletedAt IS NULL"
+        ))
+        .fetch_all(pool)
+        .await
         {
             Ok(val) => val,
             Err(e) => {
@@ -170,7 +178,7 @@ async fn query_audit_logs(
     let page: i64 = page.trim().parse::<i64>().unwrap_or(1).max(1);
     let offset = (page - 1) * LOG_PAGE_LIMIT;
 
-    let usuarios = load_usuarios_por_id(&pool).await?;
+    let usuarios = usuarios_por_id(&pool).await?;
 
     let mut data_builder = QueryBuilder::new("SELECT * FROM AuditLog");
     apply_log_filters(&mut data_builder, target, user_id, action, level);

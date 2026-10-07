@@ -5,9 +5,6 @@ const createMercadoria = `
     descricao TEXT NOT NULL,
     precoCusto REAL NOT NULL DEFAULT 0.00,
     precoVenda REAL NOT NULL DEFAULT 0.00,
-    estoque02 INTEGER NOT NULL DEFAULT 0,
-    estoque03 INTEGER NOT NULL DEFAULT 0,
-    estoque04 INTEGER NOT NULL DEFAULT 0,
     observacoes TEXT,
     createdAt TEXT NOT NULL,
     updatedAt TEXT NOT NULL,
@@ -16,7 +13,7 @@ const createMercadoria = `
     deletedAt TEXT
 );`;
 const insertMercadoriaStatment =
-  "INSERT INTO mercadorias (id, key,descricao, precoCusto,precoVenda,estoque02,estoque03,estoque04,observacoes,fabricanteId,categoriaId,createdAt,updatedAt,deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+  "INSERT INTO mercadorias (id, key,descricao, precoCusto,precoVenda,observacoes,fabricanteId,categoriaId,createdAt,updatedAt,deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 const createMercadoriaKey = `
   CREATE TABLE MercadoriaKeys (
@@ -105,6 +102,8 @@ const createLojas = `CREATE TABLE lojas (
 const insertLojasStatement =
   "INSERT INTO lojas (id,nome,CNPJ,createdAt,updatedAt,deletedAt) VALUES (?,?,?,?,?,?)";
 
+// `estoques` é a única fonte de verdade do estoque: substitui as colunas
+// `estoque02/03/04` de `mercadorias`. Uma linha por (mercadoria, loja).
 const createEstoques = `CREATE TABLE estoques (
   id INTEGER NOT NULL PRIMARY KEY,
   mercadoriaId INTEGER NOT NULL,
@@ -114,11 +113,16 @@ const createEstoques = `CREATE TABLE estoques (
   updatedAt TEXT NOT NULL,
   deletedAt TEXT DEFAULT NULL
 );
-CREATE INDEX idx_estoques_mercadoriaId ON estoques (mercadoriaId);`;
+CREATE INDEX idx_estoques_mercadoriaId ON estoques (mercadoriaId);
+CREATE INDEX idx_estoques_lojaId ON estoques (lojaId);`;
 
 const insertEstoquesStatement =
   "INSERT INTO estoques (id,mercadoriaId,lojaId,estoque,createdAt,updatedAt,deletedAt) VALUES (?,?,?,?,?,?,?)";
 
+// `lojaId` substitui a antiga coluna `local TEXT`, que era uma string hardcoded
+// ("02"/"03"/"04"). Espelha `UsuarioModel.lojaId` + `@BelongsTo(() => LojasModel)`
+// em `apps/api/src/models/Usuario.ts`. `ativo` espelha `UsuarioModel.ativo`
+// (o filtro da API chamava `active`, que não existe no model).
 const createUsuarios = `CREATE TABLE usuarios (
   id INTEGER NOT NULL PRIMARY KEY,
   nome TEXT NOT NULL,
@@ -127,12 +131,14 @@ const createUsuarios = `CREATE TABLE usuarios (
   senhaHash TEXT NOT NULL,
   createdAt TEXT NOT NULL,
   updatedAt TEXT NOT NULL,
-  local TEXT NOT NULL,
+  lojaId INTEGER NOT NULL,
+  ativo INTEGER NOT NULL DEFAULT 1,
   deletedAt TEXT DEFAULT NULL
-);`;
+);
+CREATE INDEX idx_usuarios_lojaId ON usuarios (lojaId);`;
 
 const insertUsuariosStatement =
-  "INSERT INTO usuarios (id,nome,funcao,usuario,senhaHash,local,createdAt,updatedAt,deletedAt) VALUES (?,?,?,?,?,?,?,?,?)";
+  "INSERT INTO usuarios (id,nome,funcao,usuario,senhaHash,createdAt,updatedAt,lojaId,ativo,deletedAt) VALUES (?,?,?,?,?,?,?,?,?,?)";
 
   const createAuditLog = `
   CREATE TABLE AuditLog (

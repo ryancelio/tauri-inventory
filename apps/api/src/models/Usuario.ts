@@ -1,7 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db";
-import { AllowNull, Column, ForeignKey, Model, Table } from "sequelize-typescript";
-import { Funcao, Local } from "@tauri-inventory/types";
+import { AllowNull, BelongsTo, Column, ForeignKey, Model, Table } from "sequelize-typescript";
+import { Funcao, ILoja } from "@tauri-inventory/types";
 import LojasModel from "./Lojas";
 
 @Table({
@@ -25,10 +25,12 @@ export default class UsuarioModel extends Model {
   @Column(DataTypes.ENUM("vendedor", "gerente", "admin"))
   declare funcao: Funcao;
 
-  // @Column(DataTypes.ENUM("02", "03", "04"))
   @ForeignKey(() => LojasModel)
-  @Column({type: DataTypes.STRING, allowNull: false})
-  declare local: Local;
+  @Column({type: DataTypes.INTEGER, allowNull: false})
+  declare lojaId: number;
+
+  @BelongsTo(() => LojasModel)
+  declare local: LojasModel;
 
   @AllowNull(false)
   @Column({
@@ -45,6 +47,13 @@ export default class UsuarioModel extends Model {
     },
   })
   declare usuario: string;
+
+  @Column({
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+  })
+  declare ativo: boolean;
 
   @AllowNull(false)
   @Column(DataTypes.STRING)

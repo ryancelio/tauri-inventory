@@ -1,7 +1,15 @@
-import { IUsuario, MercadoriaCreate, MercadoriaUpdate } from "@tauri-inventory/types";
+import { IUsuario } from "@tauri-inventory/types";
 
-export function getAllowedFields(user: IUsuario, mercadoria: MercadoriaCreate | MercadoriaUpdate) {
-  let defaultFields = [
+/**
+ * Colunas de `mercadorias` que um usuário não-admin pode alterar.
+ *
+ * O estoque não aparece aqui: ele não é mais coluna de `mercadorias` (era
+ * `estoque02`/`estoque03`/`estoque04`), e sim linhas de `Estoque`, gravadas por
+ * `syncEstoque` no controller, que aplica o recorte por loja e valida o tipo.
+ * Aqui só entram os campos que vão para o `update` do model.
+ */
+export function getAllowedFields(user: IUsuario) {
+  const defaultFields = [
     "descricao",
     "key",
     "fabricanteId",
@@ -10,23 +18,6 @@ export function getAllowedFields(user: IUsuario, mercadoria: MercadoriaCreate | 
     "precoCusto",
     "precoVenda",
   ];
-  switch (user.local) {
-    case "02":
-      defaultFields.push("estoque02");
-      delete mercadoria.estoque03;
-      delete mercadoria.estoque04;
-      break;
-    case "03":
-      defaultFields.push("estoque03");
-      delete mercadoria.estoque02;
-      delete mercadoria.estoque04;
-      break;
-    case "04":
-      defaultFields.push("estoque04");
-      delete mercadoria.estoque02;
-      delete mercadoria.estoque03;
-      break;
-  }
 
   return defaultFields;
 }

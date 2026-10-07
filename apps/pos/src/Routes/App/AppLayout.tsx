@@ -427,7 +427,7 @@ export function Component() {
                       {usuario?.nome || "Usuário"}
                     </span>
                     <span className="truncate text-xs font-medium text-gray-500">
-                      Loja {usuario?.local || "Matriz"}
+                      {usuario?.local.nome || "Matriz"}
                     </span>
                   </motion.div>
                 )}

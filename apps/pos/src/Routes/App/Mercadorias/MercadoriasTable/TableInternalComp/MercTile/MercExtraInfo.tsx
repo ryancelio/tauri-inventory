@@ -1,6 +1,8 @@
 import {
   Caracteristica,
+  getEstoqueNaLoja,
   getMercadoriaCor,
+  ILoja,
   IMercadoria,
   MercadoriaPhotosListing,
 } from "@tauri-inventory/types";
@@ -53,9 +55,12 @@ function objectToGrid(
 export default function MercExtraInfo({
   mercadoria,
   isExpanded,
+  lojas,
 }: {
   mercadoria: IMercadoria;
   isExpanded: boolean;
+  /** Lista de lojas para rotular o estoque, já que ele é por loja. */
+  lojas: ILoja[];
 }) {
   const [mercPhotos, setMercPhotos] = useState<MercadoriaPhotosListing[]>([]);
   const [keyPhotos, setKeyPhotos] = useState<MercadoriaPhotosListing[]>([]);
@@ -223,11 +228,19 @@ export default function MercExtraInfo({
               </div>
 
               <div className="grid grid-cols-1 gap-3">
-                <EstoqueDisplay estoque={mercadoria.estoque02} text="Loja 02" />
-
-                <EstoqueDisplay estoque={mercadoria.estoque03} text="Loja 03" />
-
-                <EstoqueDisplay estoque={mercadoria.estoque04} text="Loja 04" />
+                {lojas.length === 0 ? (
+                  <p className="text-sm text-gray-400 italic">
+                    Nenhuma loja cadastrada.
+                  </p>
+                ) : (
+                  lojas.map((loja) => (
+                    <EstoqueDisplay
+                      key={loja.id}
+                      estoque={getEstoqueNaLoja(mercadoria, loja.id)}
+                      text={loja.nome}
+                    />
+                  ))
+                )}
               </div>
             </section>
           </div>

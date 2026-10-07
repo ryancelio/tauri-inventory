@@ -24,3 +24,12 @@ const sequelize = new Sequelize(
 })();
 
 export default sequelize;
+
+/**
+ * Escaping do dialeto (MySQL), para módulos que montam SQL à mão.
+ *
+ * Existe porque o filtro de estoque precisa de uma subquery sobre `Estoque`, e
+ * `Sequelize.literal()` aceita um argumento só — não tem replacements. Passar o
+ * valor por `escape` é o que mantém a interpolação segura.
+ */
+export const escape = sequelize.escape.bind(sequelize);

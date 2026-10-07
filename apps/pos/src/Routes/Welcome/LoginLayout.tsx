@@ -1,13 +1,11 @@
-import { ActionFunction, LoaderFunctionArgs, redirect } from "react-router";
+import { ActionFunction, redirect } from "react-router";
 import { apiLogin } from "../../api/apiHelper";
 import LoginPage from "./LoginPage";
-import { apiStatusContext } from "../../context/contexts";
 import { invoke } from "@tauri-apps/api/core";
-import { useEffect, useState } from "react";
+import { useContext } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Loader2 } from "lucide-react";
-import { listen } from "@tauri-apps/api/event";
-import { getApiStatusCheck } from "../../backend/backendHelper";
+import { ApiStatusContext } from "../../context/contexts";
 
 export const action: ActionFunction = async ({ request }) => {
   const data = await request.formData();
@@ -29,11 +27,10 @@ export const action: ActionFunction = async ({ request }) => {
   }
 };
 
-export async function loader({ context }: LoaderFunctionArgs){
-  let apiStatus = context.get(apiStatusContext);
-  let isOfflineMode = await invoke<boolean>("get_offline_mode");
+export async function loader() {
+  const isOfflineMode = await invoke<boolean>("get_offline_mode");
 
-  return { apiStatus, isOfflineMode };
+  return { isOfflineMode };
 };
 
 export const HydrateFallback = () => {
@@ -45,53 +42,12 @@ export const HydrateFallback = () => {
 };
 
 export function Component() {
-  const [isCheckingApi, setIsCheckingApi] = useState(true);
+  // Só a verificação inicial (disparada pelo front em MainLayout) bloqueia a
+  // tela. O status vem do mesmo estado que resolve a checagem, então não há
+  // corrida entre ler o estado do Rust e receber o evento `API://checking`.
+  const { isChecking } = useContext(ApiStatusContext);
 
-  useEffect(() => {
-    let active = true;
-    let unlisten: (() => void) | undefined;
-    // Só o load inicial deve bloquear a tela; reconexões posteriores
-    // (API://checking) não devem reexibir o loading.
-    const resolved = { value: false };
-
-    (async () => {
-      // Consulta o estado atual, pois eventos emitidos antes do listener
-      // ser registrado (ex.: setup do Tauri) são perdidos.
-      try {
-        const { isChecking } = await getApiStatusCheck();
-        if (!active) return;
-        if (isChecking) {
-          setIsCheckingApi(true);
-        } else {
-          resolved.value = true;
-          setIsCheckingApi(false);
-        }
-      } catch {}
-
-      const unlistenPromise = listen<boolean>("API://checking", (event) => {
-        if (!active) return;
-        if (event.payload === false) {
-          resolved.value = true;
-          setIsCheckingApi(false);
-        } else if (!resolved.value) {
-          setIsCheckingApi(true);
-        }
-      });
-      const stop = await unlistenPromise;
-      if (active) {
-        unlisten = stop;
-      } else {
-        stop();
-      }
-    })();
-
-    return () => {
-      active = false;
-      unlisten?.();
-    };
-  }, []);
-
-  if (isCheckingApi) {
+  if (isChecking) {
     return (
       <div className="size-full grid place-items-center">
         <Loader2 />

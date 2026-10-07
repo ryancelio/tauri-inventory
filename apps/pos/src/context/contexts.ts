@@ -9,11 +9,15 @@ export interface ApiStatusCheck {
 }
 // REACT ROUTER CONTEXTS
 export const userContext = routerCreateContext<UsuarioLogado | null>(null);
-export const apiStatusContext = routerCreateContext<ApiStatusCheck | null>(
-  null,
-);
 
 // REACT CONTEXTS (GLOBAL)
 export const ToastContext = createContext<ToastContextValue | null>(null);
+
+// Status da conexão, publicado por MainLayout a partir da verificação inicial
+// disparada pelo front. O default (sem provider) não bloqueia a tela.
+export const ApiStatusContext = createContext<ApiStatusCheck>({
+  isOnline: false,
+  isChecking: false,
+});
 
 // export const offlineModeContext = createContext<boolean | null>(null);

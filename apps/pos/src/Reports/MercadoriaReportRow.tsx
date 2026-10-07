@@ -1,4 +1,6 @@
 import {
+  getEstoqueNaLoja,
+  ILoja,
   MercadoriaReport,
   UsuarioLogado,
 } from "@tauri-inventory/types";
@@ -22,6 +24,8 @@ type MercadoriaReportRowProps = HTMLAttributes<HTMLDivElement> & {
   ref: Ref<HTMLDivElement> | undefined;
   colLayout: any;
   index: number; // ← Recebendo o index exato do item na array original
+  /** Uma coluna por loja — o estoque vive em `Estoque`, indexado por `lojaId`. */
+  lojas: ILoja[];
 };
 
 export const MercadoriaReportRow = ({
@@ -30,6 +34,7 @@ export const MercadoriaReportRow = ({
   index,
   style,
   colLayout,
+  lojas,
   ref,
   ...props
 }: HTMLAttributes<HTMLDivElement> & MercadoriaReportRowProps) => {
@@ -49,9 +54,11 @@ export const MercadoriaReportRow = ({
       <div className={`${colLayout.fabricante} capitalize`}>
         {mercadoria.fabricante?.nome || "-"}
       </div>
-      <div className={colLayout.est}>{mercadoria.estoque02}</div>
-      <div className={colLayout.est}>{mercadoria.estoque03}</div>
-      <div className={colLayout.est}>{mercadoria.estoque04}</div>
+      {lojas.map((loja) => (
+        <div key={loja.id} className={colLayout.est}>
+          {getEstoqueNaLoja(mercadoria, loja.id)}
+        </div>
+      ))}
 
       {usuario.funcao !== "vendedor" && (
         <div className={colLayout.preco}>

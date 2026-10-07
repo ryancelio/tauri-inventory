@@ -57,13 +57,33 @@ export function formDataToMercadoria(formData: FormData): MercadoriaCreate{
       value: item.value,
     }));
 
+  // O estoque não é mais coluna de `mercadoria`: o formulário manda um campo
+  // `estoque[<lojaId>]` por loja e aqui eles viram a lista `[{ lojaId, estoque }]`
+  // que a API grava na tabela `Estoque`.
+  const estoque = Object.keys(data).reduce((acc: any[], key) => {
+    const match = key.match(/^estoque\[(\d+)\]$/);
+    if (!match) return acc;
+
+    const lojaId = parseInt(match[1], 10);
+    if (!Number.isInteger(lojaId)) return acc;
+
+    acc.push({ lojaId, estoque: Number(data[key]) || 0 });
+    return acc;
+  }, []);
+
   const payload: Record<string, any> = {
     ...data,
     caracteristicas: caracteristicas.length > 0 ? caracteristicas : null,
   };
 
+  // Só envia `estoque` se algum campo veio — distingue "não mexe no estoque"
+  // de "zerou tudo". Um campo em branco conta como zero explícito.
+  if (estoque.length > 0) payload.estoque = estoque;
+
   Object.keys(payload).forEach((key) => {
-    if (key.startsWith("caracteristicas[")) delete payload[key];
+    if (key.startsWith("caracteristicas[") || key.startsWith("estoque[")) {
+      delete payload[key];
+    }
   });
 
   if (payload.cor) {

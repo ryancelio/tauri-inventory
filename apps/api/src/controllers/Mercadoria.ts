@@ -19,7 +19,14 @@ import {
   MercadoriaLog,
   MercadoriaUpdate,
 } from "@tauri-inventory/types";
-import { CreationAttributes, Op, Order, QueryTypes } from "sequelize";
+import {
+  CreationAttributes,
+  Includeable,
+  Op,
+  Order,
+  QueryTypes,
+  Transaction,
+} from "sequelize";
 import {
   buildWhereClause,
   getAdditionalFilters,
@@ -30,6 +37,8 @@ import sequelize from "../config/db";
 import MercadoriaPhotosModel from "../models/MercadoriaPhotos";
 import MercadoriaModel from "../models/Mercadoria";
 import MercadoriaAtributosModel from "../models/MercadoriaAtributos";
+import EstoqueModel from "../models/Estoque";
+import LojasModel from "../models/Lojas";
 import AtributoModel from "../models/Atributo";
 import AuditLog, { AuditCreate, getAuditChanges } from "../models/AuditLogs";
 import { MercadoriaKey } from "../models/MercadoriaKeys";
@@ -57,6 +66,194 @@ function caracteristicasParser(
   return caracteristicasTratadas as unknown as CreationAttributes<MercadoriaAtributosModel>[];
 }
 
+/**
+ * Normaliza o estoque recebido para gravação em `Estoque`.
+ *
+ * Devolve `null` quando o campo não veio no payload — o que significa "não
+ * mexer no estoque", diferente de uma lista vazia, que significa "zerar tudo".
+ * `lojaId` ausente ou não numérico é descartado, porque viraria FK inválida.
+ */
+function estoqueParser(estoque: unknown) {
+  if (!Array.isArray(estoque)) return null;
+
+  const tratado = estoque
+    .filter(
+      (item): item is { lojaId: unknown; estoque: unknown } =>
+        typeof item === "object" && item !== null,
+    )
+    .map((item) => ({
+      lojaId: Number(item.lojaId),
+      estoque: Number(item.estoque),
+    }))
+    // `Number("abc")` é NaN, e FK NaN reprova; id de loja precisa ser inteiro.
+    .filter(
+      (item) => Number.isInteger(item.lojaId) && item.lojaId > 0,
+    )
+    .map((item) => ({
+      lojaId: item.lojaId,
+      estoque: Number.isFinite(item.estoque) ? item.estoque : 0,
+    }));
+
+  return tratado;
+}
+
+/**
+ * Grava o estoque da mercadoria em `Estoque`, uma linha por loja.
+ *
+ * `Estoque` é `paranoid`, então as linhas existentes são restauradas e
+ * atualizadas em vez de recriadas — preservando o `id` e o `createdAt` que o
+ * log de auditoria registra.
+ *
+ * @param lojasGerenciadas Quando informada, só essas lojas podem ser
+ *   removidas. O payload chega restrito à loja do usuário (o formulário só
+ *   envia os campos habilitado para ele), então sem esse recorte um gerente
+ *   salvaria apagando o estoque das outras lojas. `undefined` = admin, que
+ *   enxerga o formulário inteiro e pode zerar qualquer loja.
+ */
+async function syncEstoque(
+  mercadoriaId: number,
+  estoque: { lojaId: number; estoque: number }[],
+  transaction: Transaction,
+  lojasGerenciadas?: number[],
+) {
+  // Estoque repetido na mesma loja: o último enviado prevalece.
+  const porLoja = new Map<number, number>();
+  for (const item of estoque) porLoja.set(item.lojaId, item.estoque);
+
+  const lojaIds = new Set(porLoja.keys());
+
+  // Sem `raw: true`: o soft-delete/restore e o update abaixo são métodos de
+  // instância do model. Com `raw`, o Sequelize devolve objeto cru e
+  // `linha.destroy`/`existente.update`/`existente.restore` nem existem.
+  const existentes = await EstoqueModel.findAll({
+    where: { mercadoriaId },
+    paranoid: false,
+    transaction,
+  });
+
+  const porLojaExistente = new Map<number, EstoqueModel>();
+  for (const linha of existentes) {
+    porLojaExistente.set(linha.lojaId, linha);
+  }
+
+  // Lojas que saíram do payload são removidas (soft-delete), para que não
+  // sobrem linhas obsoletas contando no filtro e no `getEstoqueTotal`.
+  const gerenciadas = lojasGerenciadas ? new Set(lojasGerenciadas) : null;
+  const removidas = existentes.filter(
+    (linha) =>
+      !lojaIds.has(linha.lojaId) &&
+      (!gerenciadas || gerenciadas.has(linha.lojaId)),
+  );
+
+  for (const linha of removidas) {
+    if (linha.deletedAt) continue;
+    await linha.destroy({ transaction });
+  }
+
+  // Fora do alcance do usuário não pode ser criado, só atualizado — o recorte
+  // do payload já devolve só a loja dele, mas um POST forjado passaria por
+  // `estoqueParser`.
+  const dentroDoEscopo = (lojaId: number) =>
+    !gerenciadas || gerenciadas.has(lojaId);
+
+  for (const [lojaId, quantidade] of porLoja) {
+    if (!dentroDoEscopo(lojaId)) continue;
+
+    const existente = porLojaExistente.get(lojaId);
+
+    if (existente) {
+      // `restore` antes do `update`: `Estoque` é `paranoid`, e o UPDATE de um
+      // model paranoid só casa em linha sem `deletedAt` — na ordem inversa o
+      // update não encontra a linha e o estoque fica gravado como removido.
+      if (existente.deletedAt) {
+        await existente.restore({ transaction });
+      }
+      await existente.update({ estoque: quantidade }, { transaction });
+      continue;
+    }
+
+    await EstoqueModel.create(
+      { mercadoriaId, lojaId, estoque: quantidade },
+      { transaction },
+    );
+  }
+}
+
+/**
+ * Compara o estoque anterior de uma mercadoria com o novo, loja a loja.
+ *
+ * Devolve `null` quando nada mudou, para não poluir o log. O formato é o mesmo
+ * que o log já usa para `caracteristicas` (`{ nome, valor }`), então a tela de
+ * auditoria renderiza "Timoteo: 5 → 7" sem nenhuma mudança nela.
+ *
+ * @param anteriores Linhas de `Estoque` da mercadoria, como vêm do include.
+ * @param novos Payload normalizado por `estoqueParser`.
+ */
+async function diffEstoque(
+  anteriores: { lojaId: number; estoque: number }[],
+  novos: { lojaId: number; estoque: number }[],
+  transaction: Transaction,
+) {
+  const antigoPorLoja = new Map<number, number>();
+  for (const linha of anteriores) {
+    antigoPorLoja.set(linha.lojaId, Number(linha.estoque));
+  }
+
+  const novoPorLoja = new Map<number, number>();
+  for (const item of novos) novoPorLoja.set(item.lojaId, item.estoque);
+
+  // Só as lojas que realmente mudaram entram no log — inclusive as que
+  // desapareceram do payload, que `syncEstoque` remove.
+  const lojasAfetadas = new Set(
+    [...antigoPorLoja.keys(), ...novoPorLoja.keys()].filter((lojaId) => {
+      const antes = antigoPorLoja.get(lojaId);
+      const depois = novoPorLoja.get(lojaId);
+
+      if (depois === undefined) return true; // loja removida do payload
+      if (antes === undefined) return depois !== 0; // loja nova, só se tem algo
+      return antes !== depois;
+    }),
+  );
+
+  if (lojasAfetadas.size === 0) return null;
+
+  // O nome vem do include quando a loja já tinha estoque; para loja nova é
+  // preciso buscar, senão a linha sairia como "Loja 4".
+  const nomePorLoja = new Map<number, string>();
+  for (const linha of anteriores as unknown as {
+    lojaId: number;
+    loja?: { nome: string };
+  }[]) {
+    if (linha.loja?.nome) nomePorLoja.set(linha.lojaId, linha.loja.nome);
+  }
+
+  const faltando = [...lojasAfetadas].filter((lojaId) => !nomePorLoja.has(lojaId));
+  if (faltando.length > 0) {
+    const lojas = await LojasModel.findAll({
+      where: { id: faltando },
+      attributes: ["id", "nome"],
+      transaction,
+      raw: true,
+    });
+
+    for (const loja of lojas) nomePorLoja.set(loja.id, loja.nome);
+  }
+
+  const linha = (lojaId: number, valor: number) => ({
+    nome: nomePorLoja.get(lojaId) ?? `Loja ${lojaId}`,
+    valor,
+  });
+
+  return {
+    anterior: [...lojasAfetadas]
+      .filter((lojaId) => antigoPorLoja.has(lojaId))
+      .map((lojaId) => linha(lojaId, antigoPorLoja.get(lojaId)!)),
+    novo: [...lojasAfetadas]
+      .filter((lojaId) => novoPorLoja.has(lojaId))
+      .map((lojaId) => linha(lojaId, novoPorLoja.get(lojaId)!)),
+  };
+}
+
 function sequelizeResponseParser(mercadoria: Mercadoria) {
   const merc = mercadoria.get({ plain: true });
 
@@ -75,6 +272,26 @@ function sequelizeResponseParser(mercadoria: Mercadoria) {
   }
   return merc;
 }
+
+/**
+ * Include do estoque por loja usado em todas as projeções que expõem
+ * `mercadoria.estoque`.
+ *
+ * Sem restringir `attributes`, o Sequelize devolve a linha de `Estoque`
+ * inteira (`id`, `lojaId`, `estoque`, `createdAt`, `updatedAt`) e a `Lojas`
+ * inteira (`id`, `nome`, `CNPJ`, `createdAt`, `updatedAt`).
+ *
+ * Isso não é opcional: o app POS deserializa a resposta em structs Rust com
+ * campos obrigatórios — `Estoque` (`apps/pos/src-tauri/src/database/estoque.rs`)
+ * e `Loja` (`.../loja.rs`) — e o modo offline monta exatamente esse mesmo
+ * formato via `json_object` em `off_mercadorias.rs`. Uma projeção mais estreita
+ * (ex.: `attributes: ["estoque"]`) omite `createdAt`/`updatedAt` e o serde falha
+ * com "error decoding response body", quebrando online o que funciona offline.
+ */
+const estoqueInclude: Includeable = {
+  association: "estoque",
+  include: [{ association: "loja" }],
+};
 
 // POST mercadorias/
 export const criarMercadoria = async (
@@ -97,6 +314,12 @@ export const criarMercadoria = async (
       mercadoria.key = maxKey.key;
     }
 
+    // `Estoque` é gravado logo após o create, já que a mercadoria precisa do id
+    // para ser a FK. Tira do payload para o insert não tentar uma coluna que
+    // `mercadorias` não tem mais.
+    const estoque = estoqueParser(mercadoria.estoque);
+    delete mercadoria.estoque;
+
     const merc = await Mercadoria.create(
       mercadoria as unknown as CreationAttributes<MercadoriaModel>,
       { transaction: t },
@@ -104,6 +327,10 @@ export const criarMercadoria = async (
 
     const caracteristicas = caracteristicasParser(mercadoria, merc.id);
     delete mercadoria.caracteristicas;
+
+    if (estoque && estoque.length > 0) {
+      await syncEstoque(merc.id, estoque, t);
+    }
 
     // console.log(caracteristicas);
     // console.log(merc.get({ plain: true }));
@@ -165,10 +392,7 @@ export const listarMercadorias = async (
             include: ["grupo"],
             attributes: { exclude: ["grupoId"] },
           },
-          {
-            association: "estoque",
-            include: [{ association: "loja" }],
-          },
+          estoqueInclude,
         ],
         attributes: { exclude: ["grupoId", "categoriaId", "fabricanteId"] },
       });
@@ -216,10 +440,7 @@ export const listarMercadorias = async (
               attributes: ["id", "nome", "tipo"],
               through: { attributes: ["valor"] },
             },
-            {
-              association: "estoque",
-              include: [{ association: "loja" }],
-            },
+            estoqueInclude,
           ],
       attributes: include
         ? include
@@ -228,8 +449,6 @@ export const listarMercadorias = async (
     const mercadorias = rows.map((r) =>
       sequelizeResponseParser(r),
     );
-    console.log(mercadorias[0]);
-    console.log(mercadorias[0].estoque[0].loja)
     res.status(200).json({
       data: mercadorias,
       count: count,
@@ -248,26 +467,25 @@ export const relatorioMercadorias = async (
   try {
     const query = req.body;
 
+    // O estoque por loja vem da associação `Estoque`; antes ele eram as colunas
+    // `estoque02/03/04` de `mercadorias`, que deixaram de existir.
+    const relatorioInclude: Includeable[] = [
+      { association: "fabricante", attributes: ["id", "nome"] },
+      {
+        association: "caracteristicas",
+        attributes: ["id", "nome", "tipo"],
+        through: { attributes: ["valor"] },
+      },
+      estoqueInclude,
+    ];
+
+    const relatorioAttributes = ["id", "descricao", "precoCusto", "precoVenda"];
+
     if (!query) {
       const { rows, count } = await MercadoriaModel.findAndCountAll({
         distinct: true,
-        attributes: [
-          "id",
-          "descricao",
-          "estoque02",
-          "estoque03",
-          "estoque04",
-          "precoCusto",
-          "precoVenda",
-        ],
-        include: [
-          { association: "fabricante", attributes: ["id", "nome"] },
-          {
-            association: "caracteristicas",
-            attributes: ["id", "nome", "tipo"],
-            through: { attributes: ["valor"] },
-          },
-        ],
+        attributes: relatorioAttributes,
+        include: relatorioInclude,
 
         order: [["descricao", "ASC"]],
       });
@@ -284,23 +502,8 @@ export const relatorioMercadorias = async (
 
     const { rows, count } = await MercadoriaModel.findAndCountAll({
       distinct: true,
-      attributes: [
-        "id",
-        "descricao",
-        "estoque02",
-        "estoque03",
-        "estoque04",
-        "precoCusto",
-        "precoVenda",
-      ],
-      include: [
-        { association: "fabricante", attributes: ["id", "nome"] },
-        {
-          association: "caracteristicas",
-          attributes: ["id", "nome", "tipo"],
-          through: { attributes: ["valor"] },
-        },
-      ],
+      attributes: relatorioAttributes,
+      include: relatorioInclude,
       order: [["descricao", "ASC"]],
       where,
     });
@@ -337,10 +540,7 @@ export const obterMercadoria = async (
           attributes: ["id", "nome", "tipo"],
           through: { attributes: ["valor"] },
         },
-        {
-          association: "estoque",
-          include: [{ association: "loja" }],
-        },
+        estoqueInclude,
       ],
       attributes: { exclude: ["grupoId", "categoriaId", "fabricanteId"] },
       nest: true,
@@ -375,6 +575,12 @@ export const alterarMercadoria = async (
     let mercadoria = req.body;
     const caracteristicas = caracteristicasParser(mercadoria, id);
 
+    // O estoque vem como lista `[{ lojaId, estoque }]`, mas `Mercadoria` não tem
+    // essa coluna — é gravado em `Estoque` logo abaixo. Tira do payload para o
+    // `update` não tentar escrever uma coluna inexistente.
+    const estoque = estoqueParser(mercadoria.estoque);
+    delete mercadoria.estoque;
+
     // Negative merc Key, assigns new
     if (mercadoria.key === -1) {
       const maxKey: number = await Mercadoria.max("key");
@@ -388,9 +594,24 @@ export const alterarMercadoria = async (
 
     let updateFields: string[] | undefined = undefined;
 
+    // O recorte do estoque depende da loja do usuário. Token emitido antes de
+    // `local` virar objeto traz a string antiga ("02") e não tem id — sem isso
+    // um gerente ficaria sem poder nenhum em vez de receber um erro claro.
+    let lojasGerenciadas: number[] | undefined = undefined;
+
     if (user.funcao !== "admin") {
-      const allowedFields = getAllowedFields(user, mercadoria);
-      // Mantém apenas os campos que a) são permitidos e b) foram enviados (não são undefined)
+      if (!Number.isInteger(user.local?.id)) {
+        return res
+          .status(403)
+          .json({ response: "Usuario sem loja definida. Faça login novamente." });
+      }
+
+      lojasGerenciadas = [user.local.id];
+
+      const allowedFields = getAllowedFields(user);
+      // Mantém apenas os campos que a) são permitidos e b) foram enviados (não são undefined).
+      // `estoque` fica de fora de propósito: quem não é admin só escreve na
+      // própria loja, e isso é aplicado por `syncEstoque` via `lojasGerenciadas`.
       updateFields = allowedFields.filter(
         (field) => mercadoria[field as keyof MercadoriaUpdate] !== undefined,
       );
@@ -404,6 +625,11 @@ export const alterarMercadoria = async (
           attributes: ["id", "nome", "tipo"],
           through: { attributes: ["valor"] },
         },
+        {
+          association: "estoque",
+          attributes: ["lojaId", "estoque"],
+          include: [{ association: "loja", attributes: ["nome"] }],
+        },
       ],
     });
 
@@ -414,13 +640,29 @@ export const alterarMercadoria = async (
     }
     const parsedOldMerc = sequelizeResponseParser(oldMercadoria);
 
-    // console.log(mercadoria);
-    // console.log(sequelizeResponseParser(oldMercadoria));
 
     const alteracoes = getAuditChanges<MercadoriaLog>(
       parsedOldMerc,
       mercadoria as any,
     );
+
+    // O estoque foi removido do corpo, então o diff genérico não o enxerga — e
+    // mesmo se enxergasse, compararia listas de formatos diferentes. Ele é
+    // comparado por loja, no formato `nome: valor` que o log já sabe renderizar.
+    if (estoque) {
+      const alteracoesEstoque = await diffEstoque(
+        (oldMercadoria.estoque ?? []) as unknown as {
+          lojaId: number;
+          estoque: number;
+        }[],
+        estoque,
+        t,
+      );
+
+      if (alteracoesEstoque) {
+        alteracoes.estoque = alteracoesEstoque as never;
+      }
+    }
 
     console.log(alteracoes);
 
@@ -456,6 +698,14 @@ export const alterarMercadoria = async (
       });
     }
 
+    // `estoque` só é aplicado quando veio no corpo: um PUT sem estoque não deve
+    // apagar o que já está em `Estoque`. Quem não é admin só pode mexer na
+    // própria loja, então o resto do estoque fica fora do alcance.
+    console.log({ id, estoque, lojasGerenciadas });
+    if (estoque) {
+      await syncEstoque(id, estoque, t, lojasGerenciadas);
+    }
+
     await t.commit();
     return res.status(200).json({ response: `Mercadoria ${id} atualizada` });
   } catch (e) {
@@ -476,26 +726,18 @@ export const getAllSimilarMercs = async (
     const { key } = req.params;
     const rows = await Mercadoria.findAll({
       where: { key: key },
-      attributes: [
-        "id",
-        "key",
-        "descricao",
-        "estoque02",
-        "estoque03",
-        "estoque04",
-        "precoVenda",
-      ],
+      attributes: ["id", "key", "descricao", "precoVenda"],
       include: [
         {
           association: "caracteristicas",
           attributes: ["id", "nome", "tipo"],
           through: { attributes: ["valor"] },
         },
+        estoqueInclude,
       ],
     });
 
     const mercs = rows.map((merc) => sequelizeResponseParser(merc));
-    console.log(mercs[0]);
     res.status(200).json(mercs);
   } catch (e) {
     console.error(e);

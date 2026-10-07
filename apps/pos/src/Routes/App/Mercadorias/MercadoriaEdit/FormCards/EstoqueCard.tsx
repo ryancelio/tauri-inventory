@@ -1,6 +1,11 @@
 import { Layers } from "lucide-react";
 import EstoqueDisplay from "../FormComponents/FormEstoqueDisplay";
-import { ILoja, IMercadoria, UsuarioLogado } from "@tauri-inventory/types";
+import {
+  getEstoqueNaLoja,
+  ILoja,
+  IMercadoria,
+  UsuarioLogado,
+} from "@tauri-inventory/types";
 
 export default function EstoqueCard({
   mercadoria,
@@ -27,54 +32,23 @@ export default function EstoqueCard({
         ) : (
           lojas.map((loja) => (
             <EstoqueDisplay
-              id={loja.id.toString()}
+              key={loja.id}
+              // O campo entra no FormData como `estoque[<lojaId>]` e
+              // `formDataHelper` remonta em `[{ lojaId, estoque }]` — `Estoque`
+              // é a única fonte de verdade do estoque, não há mais
+              // `estoque02/03/04`.
+              id={`estoque[${loja.id}]`}
               label={loja.nome}
               disabled={
-                (usuario.local !== loja.nome &&
+                (usuario.local.id !== loja.id &&
                   usuario.funcao !== "admin" &&
                   isEdit) ||
                 isOfflineMode
               }
-              defaultValue={
-                mercadoria.estoque.find((est) => est.loja.id === est.loja.id)
-                  ?.estoque || 0
-              }
+              defaultValue={getEstoqueNaLoja(mercadoria, loja.id)}
             />
           ))
         )}
-        {/*<EstoqueDisplay
-          label="Loja 02"
-          id="estoque02"
-          defaultValue={mercadoria.estoque02 || 0}
-          disabled={
-            (usuario.local !== "02" &&
-              usuario.funcao !== "admin" &&
-              isEdit) ||
-            isOfflineMode
-          }
-        />
-        <EstoqueDisplay
-          label="Loja 03"
-          id="estoque03"
-          defaultValue={mercadoria.estoque03 || 0}
-          disabled={
-            (usuario.local !== "03" &&
-              usuario.funcao !== "admin" &&
-              isEdit) ||
-            isOfflineMode
-          }
-        />
-        <EstoqueDisplay
-          label="Loja 04"
-          id="estoque04"
-          defaultValue={mercadoria.estoque04 || 0}
-          disabled={
-            (usuario.local !== "04" &&
-              usuario.funcao !== "admin" &&
-              isEdit) ||
-            isOfflineMode
-          }
-        />*/}
       </div>
     </div>
   );

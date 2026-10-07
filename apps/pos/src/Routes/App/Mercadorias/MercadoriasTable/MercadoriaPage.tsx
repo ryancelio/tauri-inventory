@@ -1,11 +1,13 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
+  EstoqueFilter,
   MercadoriaFilter,
 } from "@tauri-inventory/types";
 import {
   getAtributos,
   getFabricantes,
   getGrupos,
+  getLojas,
   getMercadorias,
 } from "../../../../api/apiHelper";
 import {
@@ -29,6 +31,30 @@ import { MercadoriaReport } from "../../../../Reports/MercadoriaReport";
 import { AnimatePresence } from "motion/react";
 import FormDrawer from "./TableInternalComp/FormDrawer";
 
+const ESTOQUE_POSITIVO_KEY = /^estoque(\d+)Positivo$/;
+
+/**
+ * Coleta, das chaves da query, as lojas marcadas em "estoque positivo".
+ *
+ * Só as lojas marcadas entram no mapa — `MercadoriaInternalFilter` trata loja
+ * ausente como "não filtrar por essa loja", então o mapa vazio significa
+ * "sem filtro de estoque".
+ */
+function parseEstoqueFilter(parsedQuery: Record<string, unknown>): EstoqueFilter {
+  const estoque: EstoqueFilter = {};
+
+  for (const [key, value] of Object.entries(parsedQuery)) {
+    const match = ESTOQUE_POSITIVO_KEY.exec(key);
+    if (!match) continue;
+    // Checkbox marcado serializa como "on"; desmarcado não chega na query.
+    if (value !== "on") continue;
+
+    estoque[match[1]] = { gt: 0 };
+  }
+
+  return estoque;
+}
+
 function paramsToMercFilter(parsedQuery: any): MercadoriaFilter {
   const descricao = parsedQuery.descricao
     ? String(parsedQuery.descricao)
@@ -42,13 +68,11 @@ function paramsToMercFilter(parsedQuery: any): MercadoriaFilter {
   const descricaoFilter =
     exato === "on" ? { eq: descricao } : { contains: descricao };
 
-  // const estoque02 = Number(parsedQuery.estoque02) || undefined;
-  // const estoque03 = Number(parsedQuery.estoque03) || undefined;
-  // const estoque04 = Number(parsedQuery.estoque04) || undefined;
-
-  const estoque02 = parsedQuery.estoque02Positivo === "on" ? 0 : undefined;
-  const estoque03 = parsedQuery.estoque03Positivo === "on" ? 0 : undefined;
-  const estoque04 = parsedQuery.estoque04Positivo === "on" ? 0 : undefined;
+  // Os checkboxes de estoque são gerados dinamicamente por
+  // `EstoqueCheckboxGroup` com o nome `estoque{lojaId}Positivo`. Como o número
+  // de lojas é variável, os filtros são descobertos varrendo as chaves da
+  // query em vez de ler três campos hardcoded (`estoque02`/`03`/`04`).
+  const estoque = parseEstoqueFilter(parsedQuery);
 
   const observacoes = parsedQuery.observacoes
     ? String(parsedQuery.observacoes)
@@ -71,9 +95,7 @@ function paramsToMercFilter(parsedQuery: any): MercadoriaFilter {
       fabricanteId: { eq: fabricanteId },
       categoriaId: { eq: categoriaId },
       grupoId: { eq: grupoId },
-      estoque02: { gt: estoque02 },
-      estoque03: { gt: estoque03 },
-      estoque04: { gt: estoque04 },
+      estoque,
       observacoes: { contains: observacoes },
       precoCusto: {},
       precoVenda: {},
@@ -85,6 +107,9 @@ function paramsToMercFilter(parsedQuery: any): MercadoriaFilter {
 }
 
 export const ErrorBoundary = AppError;
+
+/** Payload do `loader` abaixo, para componentes que consomem via `useLoaderData`. */
+export type MercPageLoaderData = Awaited<ReturnType<typeof loader>>;
 
 // Cache em memória para evitar requisições redundantes de dados auxiliares
 // let cachedFabricantes: IFabricante[] | null = null;
@@ -131,6 +156,7 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
     const grupos = await getGrupos();
     const atributos = await getAtributos();
     const apiUrl = await getApiUrl();
+    const lojas = await getLojas();
 
     return {
       mercadorias,
@@ -141,6 +167,7 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
       atributos,
       isOfflineMode,
       filter,
+      lojas,
     };
   } catch (e: any) {
     // Verifica se o erro possui a estrutura específica retornada pelo Rust
@@ -186,23 +213,8 @@ function MercadoriasError() {
   );
 }
 
-const LOJAS_PLACEHOLDERS = [
-  {
-    id: 1,
-    nome: "02",
-  },
-  {
-    id: 2,
-    nome: "03",
-  },
-  {
-    id: 3,
-    nome: "04",
-  },
-];
-
 export function Component() {
-  const { mercadorias, usuario, filter, atributos, grupos } =
+  const { mercadorias, usuario, filter, atributos, grupos, lojas } =
     useLoaderData<typeof loader>();
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -282,7 +294,7 @@ export function Component() {
         grupos={grupos}
         isDrawerOpen={isDrawerOpen}
         setIsDrawerOpen={setIsDrawerOpen}
-        lojasPlaceholder={LOJAS_PLACEHOLDERS}
+        lojas={lojas}
         resetKey={resetKey}
         submitForm={submitForm}
       />
@@ -308,6 +320,7 @@ export function Component() {
                 <MercadoriaListVirtual
                   resolvedMercadorias={resolvedMercadorias}
                   usuario={usuario}
+                  lojas={lojas}
                 />
               )}
             </Await>

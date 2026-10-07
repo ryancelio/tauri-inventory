@@ -4,7 +4,6 @@ import {
   requireGerenteMiddleware,
 } from "../../middlewares/auth";
 import { deleteKeyPhoto, updateSimilarMerc } from "../../api/apiHelper";
-import { apiStatusMiddleware } from "../../middlewares/apiStatus";
 import { SimilarMercUpdate } from "@tauri-inventory/types";
 import {
   alterarAtributoAction,
@@ -61,12 +60,11 @@ export const router = createHashRouter([
     Component: UpdateProgress,
   },
   {
-    middleware: [apiStatusMiddleware],
+    // A verificação inicial de conexão é disparada pelo front em MainLayout.
     lazy: () => import("../Routers/Init/MainLayout"),
     children: [
       {
         path: "/",
-        middleware: [apiStatusMiddleware],
         lazy: () => import("../Welcome/LoginLayout"),
       },
       {
@@ -86,7 +84,7 @@ export const router = createHashRouter([
       },
       {
         id: "app-root",
-        middleware: [requireAuthMiddleware, apiStatusMiddleware],
+        middleware: [requireAuthMiddleware],
         lazy: () => import("../App/AppLayout"),
         children: [
           {

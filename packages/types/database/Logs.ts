@@ -118,9 +118,11 @@ export interface MercadoriaLog {
   descricao: string;
   fabricanteId: number;
   categoriaId: number;
-  estoque02: number;
-  estoque03: number;
-  estoque04: number;
+  /**
+   * Diff do estoque por loja, no formato `[{ nome: <loja>, valor }]`. Não é uma
+   * coluna de `mercadorias`: o estoque vive em `Estoque`.
+   */
+  estoque: { nome: string; valor: number }[];
   caracteristicas: Caracteristica[],
   precoCusto: number | string;
   precoVenda: number | string;

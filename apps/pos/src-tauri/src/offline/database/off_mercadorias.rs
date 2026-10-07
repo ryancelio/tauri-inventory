@@ -10,7 +10,7 @@ use crate::{
         fabricante::Fabricante,
         mercadoria::types::{
             Caracteristicas, Mercadoria, MercadoriaFilter, MercadoriaReportResponse,
-            MercadoriaSimple, SimilarMerc,
+            MercadoriaSimple, ReportEstoque, SimilarMerc,
         },
         ApiListResponse,
     },
@@ -31,9 +31,6 @@ pub struct SQLiteMercadoria {
     descricao: String,
     fabricante_id: i32,
     categoria_id: i32,
-    estoque02: i32,
-    estoque03: i32,
-    estoque04: i32,
     // caracteristicas: Option<Caracteristicas>,
     caracteristicas_json: Option<String>,
     estoque_json: Option<String>,
@@ -53,9 +50,6 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for SQLiteMercadoria {
             descricao: row.try_get("descricao")?,
             fabricante_id: row.try_get("fabricanteId")?,
             categoria_id: row.try_get("categoriaId")?,
-            estoque02: row.try_get("estoque02")?,
-            estoque03: row.try_get("estoque03")?,
-            estoque04: row.try_get("estoque04")?,
             estoque_json: row.try_get("estoqueJson")?,
             observacoes: row.try_get("observacoes")?,
             preco_custo: row.try_get("precoCusto")?,
@@ -112,10 +106,7 @@ impl SQLiteMercadoria {
             descricao: self.descricao,
             fabricante: fabricantes.get(&self.fabricante_id)?.clone(),
             categoria: categorias.get(&self.categoria_id)?.clone(),
-            estoque02: self.estoque02,
-            estoque03: self.estoque03,
-            estoque04: self.estoque04,
-            estoque: estoque,
+            estoque,
             observacoes: self.observacoes,
             preco_custo: format!("{:.2}", self.preco_custo),
             preco_venda: format!("{:.2}", self.preco_venda),
@@ -128,12 +119,23 @@ impl SQLiteMercadoria {
         self,
         fabricantes: &HashMap<i32, Fabricante>,
     ) -> Option<MercadoriaReportResponse> {
+        let estoque =
+            parse_association_column::<Estoque>(self.estoque_json.as_deref(), "estoqueJson")
+                .ok()?
+                .unwrap_or_default();
+
         Some(MercadoriaReportResponse {
             id: self.id,
             descricao: self.descricao,
-            estoque02: self.estoque02,
-            estoque03: self.estoque03,
-            estoque04: self.estoque04,
+            // Um item por loja, no mesmo formato de `MercadoriaReport.estoque`
+            // que o endpoint online devolve via `include: [{association:"estoque"}]`.
+            estoque: estoque
+                .into_iter()
+                .map(|e| ReportEstoque {
+                    loja: e.loja,
+                    estoque: e.estoque,
+                })
+                .collect(),
             preco_custo: self.preco_custo.to_string(),
             preco_venda: self.preco_venda.to_string(),
             fabricante: fabricantes.get(&self.fabricante_id)?.clone().into(),
@@ -247,10 +249,7 @@ pub async fn offline_get_single_mercadoria(
         descricao: mercadoria.descricao,
         fabricante,
         categoria,
-        estoque02: mercadoria.estoque02,
-        estoque03: mercadoria.estoque03,
-        estoque04: mercadoria.estoque04,
-        estoque: estoque,
+        estoque,
         observacoes: mercadoria.observacoes,
         preco_custo: format!("{:.2}", mercadoria.preco_custo),
         preco_venda: format!("{:.2}", mercadoria.preco_venda),
@@ -266,10 +265,8 @@ pub struct SQLiteSimilarMerc {
     pub id: i32,
     pub key: i32,
     pub descricao: String,
-    pub estoque02: i32,
-    pub estoque03: i32,
-    pub estoque04: i32,
     caracteristicas_json: Option<String>,
+    estoque_json: Option<String>,
     pub preco_venda: f64,
 }
 impl SQLiteSimilarMerc {
@@ -281,15 +278,16 @@ impl SQLiteSimilarMerc {
             .transpose()
             .ok()?;
 
+        let estoque =
+            parse_association_column::<Estoque>(self.estoque_json.as_deref(), "estoqueJson")
+                .ok()?
+                .unwrap_or_default();
+
         Some(SimilarMerc {
             id: self.id,
             key: self.key,
             descricao: self.descricao,
-
-            estoque02: self.estoque02,
-            estoque03: self.estoque03,
-            estoque04: self.estoque04,
-
+            estoque,
             caracteristicas: caracteristicas,
 
             preco_venda: format!("{:.2}", self.preco_venda),
@@ -308,9 +306,6 @@ pub async fn offline_get_similar_mercs(
     mercadorias.id,
     mercadorias.key,
     mercadorias.descricao,
-    mercadorias.estoque02,
-    mercadorias.estoque03,
-    mercadorias.estoque04,
     mercadorias.precoVenda,
     (
         SELECT json_group_array(
@@ -324,7 +319,29 @@ pub async fn offline_get_similar_mercs(
         FROM Mercadoria_Atributos ma
         JOIN atributos a ON a.id = ma.atributoId
         WHERE ma.mercadoriaId = mercadorias.id
-    ) AS caracteristicasJson
+    ) AS caracteristicasJson,
+    (
+        SELECT json_group_array(
+            json_object(
+                'id', e.id,
+                'estoque', e.estoque,
+                'createdAt', e.createdAt,
+                'updatedAt', e.updatedAt,
+                'loja', json_object(
+                    'id', l.id,
+                    'nome', l.nome,
+                    'CNPJ', l.CNPJ,
+                    'createdAt', l.createdAt,
+                    'updatedAt', l.updatedAt
+                )
+            )
+        )
+        FROM estoques e
+        JOIN lojas l ON l.id = e.lojaId
+        WHERE e.mercadoriaId = mercadorias.id
+          AND e.deletedAt IS NULL
+          AND l.deletedAt IS NULL
+    ) AS estoqueJson
 FROM mercadorias
 WHERE key = ?"#,
     )
@@ -443,9 +460,6 @@ mod tests {
             descricao TEXT NOT NULL,
             precoCusto REAL NOT NULL DEFAULT 0.00,
             precoVenda REAL NOT NULL DEFAULT 0.00,
-            estoque02 INTEGER NOT NULL DEFAULT 0,
-            estoque03 INTEGER NOT NULL DEFAULT 0,
-            estoque04 INTEGER NOT NULL DEFAULT 0,
             observacoes TEXT,
             createdAt TEXT NOT NULL,
             updatedAt TEXT NOT NULL,
@@ -487,9 +501,9 @@ mod tests {
         CREATE INDEX idx_estoques_mercadoriaId ON estoques (mercadoriaId);
 
         INSERT INTO mercadorias VALUES
-            (1, 10, 'CAMISETA PRETA', 25.5, 59.9, 5, 0, 0, NULL,
+            (1, 10, 'CAMISETA PRETA', 25.5, 59.9, NULL,
                 '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', 1, 1, NULL),
-            (2, 11, 'CAMISETA BRANCA', 30, 70, 0, 0, 0, NULL,
+            (2, 11, 'CAMISETA BRANCA', 30, 70, NULL,
                 '2024-01-02T00:00:00.000Z', '2024-01-02T00:00:00.000Z', 1, 1, NULL);
 
         INSERT INTO atributos VALUES
@@ -497,9 +511,9 @@ mod tests {
         INSERT INTO Mercadoria_Atributos VALUES ('preto', 1, 1);
 
         INSERT INTO lojas VALUES
-            (1, 'Loja 02', '12.345.678/0001-99', '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', NULL),
-            (2, 'Loja 03', '98.765.432/0001-11', '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', NULL),
-            (3, 'LOJA APAGADA', '00.000.000/0001-00', '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', '2024-06-01T00:00:00.000Z');
+            (1, 'Timoteo', '12.345.678/0001-99', '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', NULL),
+            (2, 'Coronel Fabriciano', '98.765.432/0001-11', '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', NULL),
+            (3, 'Loja Apagada', '00.000.000/0001-00', '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', '2024-06-01T00:00:00.000Z');
 
         INSERT INTO estoques VALUES
             (1, 1, 1, 5, '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', NULL),
@@ -610,7 +624,7 @@ mod tests {
                     "updatedAt": "2024-01-01T00:00:00.000Z",
                     "loja": {
                         "id": 1,
-                        "nome": "Loja 02",
+                        "nome": "Timoteo",
                         "CNPJ": "12.345.678/0001-99",
                         "createdAt": "2024-01-01T00:00:00.000Z",
                         "updatedAt": "2024-01-01T00:00:00.000Z",
@@ -623,7 +637,7 @@ mod tests {
                     "updatedAt": "2024-01-01T00:00:00.000Z",
                     "loja": {
                         "id": 2,
-                        "nome": "Loja 03",
+                        "nome": "Coronel Fabriciano",
                         "CNPJ": "98.765.432/0001-11",
                         "createdAt": "2024-01-01T00:00:00.000Z",
                         "updatedAt": "2024-01-01T00:00:00.000Z",
@@ -684,9 +698,6 @@ mod tests {
             "fabricante",
             "categoria",
             "caracteristicas",
-            "estoque02",
-            "estoque03",
-            "estoque04",
             "estoque",
             "observacoes",
             "precoCusto",
@@ -777,5 +788,182 @@ mod tests {
         let estoque =
             parse_association_column::<Estoque>(Some("[]"), "estoqueJson").unwrap();
         assert!(estoque.unwrap().is_empty());
+    }
+
+    /// Payloads capturados da API online (`GET /mercadorias/...`).
+    ///
+    /// O objetivo é travar o contrato entre a projeção do Sequelize e estas
+    /// structs. `Estoque` e `Loja` são deserializadas com todos os campos
+    /// obrigatórios, então qualquer `attributes` estreito no
+    /// `controllers/Mercadoria.ts` (por exemplo `attributes: ["estoque"]`, que
+    /// existiu em `/mercadorias/similar/:key` e `/mercadorias/relatorio`) quebra
+    /// aqui com `missing field` — o mesmo erro que chegava ao POS como
+    /// "error decoding response body" no `get_body`.
+    mod api_online {
+        /// `Estoque.estoque` + `Estoque.loja` como o Sequelize devolve com o
+        /// include sem `attributes` (o `estoqueInclude` do controller).
+        pub const ESTOQUE_JSON: &str = r#"{
+            "id": 1,
+            "mercadoriaId": 1,
+            "lojaId": 1,
+            "estoque": 1,
+            "createdAt": "2026-04-22T19:45:04.000Z",
+            "updatedAt": "2026-04-22T19:45:04.000Z",
+            "deletedAt": null,
+            "loja": {
+                "id": 1,
+                "nome": "Timoteo",
+                "CNPJ": "20.367.700/0001-26",
+                "createdAt": "2026-04-22T19:45:04.000Z",
+                "updatedAt": "2026-04-22T19:45:04.000Z",
+                "deletedAt": null
+            }
+        }"#;
+
+        /// O array de `GET /mercadorias/similar/:key` (`Vec<SimilarMerc>`),
+        /// com um item.
+        pub const SIMILAR_MERCS: &str = r#"[
+            {
+                "id": 43,
+                "key": 10,
+                "descricao": "Stainless Steel Water Pitcher",
+                "precoVenda": "2742.05",
+                "caracteristicas": [],
+                "estoque": [__ESTOQUE__]
+            }
+        ]"#;
+
+        /// Um item de `GET /mercadorias/relatorio` (`MercadoriaReportResponse`).
+        /// `ReportEstoque` só declara `loja` e `estoque`, mas a `loja` aninhada
+        /// é a struct `Loja` completa.
+        pub const RELATORIO_MERC: &str = r#"{
+            "id": 1,
+            "descricao": "Roupeiro Alvorada 6 Portas",
+            "precoCusto": "899.00",
+            "precoVenda": "1299.90",
+            "caracteristicas": [],
+            "fabricante": { "id": 1, "nome": "Bertazzoni" },
+            "estoque": [{
+                "id": 1,
+                "mercadoriaId": 1,
+                "lojaId": 1,
+                "estoque": 1,
+                "createdAt": "2026-04-22T19:45:04.000Z",
+                "updatedAt": "2026-04-22T19:45:04.000Z",
+                "deletedAt": null,
+                "loja": {
+                    "id": 1,
+                    "nome": "Timoteo",
+                    "CNPJ": "20.367.700/0001-26",
+                    "createdAt": "2026-04-22T19:45:04.000Z",
+                    "updatedAt": "2026-04-22T19:45:04.000Z",
+                    "deletedAt": null
+                }
+            }]
+        }"#;
+
+        pub fn com_estoque(payload: &str) -> String {
+            payload.replace("__ESTOQUE__", ESTOQUE_JSON)
+        }
+    }
+
+    #[test]
+    fn payload_de_similar_mercs_da_api_deserializa() {
+        let payload = api_online::com_estoque(api_online::SIMILAR_MERCS);
+        let mercs: Vec<SimilarMerc> = serde_json::from_str(&payload)
+            .expect("GET /mercadorias/similar/:key deve desserializar em SimilarMerc");
+
+        assert_eq!(mercs.len(), 1);
+        assert_eq!(mercs[0].preco_venda, "2742.05");
+        assert_eq!(mercs[0].estoque.len(), 1);
+        assert_eq!(mercs[0].estoque[0].estoque, 1);
+        assert_eq!(mercs[0].estoque[0].loja.nome, "Timoteo");
+        assert_eq!(mercs[0].estoque[0].loja.cnpj, "20.367.700/0001-26");
+    }
+
+    #[test]
+    fn payload_do_relatorio_da_api_deserializa() {
+        let relatorio: MercadoriaReportResponse =
+            serde_json::from_str(api_online::RELATORIO_MERC)
+                .expect("GET /mercadorias/relatorio deve desserializar em MercadoriaReportResponse");
+
+        assert_eq!(relatorio.estoque.len(), 1);
+        assert_eq!(relatorio.estoque[0].estoque, 1);
+        assert_eq!(relatorio.estoque[0].loja.id, 1);
+        assert_eq!(relatorio.estoque[0].loja.cnpj, "20.367.700/0001-26");
+        assert_eq!(relatorio.fabricante.nome, "Bertazzoni");
+    }
+
+    #[test]
+    fn payload_da_lista_da_api_deserializa() {
+        // `GET /mercadorias` -> `ApiListResponse<Mercadoria>`: mesma projeção
+        // `estoqueInclude`, mais `fabricante` e `categoria.grupo` inteiros.
+        let payload = format!(
+            r#"{{
+                "data": [{{
+                    "id": 1,
+                    "key": 10,
+                    "descricao": "Roupeiro Alvorada 6 Portas",
+                    "precoCusto": "899.00",
+                    "precoVenda": "1299.90",
+                    "observacoes": null,
+                    "createdAt": "2026-04-22T19:45:04.000Z",
+                    "updatedAt": "2026-04-22T19:45:04.000Z",
+                    "deletedAt": null,
+                    "fabricante": {{
+                        "id": 1, "nome": "Bertazzoni",
+                        "createdAt": "2026-04-22T19:45:04.000Z",
+                        "updatedAt": "2026-04-22T19:45:04.000Z"
+                    }},
+                    "categoria": {{
+                        "id": 1, "nome": "Moveis",
+                        "createdAt": "2026-04-22T19:45:04.000Z",
+                        "updatedAt": "2026-04-22T19:45:04.000Z",
+                        "grupo": {{
+                            "id": 1, "nome": "Casa",
+                            "createdAt": "2026-04-22T19:45:04.000Z",
+                            "updatedAt": "2026-04-22T19:45:04.000Z"
+                        }}
+                    }},
+                    "caracteristicas": [],
+                    "estoque": [{}]
+                }}],
+                "count": 1
+            }}"#,
+            api_online::ESTOQUE_JSON
+        );
+
+        let lista: ApiListResponse<Mercadoria> = serde_json::from_str(&payload)
+            .expect("GET /mercadorias deve desserializar em ApiListResponse<Mercadoria>");
+
+        assert_eq!(lista.count, 1);
+        let merc = &lista.data[0];
+        assert_eq!(merc.estoque[0].loja.nome, "Timoteo");
+        assert_eq!(merc.categoria.grupo.nome, "Casa");
+        assert_eq!(merc.fabricante.nome, "Bertazzoni");
+    }
+
+    #[test]
+    fn estoque_estreito_na_api_quebra_a_deserializacao() {
+        // A regressão que motivou este teste: `attributes: ["estoque"]` no
+        // include de `/mercadorias/similar/:key` omitia `createdAt`/`updatedAt`
+        // e da `loja` omitia `CNPJ`/`createdAt`/`updatedAt`.
+        let estreito = json!([{
+            "id": 43,
+            "key": 10,
+            "descricao": "Stainless Steel Water Pitcher",
+            "precoVenda": "2742.05",
+            "caracteristicas": [],
+            "estoque": [{ "estoque": 1, "loja": { "id": 1, "nome": "Timoteo" } }],
+        }]);
+
+        let err = serde_json::from_value::<Vec<SimilarMerc>>(estreito)
+            .expect_err("projeção estreita tem de falhar, senão o teste não protege nada");
+
+        let msg = err.to_string();
+        assert!(
+            msg.contains("missing field"),
+            "o erro esperado é `missing field`, veio: {msg}"
+        );
     }
 }

@@ -1,5 +1,5 @@
 import z from "zod";
-import { caracteristicasCreateSchema } from "./Criar.js";
+import { caracteristicasCreateSchema, estoqueInputSchema } from "./Criar.js";
 
 export const similarMercUpdateSchema = z.object({
   precoCusto: z.number().optional(),
@@ -15,10 +15,10 @@ export const updateMercadoriaSchema = z.object({
   descricao: z.string().optional(),
   fabricanteId: z.int().min(1).optional(),
   categoriaId: z.int().min(1).optional(),
-  estoque02: z.int().optional(),
-  estoque03: z.int().optional(),
-  estoque04: z.int().optional(),
-  caracteristicas: z.array(caracteristicasCreateSchema).optional(),
+  estoque: z.array(estoqueInputSchema).optional(),
+  // Mesmo motivo do create: `formDataHelper` manda `null` quando não há
+  // característica alguma.
+  caracteristicas: z.array(caracteristicasCreateSchema).nullable().optional(),
   observacoes: z.string().optional(),
   precoCusto: z.number().optional(),
   precoVenda: z.number().optional(),

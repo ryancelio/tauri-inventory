@@ -1,8 +1,17 @@
-export type { CaracteristicaCreate, MercadoriaCreate } from "./Criar.js";
-export { criarMercadoriaSchema, caracteristicasCreateSchema } from "./Criar.js";
+export type {
+  CaracteristicaCreate,
+  EstoqueInput,
+  MercadoriaCreate,
+} from "./Criar.js";
+export {
+  criarMercadoriaSchema,
+  caracteristicasCreateSchema,
+  estoqueInputSchema,
+} from "./Criar.js";
 
 export type {
   Caracteristica,
+  EstoqueFilter,
   IMercadoria,
   MercadoriaDB,
   MercadoriaFilter,
@@ -10,10 +19,12 @@ export type {
   MercadoriaKeyListing,
   MercadoriaReport,
   MercadoriaSimple,
+  ReportEstoque,
   SimilarMerc,
 } from "./Read.js";
 export {
   getDescricaoCompleta,
+  getEstoqueNaLoja,
   getEstoqueTotal,
   getMercadoriaCor,
   Estoque,

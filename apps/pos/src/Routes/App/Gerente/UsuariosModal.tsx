@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Loader2, Lock, Tag, Trash2, User } from "lucide-react";
+import {
+  Ban,
+  Check,
+  ChevronDown,
+  Loader2,
+  Lock,
+  Tag,
+  Trash2,
+  User,
+} from "lucide-react";
 import { useLoaderData, useFetcher } from "react-router";
 import { UsuarioListing } from "../../../../../../packages/types/database/Usuario";
 import { useToast } from "../../../context/Toast/ToastContext";
@@ -9,6 +18,7 @@ import { UsuarioPageLoaderData } from "./UsuariosPage";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import { ActionResponse } from "../../Routers/routes";
 import { AnimatePresence, motion } from "motion/react";
+import { ILoja } from "@tauri-inventory/types";
 
 type UserFormState = {
   nome: string;
@@ -34,12 +44,12 @@ const EMPTY_FORM_STATE: UserFormState = {
 };
 
 export default function AddUsuarioModal({
-  local,
+  loja,
   onClose,
   usuario,
   isNew,
 }: {
-  local?: string;
+  loja?: ILoja;
   onClose: () => void;
   usuario?: UsuarioListing;
   isNew?: boolean;
@@ -141,41 +151,70 @@ export default function AddUsuarioModal({
     }
   }, [fetcher.data, isNew, onClose, toaster]);
 
-  const handleDelete = async () => {
+  const handleDeactivate = async () => {
     const confirmed = await confirm(
-      `Você tem certeza que deseja deletar o usuario ${usuario?.nome}?`,
-      { title: "Deletar Usuário." },
+      `Você tem certeza que deseja desativar o usuario ${usuario?.nome}?`,
+      { title: "Desativar Usuário." },
     );
-    if (!confirmed) return;
+    if (!confirmed || !usuario) return;
     await fetcher.submit(
-      { id: usuario?.id ?? null },
-      { action: "/gerente/usuarios", method: "DELETE" },
+      { id: usuario.id, ativo: false, },
+      { action: "/gerente/usuarios", method: "PUT" },
     );
   };
 
+  const handleReactivate = async () => {
+    const confirmed = await confirm(
+      `Você tem certeza que deseja reativar o usuario ${usuario?.nome}?`,
+      { title: "Reativar Usuário." },
+    );
+    if (!confirmed || !usuario) return;
+    await fetcher.submit(
+      { id: usuario.id, ativo: true },
+      { action: "/gerente/usuarios", method: "PUT" },
+    );
+  };
   return (
     <FullscreenModalWrapper handleClose={handleClose}>
       <div className="px-5 pt-5 pb-3">
         {!isNew && (
           <button
             type="button"
-            onClick={() => handleDelete()}
-            className="absolute top-5 right-5 size-fit rounded-lg bg-red-50 p-2 text-red-500 hover:bg-red-200"
+            onClick={() => {
+              if (usuario?.ativo === true) {
+                handleDeactivate();
+              } else {
+                handleReactivate();
+              }
+            }}
+            className={`absolute top-5 right-5 size-fit items-center rounded-lg ${usuario?.ativo === false ? "bg-green-500" : "bg-red-500"} p-2 text-[16px] font-bold text-white hover:brightness-95 active:brightness-105`}
           >
-            <Trash2 className="w-full" />
+            <p className="flex items-center gap-2">
+              {usuario?.ativo === true ? (
+                <>
+                  <Ban className="h-full" size={19} strokeWidth={3} /> Desativar
+                </>
+              ) : (
+                <>
+                  <Check className="h-full" size={19} strokeWidth={3} />{" "}
+                  Reativar Usuario
+                </>
+              )}
+            </p>
           </button>
         )}
 
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-slate-800">
-            {isNew ? "Adicionar" : "Editar"} Usuário
+            {isNew ? "Adicionar" : "Editar"} Usuário{" "}
+            {usuario?.ativo === false && !isNew && "Inativo"}
           </h2>
 
-          {local && (
+          {loja && (
             <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-slate-500">
               Loja selecionada:
               <span className="rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 text-blue-700">
-                {local}
+                {loja.nome}
               </span>
             </p>
           )}
@@ -188,7 +227,11 @@ export default function AddUsuarioModal({
           onChange={checkDirty}
           className="flex flex-col gap-4"
         >
-          <input type="hidden" name="local" value={local || usuario?.local} />
+          <input
+            type="hidden"
+            name="lojaId"
+            value={loja?.id || usuario?.local.id}
+          />
 
           <input type="hidden" value={usuario?.id} name="id" />
 
@@ -296,7 +339,12 @@ export default function AddUsuarioModal({
             </label>
 
             <UISelect
-              defaultValue={usuario?.funcao && {value: usuario.funcao, label: usuario.funcao}}
+              defaultValue={
+                usuario?.funcao && {
+                  value: usuario.funcao,
+                  label: usuario.funcao,
+                }
+              }
               className="h-12 text-[17px]"
               name="funcao"
               items={[

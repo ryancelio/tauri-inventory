@@ -71,20 +71,8 @@ export default class MercadoriaModel extends Model {
   @Column(DataType.DECIMAL(10, 2))
   declare precoVenda: number;
 
-  @AllowNull(false)
-  @Default(0)
-  @Column(DataType.INTEGER)
-  declare estoque02: number;
-
-  @AllowNull(false)
-  @Default(0)
-  @Column(DataType.INTEGER)
-  declare estoque03: number;
-
-  @AllowNull(false)
-  @Default(0)
-  @Column(DataType.INTEGER)
-  declare estoque04: number;
+  // O estoque por loja não é coluna de `mercadorias`: vive em `Estoque`
+  // (uma linha por mercadoria/loja), exposto pela associação `estoque` abaixo.
 
   @AllowNull(true)
   @Column(DataType.TEXT)

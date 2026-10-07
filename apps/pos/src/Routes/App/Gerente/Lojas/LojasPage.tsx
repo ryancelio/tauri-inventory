@@ -12,7 +12,7 @@ export async function loader({ }: LoaderFunctionArgs) {
 
 export function Component() {
   const { lojas } = useLoaderData<typeof loader>()
-  
+
   return (
     <div className="size-full p-5">
       <motion.div
@@ -29,7 +29,7 @@ export function Component() {
           </div>
         </header>
         <div className="p-5 grow">
-          <LojasTable lojas={lojas}/>
+          <LojasTable/>
         </div>
       </motion.div>
     </div>

@@ -63,13 +63,14 @@ export async function getAllLogs(
         {
           association: "Usuario",
           as: "usuario",
-          attributes: ["id", "nome", "funcao", "local"],
+          attributes: ["id", "nome", "funcao"],
+          include: [{association: "local"}]
         },
       ],
       attributes: { exclude: ["usuarioId"] },
     });
 
-    return res.status(200).json({ count, data: rows });
+    return res.status(200).json({ count, data: rows as any });
   } catch (e) {
     console.error(e);
     res.status(500).json({ response: "Erro interno" });
@@ -103,14 +104,15 @@ export async function getMercLogs(
         {
           association: "Usuario",
           as: "usuario",
-          attributes: ["id", "nome", "funcao", "local"],
+          attributes: ["id", "nome", "funcao"],
+          include: [{association: "local"}]
         },
       ],
       attributes: { exclude: ["usuarioId"] },
       paranoid: false,
     });
 
-    return res.status(200).json({ count, data: rows });
+    return res.status(200).json({ count, data: rows as any });
   } catch (e) {
     console.error(e);
     res.status(500).json({ response: "Erro interno" });
@@ -144,13 +146,14 @@ export async function getUserLogs(
         {
           association: "Usuario",
           as: "usuario",
-          attributes: ["id", "nome", "funcao", "local"],
+          attributes: ["id", "nome", "funcao"],
+          include: [{association: "local"}]
         },
       ],
       attributes: { exclude: ["usuarioId"] },
       paranoid: false,
     });
-    res.status(200).json({ count, data: rows });
+    res.status(200).json({ count, data: rows as any });
   } catch (e) {
     console.error(e);
     res.status(500).json({ response: "Erro interno" });
@@ -183,13 +186,14 @@ export async function getFabricanteLogs(
         {
           association: "Usuario",
           as: "usuario",
-          attributes: ["id", "nome", "funcao", "local"],
+          attributes: ["id", "nome", "funcao"],
+          include: [{association: "local"}]
         },
       ],
       attributes: { exclude: ["usuarioId"] },
       paranoid: false,
     });
-    res.status(200).json({ count, data: rows });
+    res.status(200).json({ count, data: rows as any });
   } catch (e) {
     console.error(e);
     res.status(500).json({ response: "Erro interno" });

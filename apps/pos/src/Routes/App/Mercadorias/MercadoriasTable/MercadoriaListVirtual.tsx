@@ -1,6 +1,7 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   ApiListResponse,
+  ILoja,
   IMercadoria,
   UsuarioLogado,
 } from "@tauri-inventory/types";
@@ -13,9 +14,11 @@ import TableFooter from "./TableInternalComp/Footer";
 export default function MercadoriaListVirtual({
   resolvedMercadorias,
   usuario,
+  lojas,
 }: {
   resolvedMercadorias: ApiListResponse<IMercadoria>;
   usuario: UsuarioLogado;
+  lojas: ILoja[];
 }) {
   const parentRef = useRef<HTMLDivElement>(null);
   const navigation = useNavigation();
@@ -115,7 +118,11 @@ export default function MercadoriaListVirtual({
                   }}
                   className="px-2 pb-2 lg:px-3" // Substitui o antigo gap-2 usando paddingBottom
                 >
-                  <MercadoriaTile mercadoria={merc} usuario={usuario} />
+                  <MercadoriaTile
+                    mercadoria={merc}
+                    usuario={usuario}
+                    lojas={lojas}
+                  />
                 </div>
               );
             })}

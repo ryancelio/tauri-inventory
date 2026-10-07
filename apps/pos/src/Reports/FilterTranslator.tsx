@@ -5,6 +5,8 @@ export interface FilterLookups {
   fabricantes?: Record<number, string>;
   categorias?: Record<number, string>;
   grupos?: Record<number, string>;
+  /** `lojas.id` → nome, para traduzir as chaves do filtro de estoque. */
+  lojas?: Record<number, string>;
 }
 
 const fieldLabels: Record<keyof MercadoriaInternalFilter, string> = {
@@ -14,9 +16,7 @@ const fieldLabels: Record<keyof MercadoriaInternalFilter, string> = {
   fabricanteId: "Fabricante",
   categoriaId: "Categoria",
   grupoId: "Grupo",
-  estoque02: "Estoque 02",
-  estoque03: "Estoque 03",
-  estoque04: "Estoque 04",
+  estoque: "Estoque",
   caracteristicas: "Características",
   observacoes: "Observações",
   precoCusto: "Preço de Custo",
@@ -119,13 +119,31 @@ export function parseFiltrosParaTexto(
       return;
     }
 
-    // 2. Regra do Estoque (Positivo)
-    if (key.startsWith("estoque")) {
-      const keys = Object.keys(value);
-      if (keys.length === 1 && value.gt === 0) {
-        descricoesFiltro.push(`${label}: Positivo`);
-        return;
-      }
+    // 2. Regra do Estoque por loja
+    // As chaves são ids de loja, então cada uma vira sua própria tag usando o
+    // nome da loja. Uma loja marcada com `gt: 0` é "estoque positivo".
+    if (key === "estoque") {
+      Object.entries(value).forEach(([lojaId, lojaCondition]) => {
+        if (lojaCondition === undefined || lojaCondition === null) return;
+
+        const nomeLoja =
+          lookups?.lojas?.[Number(lojaId)] ?? `Loja ${lojaId}`;
+
+        const cond = lojaCondition as Record<string, any>;
+        if (cond.gt === 0 && Object.keys(cond).length === 1) {
+          descricoesFiltro.push(`Estoque (${nomeLoja}): Positivo`);
+          return;
+        }
+
+        const condText = formatCondition(lojaId, cond);
+        if (condText) {
+          // `formatCondition` já põe ": " nos casos de igualdade, mas não nos
+          // de intervalo — daí o separador condicional.
+          const sep = condText.startsWith(":") ? "" : " ";
+          descricoesFiltro.push(`Estoque (${nomeLoja})${sep}${condText}`);
+        }
+      });
+      return;
     }
 
     // 3. Processamento dos demais campos

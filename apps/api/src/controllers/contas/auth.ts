@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { Usuario } from "../../models/models";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { IUsuario } from "@tauri-inventory/types";
+import { IUsuario, UsuarioLogado } from "@tauri-inventory/types";
 
 export const login = async (
   req: Request<{}, {}, { usuario: string; senha: string }>,
@@ -15,22 +15,24 @@ export const login = async (
       where: {
         usuario: usuario,
       },
-      raw: true,
+      include: [
+        {association: "local"}
+      ],
     });
 
     if (!row)
       return res.status(400).json({ response: "Usuário ou Senha Inválidos." });
-    const user = row as unknown as IUsuario;
+    const user = row;
     const matches = await bcrypt.compare(senha, user.senhaHash);
 
     if (!matches)
       return res.status(400).json({ response: "Usuário ou Senha Inválidos" });
 
-    const payload = {
+    const payload: UsuarioLogado = {
       id: user.id,
       nome: user.nome,
       funcao: user.funcao,
-      local: user.local,
+      local: user.local as any,
     };
 
     const secret = process.env.JWT_SECRET;

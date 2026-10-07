@@ -1,30 +1,34 @@
 import {
   ActionFunctionArgs,
   LoaderFunction,
+  LoaderFunctionArgs,
   redirect,
   useLoaderData,
 } from "react-router";
-import { getUsuarios } from "../../../api/apiHelper";
+import { getLojas, getUsuarios } from "../../../api/apiHelper";
 import { Search, Users } from "lucide-react";
 import { useMemo, useState } from "react";
-import AddUsuarioModal from "./UsuariosModal";
 import { IUsuario, UsuarioListing } from "@tauri-inventory/types";
 import { getIsOfflineModeActive } from "../../../backend/backendHelper";
 import { userContext } from "../../../context/contexts";
-import { AnimatePresence } from "motion/react";
 import UsersCard from "./UserCard";
 import {
   createUsuarioAction,
-  deleteUsuarioAction,
+  deactivateUsuarioAction,
   updateUsuarioAction,
 } from "../../Routers/Actions/UsuariosActions";
 
-export const loader: LoaderFunction = async ({ context }) => {
-  const usuarios = await getUsuarios();
+export async function loader({ context }: LoaderFunctionArgs){
+  const usuarios = await getUsuarios(true);
   const usuarioLogado = context.get(userContext);
   const isOfflineMode = await getIsOfflineModeActive();
+  const lojas = await getLojas();
 
-  return { usuarios, isOfflineMode, usuarioLogado };
+  if (!usuarioLogado) {
+    return redirect("/unauthorized")
+  }
+
+  return { usuarios, isOfflineMode, usuarioLogado, lojas };
 };
 
 export interface UsuarioPageLoaderData {
@@ -47,13 +51,12 @@ export async function action({ request, context }: ActionFunctionArgs) {
         response = await updateUsuarioAction(formData);
         const usuario = context.get(userContext);
         const id = Number(formData.get("id") as string);
-        // console.log(`${id} : ${usuario?.id}`);
         if (id === usuario?.id) {
           return redirect("/");
         }
         break;
       case "DELETE":
-        response = await deleteUsuarioAction(formData);
+        response = await deactivateUsuarioAction(formData);
         break;
     }
     return { ok: true, response: response.response };
@@ -68,13 +71,12 @@ export async function action({ request, context }: ActionFunctionArgs) {
 }
 
 export function Component() {
-  const [addModal, setAddModal] = useState<string | null>(null);
-  const [editModal, setEditModal] = useState<UsuarioListing | null>(null);
+
 
   const [search, setSearch] = useState("");
 
-  const { usuarios, usuarioLogado, isOfflineMode } =
-    useLoaderData<UsuarioPageLoaderData>();
+  const { usuarios, usuarioLogado, isOfflineMode, lojas } =
+    useLoaderData<typeof loader>();
 
   const usuariosFiltrados = useMemo(() => {
     return usuarios.filter(
@@ -85,29 +87,9 @@ export function Component() {
     );
   }, [usuarios, search]);
 
-  const loja02 = usuariosFiltrados.filter((user) => user.local === "02");
-  const loja03 = usuariosFiltrados.filter((user) => user.local === "03");
-  const loja04 = usuariosFiltrados.filter((user) => user.local === "04");
 
   return (
     <>
-      <AnimatePresence>
-        {addModal && (
-          <AddUsuarioModal
-            local={addModal}
-            isNew
-            onClose={() => setAddModal(null)}
-          />
-        )}
-        {editModal && (
-          <AddUsuarioModal
-            local={editModal.local}
-            onClose={() => setEditModal(null)}
-            usuario={editModal}
-          />
-        )}
-      </AnimatePresence>
-
       <div className="h-full w-full overflow-hidden bg-slate-50 p-3 md:p-5">
         <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           {/* Header */}
@@ -149,7 +131,12 @@ export function Component() {
 
           {/* Cards */}
           <div className="grid grid-cols-1 gap-5 overflow-y-auto p-5 xl:grid-cols-3">
-            <UsersCard
+            {
+              lojas.map((loja) => (
+                <UsersCard usuario={usuarioLogado} users={usuariosFiltrados.filter((user) => user.local.id === loja.id)} isDisabled={isOfflineMode} loja={loja}/>
+              ))
+            }
+            {/*<UsersCard
               usuario={usuarioLogado}
               users={loja02}
               title="Loja 02"
@@ -189,7 +176,7 @@ export function Component() {
                   usuarioLogado.local !== "03")
               }
               onDoubleClick={setEditModal}
-            />
+            />*/}
           </div>
         </div>
       </div>

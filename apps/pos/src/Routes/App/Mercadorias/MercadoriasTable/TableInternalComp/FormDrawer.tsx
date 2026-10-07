@@ -1,5 +1,5 @@
 import { Filter, X } from "lucide-react";
-import { IAtributo, IGrupo } from "@tauri-inventory/types";
+import { IAtributo, IGrupo, ILoja } from "@tauri-inventory/types";
 import CaracteristicasFilter from "./CaracteristicasFilter";
 import { RefObject, useEffect, useRef } from "react";
 import { motion } from "motion/react";
@@ -10,7 +10,7 @@ export default function FormDrawer({
   isDrawerOpen,
   setIsDrawerOpen,
   resetKey,
-  lojasPlaceholder,
+  lojas,
   grupos,
   submitForm,
   atributos,
@@ -19,7 +19,7 @@ export default function FormDrawer({
   isDrawerOpen: boolean;
   setIsDrawerOpen: (val: boolean) => void;
   resetKey: number;
-  lojasPlaceholder: any[];
+  lojas: ILoja[];
   grupos: IGrupo[];
   submitForm: (delay?: number) => void;
   atributos: IAtributo[];
@@ -86,7 +86,7 @@ export default function FormDrawer({
               <EstoqueCheckboxGroup
                 form="merc-list-form"
                 key={resetKey}
-                lojas={lojasPlaceholder}
+                lojas={lojas}
                 submitForm={() => submitForm(0)}
               />
             </div>

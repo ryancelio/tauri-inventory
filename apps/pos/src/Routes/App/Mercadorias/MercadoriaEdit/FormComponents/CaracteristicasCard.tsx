@@ -45,7 +45,7 @@ export function CaracteristicasCard({
   const corAtributoId = useMemo(
     () => atributos.find((a) => a.nome.toLowerCase() === "cor"),
     [atributos],
-  )?.id;
+  )?.id ?? 1;
 
   const caracteristicasFiltradas = useMemo(
     () => caracteristicas.filter((c) => c.key != corAtributoId?.toString()),
@@ -53,10 +53,12 @@ export function CaracteristicasCard({
   );
 
   const atributosItems = useMemo(() => {
-    return atributos.map((at) => ({
-      label: at.nome,
-      value: at.id,
-    }));
+    return atributos.map((at) => {
+      return ({
+        label: at.nome,
+        value: at.id,
+      });
+    }).filter((at) => at.label.toLowerCase() !== "cor");
   }, [atributos]);
 
   const usedKeys = useMemo(() => {

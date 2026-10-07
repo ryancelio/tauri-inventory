@@ -65,9 +65,6 @@ function run() {
           safeValue(m.descricao),
           safeValue(m.precoCusto),
           safeValue(m.precoVenda),
-          safeValue(m.estoque02),
-          safeValue(m.estoque03),
-          safeValue(m.estoque04),
           safeValue(m.observacoes),
           safeValue(m.fabricanteId),
           safeValue(m.categoriaId),
@@ -118,19 +115,6 @@ function run() {
           safeValue(al.usuarioId),
         ]);
       }
-      for (const usuario of data.usuarios) {
-        insertUsuarios.run([
-          safeValue(usuario.id),
-          safeValue(usuario.nome),
-          safeValue(usuario.funcao),
-          safeValue(usuario.usuario),
-          safeValue(usuario.senhaHash),
-          safeValue(usuario.local),
-          safeValue(usuario.createdAt),
-          safeValue(usuario.updatedAt),
-          safeValue(usuario.deletedAt),
-        ]);
-      }
       for (const fabricante of data.fabricantes) {
         insertFabricantes.run([
           safeValue(fabricante.id),
@@ -168,6 +152,23 @@ function run() {
           safeValue(estoque.createdAt),
           safeValue(estoque.updatedAt),
           safeValue(estoque.deletedAt),
+        ]);
+      }
+      // `usuarios` referencia `lojas` via `lojaId`, então precisa ser inserido
+      // depois dela para respeitar a chave estrangeira.
+      for (const usuario of data.usuarios) {
+        insertUsuarios.run([
+          safeValue(usuario.id),
+          safeValue(usuario.nome),
+          safeValue(usuario.funcao),
+          safeValue(usuario.usuario),
+          safeValue(usuario.senhaHash),
+          safeValue(usuario.createdAt),
+          safeValue(usuario.updatedAt),
+          safeValue(usuario.lojaId),
+          // `ativo` é BOOLEAN no MySQL; o SQLite guarda como INTEGER (0/1).
+          safeValue(usuario.ativo === undefined ? 1 : usuario.ativo ? 1 : 0),
+          safeValue(usuario.deletedAt),
         ]);
       }
     });

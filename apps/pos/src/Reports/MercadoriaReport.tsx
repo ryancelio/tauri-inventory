@@ -1,5 +1,6 @@
 import {
   ApiListResponse,
+  getEstoqueNaLoja,
   ICategoria,
   MercadoriaFilter,
   type MercadoriaReport,
@@ -13,7 +14,7 @@ import {
 import { getCategorias, getMercadoriaReport } from "../api/apiHelper";
 import { useToast } from "../context/Toast/ToastContext";
 import { jsPDF } from "jspdf";
-import autoTable, { RowInput } from "jspdf-autotable";
+import autoTable, { CellInput, RowInput } from "jspdf-autotable";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import { message, save } from "@tauri-apps/plugin-dialog";
 import { parseFiltrosParaTexto } from "./FilterTranslator";
@@ -43,7 +44,7 @@ export function MercadoriaReport({
   const [categorias, setCategorias] = useState<ICategoria[]>([]);
   const [printers, setPrinters] = useState<string[]>([]);
   const [isLoading, setLoading] = useState(true);
-  const { fabricantes, grupos, atributos, usuario } =
+  const { fabricantes, grupos, atributos, usuario, lojas } =
     useLoaderData<MercPageLoaderData>();
 
   const reportRef = useRef<HTMLDivElement>(null);
@@ -123,6 +124,20 @@ export function MercadoriaReport({
     [categorias],
   );
 
+  // O filtro de estoque é chaveado por `lojas.id`, então o nome da loja é
+  // preciso para as tags do PDF não virarem "Loja 1"/"Loja 2".
+  const mapLojas = useMemo(
+    () =>
+      (lojas ?? []).reduce(
+        (acc, loja) => {
+          acc[loja.id] = loja.nome;
+          return acc;
+        },
+        {} as Record<number, string>,
+      ),
+    [lojas],
+  );
+
   const handleDownload = async () => {
     try {
       const pdf = await generateReportPdf();
@@ -198,6 +213,7 @@ export function MercadoriaReport({
       categorias: mapCategorias,
       grupos: mapGrupos,
       atributos: mapAtributos,
+      lojas: mapLojas,
     });
     let startY = 30;
 
@@ -254,50 +270,52 @@ export function MercadoriaReport({
       header: RowInput[];
       data: RowInput[];
     }
+
+    // Uma coluna por loja, na mesma ordem da listagem em tela. O estoque vem de
+    // `Estoque` (uma linha por mercadoria/loja), então a coluna existe mesmo
+    // para lojas sem estoque cadastrado — nesses casos a célula fica vazia.
+    const estoqueHeaders: CellInput[] = lojas.map((loja) => ({
+      content: `Est ${loja.nome}`,
+      styles: { halign: "center" },
+    }));
+
+    const estoqueCells = (merc: MercadoriaReport): CellInput[] =>
+      lojas.map((loja) => {
+        const quantidade = getEstoqueNaLoja(merc, loja.id);
+        return {
+          content: quantidade || "-",
+          styles: { halign: quantidade === 0 ? "center" : "right" },
+        };
+      });
+
+    const nomeFabricante = (merc: MercadoriaReport) =>
+      merc.fabricante.nome[0].toUpperCase().concat(merc.fabricante.nome.slice(1)) ||
+      "-";
+
     const table: tableTypes = {
-      header:
+      header: [
         usuario.funcao !== "vendedor"
           ? [
-              [
-                "Descrição",
-                "Fabricante",
-                { content: "Est 02", styles: { halign: "center" } },
-                { content: "Est 03", styles: { halign: "center" } },
-                { content: "Est 04", styles: { halign: "center" } },
-                { content: "Custo", styles: { halign: "center" } },
-                { content: "Venda", styles: { halign: "center" } },
-                { content: "Margem", styles: { halign: "center" } },
-              ],
+              "Descrição",
+              "Fabricante",
+              ...estoqueHeaders,
+              { content: "Custo", styles: { halign: "center" } },
+              { content: "Venda", styles: { halign: "center" } },
+              { content: "Margem", styles: { halign: "center" } },
             ]
           : [
-              [
-                "Descrição",
-                "Fabricante",
-                { content: "Est 02", styles: { halign: "center" } },
-                { content: "Est 03", styles: { halign: "center" } },
-                { content: "Est 04", styles: { halign: "center" } },
-                { content: "Venda", styles: { halign: "center" } },
-              ],
+              "Descrição",
+              "Fabricante",
+              ...estoqueHeaders,
+              { content: "Venda", styles: { halign: "center" } },
             ],
+      ],
       data:
         usuario.funcao !== "vendedor"
           ? mercadoriaList.data.map((merc) => [
               merc.descricao,
-              merc.fabricante.nome[0]
-                .toUpperCase()
-                .concat(merc.fabricante.nome.slice(1)) || "-",
-              {
-                content: merc.estoque02 || "-",
-                styles: { halign: merc.estoque02 === 0 ? "center" : "right" },
-              },
-              {
-                content: merc.estoque03 || "-",
-                styles: { halign: merc.estoque03 === 0 ? "center" : "right" },
-              },
-              {
-                content: merc.estoque04 || "-",
-                styles: { halign: merc.estoque04 === 0 ? "center" : "right" },
-              },
+              nomeFabricante(merc),
+              ...estoqueCells(merc),
               {
                 content: formatCurrency(merc.precoCusto),
                 styles: { halign: "right" },
@@ -316,12 +334,8 @@ export function MercadoriaReport({
             ])
           : mercadoriaList.data.map((merc) => [
               merc.descricao,
-              merc.fabricante.nome[0]
-                .toUpperCase()
-                .concat(merc.fabricante.nome.slice(1)) || "-",
-              { content: merc.estoque02, styles: { halign: "center" } },
-              { content: merc.estoque03, styles: { halign: "center" } },
-              { content: merc.estoque04, styles: { halign: "center" } },
+              nomeFabricante(merc),
+              ...estoqueCells(merc),
               {
                 content: formatCurrency(merc.precoVenda),
                 styles: { halign: "right" },
@@ -445,6 +459,7 @@ export function MercadoriaReport({
                     categorias: mapCategorias,
                     fabricantes: mapFabricantes,
                     grupos: mapGrupos,
+                    lojas: mapLojas,
                   }).map((filtro, index) => (
                     <p
                       key={index}
@@ -460,9 +475,11 @@ export function MercadoriaReport({
                   <div className="sticky top-0 z-20 flex w-full bg-blue-600 font-semibold text-white shadow-[0_1px_0_0_#9ca3af]">
                     <div className={colLayout.descricao}>Descrição</div>
                     <div className={colLayout.fabricante}>Fabricante</div>
-                    <div className={colLayout.est}>Est 02</div>
-                    <div className={colLayout.est}>Est 03</div>
-                    <div className={colLayout.est}>Est 04</div>
+                    {lojas.map((loja) => (
+                      <div key={loja.id} className={colLayout.est}>
+                        Est {loja.nome}
+                      </div>
+                    ))}
                     {usuario.funcao !== "vendedor" && (
                       <div className={colLayout.preco}>Preço Custo</div>
                     )}
@@ -496,6 +513,7 @@ export function MercadoriaReport({
                             }}
                             mercadoria={merc}
                             usuario={usuario}
+                            lojas={lojas}
                           />
                         );
                       })}

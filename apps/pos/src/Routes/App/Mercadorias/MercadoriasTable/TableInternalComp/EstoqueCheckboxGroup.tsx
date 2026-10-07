@@ -1,4 +1,5 @@
 import { Checkbox, Field, Fieldset } from "@base-ui/react";
+import { ILoja } from "@tauri-inventory/types";
 import { Check, ChevronDown } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
@@ -8,7 +9,7 @@ export default function EstoqueCheckboxGroup({
   form,
   submitForm,
 }: {
-  lojas: any[];
+  lojas: ILoja[];
   form: string;
   submitForm?: () => void;
 }) {
@@ -34,7 +35,7 @@ export default function EstoqueCheckboxGroup({
           {lojas.map((loja, _) => (
             <Field.Root
               key={loja.id}
-              name={`estoque${loja.nome}Positivo`}
+              name={`estoque${loja.id}Positivo`}
               className={`w-full`}
             >
               <Field.Label

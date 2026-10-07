@@ -1,7 +1,7 @@
 use sqlx::{QueryBuilder, Sqlite};
 
 use crate::database::{
-    filters::{DateFilter, NumberFilter, StringFilter},
+    filters::{loja_id_do_filtro_de_estoque, DateFilter, NumberFilter, StringFilter},
     mercadoria::types::MercadoriaFilter,
 };
 
@@ -295,14 +295,37 @@ pub fn build_mercadorias_query<'args>(
             let base_query = "SELECT 1 FROM categoria WHERE id = mercadorias.categoriaId";
             conditions.apply_number_exists(base_query, "grupoId", f);
         }
-        if let Some(ref f) = internal_filter.estoque02 {
-            conditions.apply_number("estoque02", f);
-        }
-        if let Some(ref f) = internal_filter.estoque03 {
-            conditions.apply_number("estoque03", f);
-        }
-        if let Some(ref f) = internal_filter.estoque04 {
-            conditions.apply_number("estoque04", f);
+        // Estoque por loja. Não existe mais coluna de estoque em `mercadorias`: o
+        // estoque vive em `estoques`, uma linha por (mercadoria, loja). Cada loja
+        // marcada vira um `EXISTS` independente, e o `and()` os combina com AND
+        // — o mesmo comportamento do antigo `estoque02 > 0 AND estoque03 > 0`.
+        if let Some(ref f) = internal_filter.estoque {
+            for (loja_id, val) in f {
+                let Some(loja) = loja_id_do_filtro_de_estoque(loja_id) else {
+                    println!("Chave de loja inválida no filtro de estoque: {loja_id}");
+                    continue;
+                };
+
+                // Os `deletedAt IS NULL` espelham o `paranoid: true` dos models
+                // `Estoque`/`Lojas` usado na projeção `MERCADORIAS_SELECT`:
+                // estoque de loja apagada não conta como "tem estoque".
+                let base_query = format!(
+                    "SELECT 1 FROM estoques e \
+                     JOIN lojas l ON l.id = e.lojaId \
+                     WHERE e.mercadoriaId = mercadorias.id \
+                     AND e.lojaId = {loja} \
+                     AND e.deletedAt IS NULL \
+                     AND l.deletedAt IS NULL"
+                );
+
+                match val {
+                    crate::database::filters::FilterNode::Number(n) => {
+                        conditions.apply_number_exists(&base_query, "e.estoque", n);
+                    }
+                    crate::database::filters::FilterNode::String(_)
+                    | crate::database::filters::FilterNode::Enum(_) => {}
+                }
+            }
         }
         if let Some(ref f) = internal_filter.observacoes {
             conditions.apply_string("observacoes", f);
@@ -404,4 +427,248 @@ pub fn build_mercadorias_query<'args>(
     }
 
     builder
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::database::mercadoria::types::MercadoriaFilter;
+
+    use super::*;
+
+    /// Mesmo schema de `off_mercadorias::tests`, que por sua vez espelha o DDL
+    /// de `apps/api/src/helpers/SqliteTablesStrings.ts`.
+    ///
+    /// * mercadoria 1: estoque 5 na loja 1, 7 na loja 2, e uma linha
+    ///   soft-deleted na loja 3
+    /// * mercadoria 2: sem nenhum registro em `estoques`
+    async fn seed_pool() -> sqlx::SqlitePool {
+        let pool = sqlx::SqlitePool::connect("sqlite::memory:")
+            .await
+            .expect("falha ao abrir o banco em memória");
+
+        sqlx::raw_sql(
+            r#"
+        CREATE TABLE mercadorias (
+            id INTEGER PRIMARY KEY,
+            key INTEGER NOT NULL,
+            descricao TEXT NOT NULL,
+            precoCusto REAL NOT NULL DEFAULT 0.00,
+            precoVenda REAL NOT NULL DEFAULT 0.00,
+            observacoes TEXT,
+            createdAt TEXT NOT NULL,
+            updatedAt TEXT NOT NULL,
+            fabricanteId INTEGER,
+            categoriaId INTEGER,
+            deletedAt TEXT
+        );
+        CREATE TABLE atributos (
+            id INTEGER PRIMARY KEY,
+            tipo TEXT NOT NULL,
+            createdAt TEXT NOT NULL,
+            updatedAt TEXT NOT NULL,
+            nome TEXT NOT NULL,
+            deletedAt TEXT
+        );
+        CREATE TABLE Mercadoria_Atributos (
+            valor TEXT NOT NULL,
+            mercadoriaId INTEGER NOT NULL,
+            atributoId INTEGER NOT NULL,
+            PRIMARY KEY (mercadoriaId, atributoId)
+        );
+        CREATE TABLE lojas (
+            id INTEGER NOT NULL PRIMARY KEY,
+            nome TEXT NOT NULL,
+            CNPJ TEXT NOT NULL,
+            createdAt TEXT NOT NULL,
+            updatedAt TEXT NOT NULL,
+            deletedAt TEXT DEFAULT NULL
+        );
+        CREATE TABLE estoques (
+            id INTEGER NOT NULL PRIMARY KEY,
+            mercadoriaId INTEGER NOT NULL,
+            lojaId INTEGER NOT NULL,
+            estoque INTEGER NOT NULL DEFAULT 0,
+            createdAt TEXT NOT NULL,
+            updatedAt TEXT NOT NULL,
+            deletedAt TEXT DEFAULT NULL
+        );
+
+        INSERT INTO mercadorias VALUES
+            (1, 10, 'CAMISETA PRETA', 25.5, 59.9, NULL,
+                '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', 1, 1, NULL),
+            (2, 11, 'CAMISETA BRANCA', 30, 70, NULL,
+                '2024-01-02T00:00:00.000Z', '2024-01-02T00:00:00.000Z', 1, 1, NULL);
+
+        INSERT INTO lojas VALUES
+            (1, 'Timoteo', '12.345.678/0001-99', '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', NULL),
+            (2, 'Coronel Fabriciano', '98.765.432/0001-11', '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', NULL),
+            (3, 'Loja Apagada', '00.000.000/0001-00', '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', '2024-06-01T00:00:00.000Z');
+
+        INSERT INTO estoques VALUES
+            (1, 1, 1, 5, '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', NULL),
+            (2, 1, 2, 7, '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', NULL),
+            -- linha soft-deleted: `paranoid: true` a esconde do filtro também
+            (3, 1, 3, 99, '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', '2024-06-01T00:00:00.000Z');
+        "#,
+        )
+        .execute(&pool)
+        .await
+        .expect("falha ao semear");
+
+        pool
+    }
+
+    /// Monta o filtro a partir do JSON que o frontend realmente envia, para que
+    /// a desserialização também seja exercitada.
+    fn filter_from_json(json: serde_json::Value) -> MercadoriaFilter {
+        serde_json::from_value(json).expect("filtro deve desserializar")
+    }
+
+    async fn ids(pool: &sqlx::SqlitePool, filter_json: serde_json::Value) -> Vec<i32> {
+        let filter = filter_from_json(filter_json);
+
+        let rows: Vec<(i32,)> = build_mercadorias_query(&filter, false, false)
+            .build_query_as()
+            .fetch_all(pool)
+            .await
+            .expect("a query deve ser executável");
+
+        rows.into_iter().map(|r| r.0).collect()
+    }
+
+    #[tokio::test]
+    async fn estoque_positivo_filtra_pela_loja_marcada() {
+        let pool = seed_pool().await;
+
+        // `estoque1Positivo` marcado na URL → { "1": { gt: 0 } }
+        let ids = ids(&pool, serde_json::json!({ "filter": { "estoque": { "1": { "gt": 0 } } } })).await;
+
+        assert_eq!(ids, vec![1], "só a CAMISETA PRETA tem estoque na loja 1");
+    }
+
+    #[tokio::test]
+    async fn estoque_vazio_nao_filtra_nada() {
+        let pool = seed_pool().await;
+
+        let ids = ids(&pool, serde_json::json!({ "filter": { "estoque": {} } })).await;
+
+        assert_eq!(ids.len(), 2, "sem loja marcada, nenhuma loja é filtrada");
+    }
+
+    #[tokio::test]
+    async fn varias_lojas_sao_combinadas_com_and() {
+        let pool = seed_pool().await;
+
+        let ids = ids(
+            &pool,
+            serde_json::json!({ "filter": { "estoque": { "1": { "gt": 0 }, "2": { "gt": 0 } } } }),
+        )
+        .await;
+
+        // A mercadoria 1 tem estoque nas duas; a 2 não tem em nenhuma. O AND
+        // preserva a semântica do antigo `estoque02 > 0 AND estoque03 > 0`.
+        assert_eq!(ids, vec![1]);
+    }
+
+    #[tokio::test]
+    async fn and_com_uma_loja_sem_estoque_nao_retorna_nada() {
+        let pool = seed_pool().await;
+
+        // Loja 4 não existe e nenhuma mercadoria tem estoque lá.
+        let ids = ids(
+            &pool,
+            serde_json::json!({ "filter": { "estoque": { "1": { "gt": 0 }, "4": { "gt": 0 } } } }),
+        )
+        .await;
+
+        assert!(ids.is_empty(), "exigir estoque numa loja inexistente esvazia a lista");
+    }
+
+    #[tokio::test]
+    async fn loja_soft_deleted_nao_conta_como_estoque() {
+        let pool = seed_pool().await;
+
+        // A loja 3 tem 99 unidades na mercadoria 1, mas a loja está apagada —
+        // o `paranoid: true` de `LojasModel`/`EstoqueModel` a esconde.
+        let ids = ids(&pool, serde_json::json!({ "filter": { "estoque": { "3": { "gt": 0 } } } })).await;
+
+        assert!(ids.is_empty());
+    }
+
+    #[tokio::test]
+    async fn estoque_apagado_nao_conta_como_estoque() {
+        let pool = seed_pool().await;
+
+        sqlx::query("UPDATE estoques SET deletedAt = '2024-06-01T00:00:00.000Z' WHERE lojaId = 1")
+            .execute(&pool)
+            .await
+            .expect("falha ao apagar estoque");
+
+        let ids = ids(&pool, serde_json::json!({ "filter": { "estoque": { "1": { "gt": 0 } } } })).await;
+
+        assert!(ids.is_empty());
+    }
+
+    #[tokio::test]
+    async fn chave_de_loja_invalida_e_descartada_sem_quebrar_a_query() {
+        let pool = seed_pool().await;
+
+        // Chave não-numérica é ignorada; a query segue válida e sem filtro.
+        let ids = ids(
+            &pool,
+            serde_json::json!({ "filter": { "estoque": { "1 OR 1=1": { "gt": 0 } } } }),
+        )
+        .await;
+
+        assert_eq!(ids.len(), 2, "a chave malformada não pode gerar SQL arbitrário");
+    }
+
+    #[tokio::test]
+    async fn operadores_de_intervalo_sao_aplicados() {
+        let pool = seed_pool().await;
+
+        // Loja 1 tem 5: `gte 10` não casa, `lte 10` casa.
+        let alto = ids(&pool, serde_json::json!({ "filter": { "estoque": { "1": { "gte": 10 } } } })).await;
+        assert!(alto.is_empty());
+
+        let baixo = ids(&pool, serde_json::json!({ "filter": { "estoque": { "1": { "lte": 10 } } } })).await;
+        assert_eq!(baixo, vec![1]);
+    }
+
+    #[tokio::test]
+    async fn estoque_combina_com_os_demais_filtros() {
+        let pool = seed_pool().await;
+
+        let ids = ids(
+            &pool,
+            serde_json::json!({
+                "filter": {
+                    "estoque": { "1": { "gt": 0 } },
+                    "descricao": { "contains": "BRANCA" }
+                }
+            }),
+        )
+        .await;
+
+        assert!(
+            ids.is_empty(),
+            "estoque da loja 1 e descrição BRANCA não podem coexistir"
+        );
+    }
+
+    #[tokio::test]
+    async fn contagem_usa_o_mesmo_filtro_de_estoque() {
+        let pool = seed_pool().await;
+        let filter = filter_from_json(
+            serde_json::json!({ "filter": { "estoque": { "2": { "gt": 0 } } } }),
+        );
+
+        let (count,): (i32,) = build_mercadorias_query(&filter, true, false)
+            .build_query_as()
+            .fetch_one(&pool)
+            .await
+            .expect("a contagem deve ser executável");
+
+        assert_eq!(count, 1);
+    }
 }

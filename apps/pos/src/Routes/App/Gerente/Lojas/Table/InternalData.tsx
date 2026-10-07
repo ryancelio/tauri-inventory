@@ -1,8 +1,9 @@
-import { ILoja } from "@tauri-inventory/types";
+import { ILoja, UsuarioListing } from "@tauri-inventory/types";
 import { useEffect, useState } from "react";
 import { timeout } from "../../../../../Helpers/delay";
 import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { getUsuarios } from "../../../../../api/apiUsuario";
 
 export default function InternalData({
   selectedLoja,
@@ -11,11 +12,15 @@ export default function InternalData({
   }) {
   const [isLoading, setIsLoading] = useState(false);
 
+  const [lojaUsuarios, setLojaUsuarios] = useState<UsuarioListing[]>([]);
+
   useEffect(() => {
+    if (!selectedLoja) return;
     setIsLoading(true);
     (async () => {
       try {
         await timeout(1000)
+        const usuarios = getUsuarios()
       } catch (e) {
 
       } finally {

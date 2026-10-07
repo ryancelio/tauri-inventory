@@ -154,7 +154,7 @@ pub fn run() {
             database::usuarios::get_usuarios,
             database::usuarios::criar_usuario,
             database::usuarios::update_usuario,
-            database::usuarios::deletar_usuario,
+            database::usuarios::desativar_usuario,
             database::atributo::get_atributos,
             database::atributo::create_atributo,
             database::atributo::update_atributo,

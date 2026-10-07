@@ -108,9 +108,9 @@ export const FIELD_LABELS: Record<string, string> = {
   grupoId: "Grupo",
   fabricanteId: "Fabricante",
   categoriaId: "Categoria",
-  estoque02: "Estoque (Loja 02)",
-  estoque03: "Estoque (Loja 03)",
-  estoque04: "Estoque (Loja 04)",
+  // O estoque é por loja e o log traz o nome de cada uma nos itens, então o
+  // rótulo é só "Estoque" — não dá para fixar loja nenhuma aqui.
+  estoque: "Estoque",
   precoCusto: "Preço de custo",
   precoVenda: "Preço de venda",
   url: "URL da foto",

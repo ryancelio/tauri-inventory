@@ -10,6 +10,7 @@ import {
   createUsuarioSchema,
   CriarUsuarioPayload,
   IUsuario,
+  UsuarioListing,
 } from "@tauri-inventory/types";
 import UsuarioModel from "../models/Usuario";
 import { ValidationError } from "sequelize";
@@ -33,7 +34,7 @@ export const criarUsuario = async (
 
     if (
       usuarioLogado.funcao === "gerente" &&
-      usuarioLogado.local !== usuario.local
+      usuarioLogado.local.id !== usuario.lojaId
     ) {
       return res.status(403).json({
         response:
@@ -54,7 +55,7 @@ export const criarUsuario = async (
     const novoUsuario = {
       nome: usuario.nome,
       usuario: usuario.usuario,
-      local: usuario.local,
+      lojaId: usuario.lojaId,
       funcao: usuario.funcao,
       senhaHash: senhaHash,
     };
@@ -64,7 +65,7 @@ export const criarUsuario = async (
     const dados = {
       nome: usuario.nome,
       usuario: usuario.usuario,
-      local: usuario.local,
+      lojaId: usuario.lojaId,
       funcao: usuario.funcao,
     };
 
@@ -111,11 +112,18 @@ export const criarUsuario = async (
 
 export const listarUsuarios = async (
   req: Request,
-  res: Response<ApiResponse | any>,
+  res: Response<ApiResponse | UsuarioListing>,
   next: NextFunction,
 ) => {
   try {
     const getDeleted = req.query.all?.toString().toLowerCase() === "true";
+
+    // `UsuarioListFilter` em `apps/pos/src-tauri/src/database/usuarios.rs`:
+    // `localId`/`ativo`. Os nomes antigos (`local`/`active`) eram colunas que
+    // nunca existiram no model — `local` virou a associação e `active` é `ativo`
+    // — então o filtro era silenciosamente ignorado.
+    const localId = req.body?.localId;
+    const ativo = req.body?.ativo;
 
     const usuarios = await Usuario.findAll({
       attributes: [
@@ -123,13 +131,29 @@ export const listarUsuarios = async (
         "nome",
         "usuario",
         "funcao",
-        "local",
+        "ativo",
         "createdAt",
         "updatedAt",
+        "deletedAt",
       ],
+      include: [
+        // `paranoid: false` para espelhar a subquery de `USUARIOS_SELECT`
+        // (`apps/pos/src-tauri/src/offline/database/off_users.rs`): a loja de um
+        // usuário é `NOT NULL` e faz parte da identidade dele, então uma loja
+        // soft-deleted ainda precisa resolver. Sem isto o include devolveria
+        // `null` e o `serde` falharia ao desserializar `LoggedUser.local`.
+        { association: "local", paranoid: false },
+      ],
+
       paranoid: !getDeleted,
+      where: {
+        ...(localId !== undefined ? { lojaId: localId } : undefined),
+        ...(ativo !== undefined ? { ativo } : undefined),
+      },
     });
-    res.status(200).json(usuarios);
+
+    console.log(usuarios[0]);
+    res.status(200).json(usuarios as any);
   } catch (e) {
     console.error("Failed to list usuarios: ", e);
 
@@ -161,9 +185,15 @@ export const alterarUsuario = async (
         .json({ response: "Dados do usuário ausentes ou ID inválido" });
     }
 
+    const oldUser = await UsuarioModel.findByPk(id, {
+      transaction: t,
+      paranoid: false,
+    });
+
     if (
       usuarioLogado.funcao === "gerente" &&
-      usuarioLogado.local !== usuarioData.local
+      usuarioLogado.local.id !== usuarioData.lojaId &&
+      usuarioLogado.local.id !== oldUser?.lojaId
     ) {
       return res.status(403).json({
         response:
@@ -171,7 +201,7 @@ export const alterarUsuario = async (
       });
     }
 
-    const oldUser = await UsuarioModel.findByPk(id, { transaction: t });
+
     if (!oldUser) {
       return res
         .status(404)
@@ -182,16 +212,21 @@ export const alterarUsuario = async (
       senhaHash = await bcrypt.hash(usuarioData.senha, 10);
     }
 
-    const novoUsuario: Partial<IUsuario> = {
+    const novoUsuario = {
       id: id,
       nome: usuarioData.nome,
       funcao: usuarioData.funcao,
-      local: usuarioData.local,
+      lojaId: usuarioData.lojaId,
       usuario: usuarioData.usuario,
       senhaHash: senhaHash,
+      ativo: usuarioData.ativo
     };
 
+    // console.log(novoUsuario);
+
     const alteracoes = getAuditChanges(oldUser, novoUsuario);
+
+
 
     await AuditLog.create(
       {
@@ -223,7 +258,7 @@ export const alterarUsuario = async (
   }
 };
 
-export const deletarUsuario = async (
+export const desativarUsuario = async (
   req: Request<{ id: string }>,
   res: Response<ApiResponse>,
   next: NextFunction,
@@ -248,7 +283,7 @@ export const deletarUsuario = async (
     if (!userData) {
       return res
         .status(404)
-        .json({ response: "Usuario para deletar nao encontrado." });
+        .json({ response: "Usuario para desativar nao encontrado." });
     }
 
     if (
@@ -257,7 +292,7 @@ export const deletarUsuario = async (
     ) {
       return res
         .status(403)
-        .json({ response: "Não é possivel deletar usuario de outra loja." });
+        .json({ response: "Não é possivel desativar usuario de outra loja." });
     }
 
     await AuditLog.create(
