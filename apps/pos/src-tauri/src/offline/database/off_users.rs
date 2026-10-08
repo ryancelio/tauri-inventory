@@ -31,8 +31,10 @@ pub const USUARIOS_SELECT: &str = r#"SELECT
     usuarios.nome,
     usuarios.funcao,
     usuarios.usuario,
+    usuarios.ativo,
     usuarios.createdAt,
     usuarios.updatedAt,
+    usuarios.deletedAt,
     usuarios.ativo,
     (
         SELECT json_object(

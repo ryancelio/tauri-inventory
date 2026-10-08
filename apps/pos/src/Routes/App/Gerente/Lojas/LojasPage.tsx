@@ -1,17 +1,36 @@
 import { motion } from "framer-motion";
 import { Store } from "lucide-react";
-import { LoaderFunctionArgs, useLoaderData } from "react-router";
+import { LoaderFunctionArgs } from "react-router";
 import LojasTable from "./Table/LojasTable";
 import { getLojas } from "../../../../api/apiLojas";
 
-export async function loader({ }: LoaderFunctionArgs) {
-  const lojas = await getLojas()
+export async function loader({request }: LoaderFunctionArgs) {
+  const allLojas = await getLojas()
+
+  let url = new URL(request.url);
+
+  let nome = url.searchParams.get("nome");
+
+
+  const lojas = allLojas.filter((loja) => {
+    // If theres a nome input, check
+    // If check returns true, continue
+    // else, return false
+    if (nome) {
+      const found = loja.nome.includes(nome);
+      if (!found) {
+        return false
+      }
+    }
+
+    return true;
+  })
+
 
   return {lojas}
 }
 
 export function Component() {
-  const { lojas } = useLoaderData<typeof loader>()
 
   return (
     <div className="size-full p-5">

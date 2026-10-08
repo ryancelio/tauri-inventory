@@ -10,18 +10,6 @@ import { useMemo, RefObject } from "react";
 import { MercPageLoaderData } from "../MercadoriaPage";
 import AutoCompleteDropdown from "../../MercadoriaEdit/FormComponents/BASE-UI/AutoCompleteDropdown/AutoCompleteDropdown";
 
-// const DEFAULT_ATTRIBUTES_BY_GROUP: Record<string, string[]> = {
-//   Móveis: ["cor", "portas", "gavetas", "material"],
-// };
-
-// const DEFAULT_GRUPO = {
-//   id: -1000,
-//   categorias: [],
-//   createdAt: "",
-//   nome: "Todos",
-//   updatedAt: "",
-// };
-
 export default function MercListForm({
   openReportModal,
   openDrawer,
