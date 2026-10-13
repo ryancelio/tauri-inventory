@@ -30,6 +30,12 @@ export type JsonFilter = Record<
 export interface BaseQuery<T> {
   page?: number;
   limit?: number;
+  /**
+   * Coluna usada para ordenar. Só colunas reais da tabela são aceitas — cada
+   * recurso pode ampliar a lista (mercadorias aceita também `estoqueTotal` e
+   * `estoque.<lojaId>`); valor fora do whitelist é ignorado em vez de quebrar
+   * a query.
+   */
   sortBy?: string;
   sortOrder?: "ASC" | "DESC";
   include?: string[];

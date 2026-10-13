@@ -490,8 +490,10 @@ mod tests {
                     "updatedAt": "2024-01-01T00:00:00.000Z",
                 },
                 "usuario": "ana",
+                "ativo": true,
                 "createdAt": "2024-01-01T00:00:00.000Z",
                 "updatedAt": "2024-01-01T00:00:00.000Z",
+                "deletedAt": null,
             })
         );
     }
@@ -520,7 +522,9 @@ mod tests {
                 .unwrap();
 
         let payload = serde_json::to_value(&rows[0]).unwrap();
-        for coluna in ["lojaId", "ativo", "localJson", "senhaHash"] {
+        // `ativo` e `deletedAt` fazem parte do payload desde que
+        // `UsuarioListing` passou a expor as duas colunas.
+        for coluna in ["lojaId", "localJson", "senhaHash"] {
             assert!(
                 payload.get(coluna).is_none(),
                 "`{coluna}` é coluna auxiliar do SQLite e não deve sair no payload"

@@ -32,13 +32,20 @@ import { AnimatePresence } from "motion/react";
 import FormDrawer from "./TableInternalComp/FormDrawer";
 
 const ESTOQUE_POSITIVO_KEY = /^estoque(\d+)Positivo$/;
+const ESTOQUE_MIN_KEY = /^estoque(\d+)Min$/;
 
 /**
- * Coleta, das chaves da query, as lojas marcadas em "estoque positivo".
+ * Coleta, das chaves da query, o filtro de estoque por loja.
  *
- * Só as lojas marcadas entram no mapa — `MercadoriaInternalFilter` trata loja
+ * Só as lojas presentes entram no mapa — `MercadoriaInternalFilter` trata loja
  * ausente como "não filtrar por essa loja", então o mapa vazio significa
  * "sem filtro de estoque".
+ *
+ * Duas origens, com a numérica vencendo a booleana quando as duas vêm
+ * preenchidas:
+ *
+ * - `estoque<id>Positivo=on` → `{ gt: 0 }` (checkbox "tem estoque");
+ * - `estoque<id>Min=<n>` → `{ gte: n }` ("mín. n unidades").
  */
 function parseEstoqueFilter(parsedQuery: Record<string, unknown>): EstoqueFilter {
   const estoque: EstoqueFilter = {};
@@ -50,6 +57,20 @@ function parseEstoqueFilter(parsedQuery: Record<string, unknown>): EstoqueFilter
     if (value !== "on") continue;
 
     estoque[match[1]] = { gt: 0 };
+  }
+
+  // Segunda passada: o "mín." sobrescreve o checkbox da mesma loja, porque
+  // `{ gte: n }` (n ≥ 1) já implica estoque positivo e diz mais.
+  for (const [key, value] of Object.entries(parsedQuery)) {
+    const match = ESTOQUE_MIN_KEY.exec(key);
+    if (!match) continue;
+
+    const quantidade = Number(value);
+    // Vazio/não-numérico/não-positivo não filtra — `{ gte: 0 }` casaria com
+    // tudo e só poluiria a query.
+    if (!Number.isFinite(quantidade) || quantidade <= 0) continue;
+
+    estoque[match[1]] = { gte: quantidade };
   }
 
   return estoque;
@@ -87,6 +108,24 @@ function paramsToMercFilter(parsedQuery: any): MercadoriaFilter {
 
   const id = Number(parsedQuery.id) || undefined;
 
+  // Filtro sobre o estoque **total** (soma em todas as lojas), vindo do campo
+  // "total" de `EstoqueCheckboxGroup`. `Number(undefined)` vira `NaN` e é
+  // descartado abaixo, então query sem o campo = sem filtro.
+  const estoqueTotalGte = Number(parsedQuery.estoqueTotalMin);
+  const estoqueTotal =
+    Number.isFinite(estoqueTotalGte) && estoqueTotalGte > 0
+      ? { gte: estoqueTotalGte }
+      : undefined;
+
+  // Ordenação vem da URL, não do formulário: é controlada pelo cabeçalho da
+  // tabela (`sortBy=estoqueTotal` ou `sortBy=estoque.<lojaId>`). O backend
+  // ignora chave desconhecida, então só repassamos o valor cru.
+  const sortBy = parsedQuery.sortBy ? String(parsedQuery.sortBy) : undefined;
+  const sortOrder =
+    parsedQuery.sortOrder === "ASC" || parsedQuery.sortOrder === "DESC"
+      ? parsedQuery.sortOrder
+      : undefined;
+
   return {
     filter: {
       id: { eq: id },
@@ -96,6 +135,7 @@ function paramsToMercFilter(parsedQuery: any): MercadoriaFilter {
       categoriaId: { eq: categoriaId },
       grupoId: { eq: grupoId },
       estoque,
+      estoqueTotal,
       observacoes: { contains: observacoes },
       precoCusto: {},
       precoVenda: {},
@@ -103,6 +143,8 @@ function paramsToMercFilter(parsedQuery: any): MercadoriaFilter {
     },
     limit,
     page,
+    sortBy,
+    sortOrder,
   } as MercadoriaFilter;
 }
 
@@ -250,7 +292,18 @@ export function Component() {
 
       const queryString = qs.stringify(data, { arrayFormat: "brackets",skipNulls: true });
       // navigate(`?${queryString}`, { replace: true });
-      setSearchParams(queryString)
+
+      // A ordenação (`sortBy`/`sortOrder`) não vem do formulário — é estado
+      // da URL, controlado pelo cabeçalho da tabela — e o `queryString` é
+      // reconstruído do zero a cada submit. Sem reinjetar aqui, todo filtro
+      // enviado apagaria a ordenação atual.
+      const params = new URLSearchParams(queryString);
+      for (const key of ["sortBy", "sortOrder"] as const) {
+        const value = searchParams.get(key);
+        if (value) params.set(key, value);
+      }
+
+      setSearchParams(params);
 
     }, delay);
   };

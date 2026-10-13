@@ -23,11 +23,11 @@ import {
   CreationAttributes,
   Includeable,
   Op,
-  Order,
   QueryTypes,
   Transaction,
 } from "sequelize";
 import {
+  buildMercadoriaOrder,
   buildWhereClause,
   getAdditionalFilters,
 } from "../config/utils/whereBuilder";
@@ -415,13 +415,16 @@ export const listarMercadorias = async (
 
     console.log(where);
 
-    const { limit, offset, order, include } = getAdditionalFilters(query);
+    const { limit, offset, include } = getAdditionalFilters(query);
 
     const { rows, count } = await Mercadoria.findAndCountAll({
       where,
       limit,
       offset,
-      order: order as Order,
+      // Não é o `order` do `getAdditionalFilters`: `sortBy` pode ser
+      // `estoqueTotal`/`estoque.<lojaId>`, que viram subquery correlacionada
+      // (e valores fora do whitelist viram "sem ordenação", não erro de SQL).
+      order: buildMercadoriaOrder(query.sortBy, query.sortOrder),
       distinct: true,
       include: include
         ? undefined
@@ -504,7 +507,11 @@ export const relatorioMercadorias = async (
       distinct: true,
       attributes: relatorioAttributes,
       include: relatorioInclude,
-      order: [["descricao", "ASC"]],
+      // Segue a ordenação da listagem quando existe (o relatório offline já
+      // honra `sort_by`); sem `sortBy`, cai no `descricao` de sempre.
+      order: buildMercadoriaOrder(query.sortBy, query.sortOrder) ?? [
+        ["descricao", "ASC"],
+      ],
       where,
     });
 

@@ -251,6 +251,98 @@ impl<'a, 'args> ConditionBuilder<'a, 'args> {
     }
 }
 
+/// Estoque **total** da mercadoria da linha corrente: soma de `estoques.estoque`
+/// em todas as lojas não apagadas, correlacionada ao `mercadorias.id` da query.
+///
+/// `COALESCE(..., 0)` dá total 0 para mercadoria sem nenhuma linha em
+/// `estoques`, igual ao `getEstoqueTotal` do front-end. Os dois `deletedAt IS
+/// NULL` espelham o `paranoid: true` dos models usados na projeção
+/// `MERCADORIAS_SELECT` — e são os mesmos predicados do filtro por loja, para
+/// "total" e "total na loja X" não discordarem sobre o que conta.
+///
+/// `loja` restringe a soma a uma loja (ordenação por loja); chega já validado
+/// por [`loja_id_do_filtro_de_estoque`].
+///
+/// Espelha `estoqueTotalSql` em `apps/api/src/config/utils/whereBuilder.ts`
+/// (lá a tabela principal é referenciada pelo alias do Sequelize,
+/// `MercadoriaModel`; aqui o `FROM` não tem alias).
+fn estoque_total_sql(loja: Option<i32>) -> String {
+    let por_loja = match loja {
+        Some(id) => format!(" AND e.lojaId = {id}"),
+        None => String::new(),
+    };
+
+    format!(
+        "(SELECT COALESCE(SUM(e.estoque), 0) \
+         FROM estoques e \
+         JOIN lojas l ON l.id = e.lojaId \
+         WHERE e.mercadoriaId = mercadorias.id \
+         AND e.deletedAt IS NULL \
+         AND l.deletedAt IS NULL{por_loja})"
+    )
+}
+
+/// Colunas reais de `mercadorias` aceitas em `sort_by`.
+///
+/// O bloco de ordenação sanitizava a string e empurrava direto no `ORDER BY`:
+/// qualquer nome virava SQL, e um nome inexistente (como `estoque`, que deixou
+/// de ser coluna) derrubava a listagem inteira com erro do SQLite. Aqui, fora do
+/// whitelist é "não ordena" em vez de erro.
+const MERCADORIA_SORTABLE_COLUMNS: &[&str] = &[
+    "id",
+    "key",
+    "descricao",
+    "fabricanteId",
+    "categoriaId",
+    "precoCusto",
+    "precoVenda",
+    "createdAt",
+    "updatedAt",
+];
+
+/// Monta a cláusula `ORDER BY` da listagem de mercadorias, ou `None` quando não
+/// há ordenação aplicável.
+///
+/// Vocabulário de `sort_by`:
+///
+/// * `estoqueTotal` → soma em todas as lojas;
+/// * `estoque.<lojaId>` → soma restrita àquela loja;
+/// * coluna do [`MERCADORIA_SORTABLE_COLUMNS`] → direto;
+/// * qualquer outra coisa → `None` (ignorada, com log).
+///
+/// `estoque.<id>` precisa ser lido **antes** de qualquer sanitização: o `.`
+/// seria stripado e `estoque.1` viraria a coluna inexistente `estoque1`.
+///
+/// Espelha `buildMercadoriaOrder` em `apps/api/src/config/utils/whereBuilder.ts`.
+fn order_by_clause(sort_by: Option<&str>, sort_order: Option<&str>) -> Option<String> {
+    let sort_by = sort_by?;
+
+    let direction = if sort_order.map(|s| s.eq_ignore_ascii_case("DESC")).unwrap_or(false) {
+        "DESC"
+    } else {
+        "ASC"
+    };
+
+    let expr = if sort_by == "estoqueTotal" {
+        estoque_total_sql(None)
+    } else if let Some(resto) = sort_by.strip_prefix("estoque.") {
+        match loja_id_do_filtro_de_estoque(resto) {
+            Some(loja) => estoque_total_sql(Some(loja)),
+            None => {
+                println!("sortBy ignorado (loja inválida): {sort_by}");
+                return None;
+            }
+        }
+    } else if MERCADORIA_SORTABLE_COLUMNS.contains(&sort_by) {
+        sort_by.to_string()
+    } else {
+        println!("sortBy ignorado (não é ordenável): {sort_by}");
+        return None;
+    };
+
+    Some(format!("ORDER BY {expr} {direction}"))
+}
+
 pub fn build_mercadorias_query<'args>(
     filter: &'args MercadoriaFilter,
     is_count: bool,
@@ -327,6 +419,13 @@ pub fn build_mercadorias_query<'args>(
                 }
             }
         }
+        // Estoque total: soma em todas as lojas não apagadas. `mercadorias` não
+        // tem coluna de estoque (eram `estoque02/03/04`), então vira uma
+        // subquery correlacionada usada como se fosse a coluna — a mesma
+        // expressão da ordenação por `estoqueTotal`.
+        if let Some(ref f) = internal_filter.estoque_total {
+            conditions.apply_number(&estoque_total_sql(None), f);
+        }
         if let Some(ref f) = internal_filter.observacoes {
             conditions.apply_string("observacoes", f);
         }
@@ -397,25 +496,13 @@ pub fn build_mercadorias_query<'args>(
     }
 
     if !is_count {
-        if let Some(ref sort_by) = filter.sort_by {
-            let safe_sort_by: String = sort_by
-                .chars()
-                .filter(|c| c.is_alphanumeric() || *c == '_')
-                .collect();
-            if !safe_sort_by.is_empty() {
-                builder.push(" ORDER BY ");
-                builder.push(safe_sort_by);
-
-                if let Some(ref sort_order) = filter.sort_order {
-                    if sort_order.eq_ignore_ascii_case("DESC") {
-                        builder.push(" DESC");
-                    } else {
-                        builder.push(" ASC");
-                    }
-                } else {
-                    builder.push(" ASC");
-                }
-            }
+        // `ORDER BY` só na query de dados (a de contagem não usa). O filtro do
+        // `order_by_clause` evita o erro do SQLite com coluna inexistente —
+        // `sort_by = "estoque"` derrubava a listagem antes disso.
+        if let Some(order_by) =
+            order_by_clause(filter.sort_by.as_deref(), filter.sort_order.as_deref())
+        {
+            builder.push(" ").push(order_by);
         }
 
         let limit = filter.limit.unwrap_or(10);
@@ -670,5 +757,183 @@ mod tests {
             .expect("a contagem deve ser executável");
 
         assert_eq!(count, 1);
+    }
+
+    // --- Estoque total (soma em todas as lojas) -----------------------------
+
+    #[tokio::test]
+    async fn estoque_total_soma_todas_as_lojas() {
+        let pool = seed_pool().await;
+
+        // Mercadoria 1: 5 (loja 1) + 7 (loja 2) = 12; mercadoria 2 não tem
+        // nenhuma linha em `estoques`, então total 0.
+        let alto = ids(&pool, serde_json::json!({ "filter": { "estoqueTotal": { "gte": 12 } } })).await;
+        assert_eq!(alto, vec![1]);
+
+        let nenhum = ids(&pool, serde_json::json!({ "filter": { "estoqueTotal": { "gte": 13 } } })).await;
+        assert!(nenhum.is_empty(), "nenhuma mercadoria passa de 12");
+
+        let zerado = ids(&pool, serde_json::json!({ "filter": { "estoqueTotal": { "lt": 1 } } })).await;
+        assert_eq!(zerado, vec![2], "mercadoria sem estoque tem total 0");
+    }
+
+    #[tokio::test]
+    async fn estoque_total_ignora_linhas_e_lojas_apagadas() {
+        let pool = seed_pool().await;
+
+        // A loja 3 tem 99 unidades na mercadoria 1, mas tanto a linha de
+        // estoque quanto a loja estão soft-deleted — não podem entrar na soma.
+        let ids = ids(&pool, serde_json::json!({ "filter": { "estoqueTotal": { "gte": 100 } } })).await;
+
+        assert!(ids.is_empty(), "o estoque da loja apagada não conta no total");
+    }
+
+    #[tokio::test]
+    async fn estoque_total_combina_com_o_filtro_por_loja() {
+        let pool = seed_pool().await;
+
+        let ok = ids(
+            &pool,
+            serde_json::json!({ "filter": { "estoqueTotal": { "gte": 12 }, "estoque": { "1": { "gte": 5 } } } }),
+        )
+        .await;
+        assert_eq!(ok, vec![1], "total 12 E loja 1 com 5: as duas condições seguram");
+
+        let vazio = ids(
+            &pool,
+            serde_json::json!({ "filter": { "estoqueTotal": { "gte": 12 }, "estoque": { "2": { "gte": 8 } } } }),
+        )
+        .await;
+        assert!(vazio.is_empty(), "loja 2 tem 7, não 8");
+    }
+
+    #[tokio::test]
+    async fn contagem_usa_o_filtro_de_estoque_total() {
+        let pool = seed_pool().await;
+        let filter = filter_from_json(serde_json::json!({ "filter": { "estoqueTotal": { "gte": 12 } } }));
+
+        let (count,): (i32,) = build_mercadorias_query(&filter, true, false)
+            .build_query_as()
+            .fetch_one(&pool)
+            .await
+            .expect("a contagem deve ser executável");
+
+        assert_eq!(count, 1, "a query de contagem compartilha o WHERE");
+    }
+
+    #[tokio::test]
+    async fn filtro_de_estoque_total_vazio_nao_gera_clausula() {
+        let pool = seed_pool().await;
+
+        let ids = ids(&pool, serde_json::json!({ "filter": { "estoqueTotal": {} } })).await;
+
+        assert_eq!(ids.len(), 2, "sem operador não há predicado a aplicar");
+    }
+
+    // --- Ordenação ----------------------------------------------------------
+
+    #[tokio::test]
+    async fn ordena_por_estoque_total() {
+        let pool = seed_pool().await;
+
+        let desc = ids(
+            &pool,
+            serde_json::json!({ "sortBy": "estoqueTotal", "sortOrder": "DESC" }),
+        )
+        .await;
+        assert_eq!(desc, vec![1, 2], "12 antes de 0");
+
+        let asc = ids(
+            &pool,
+            serde_json::json!({ "sortBy": "estoqueTotal", "sortOrder": "ASC" }),
+        )
+        .await;
+        assert_eq!(asc, vec![2, 1]);
+    }
+
+    #[tokio::test]
+    async fn ordena_por_estoque_de_uma_loja() {
+        let pool = seed_pool().await;
+
+        // Loja 1: mercadoria 1 tem 5, a 2 não tem linha (total 0 na loja).
+        let desc = ids(&pool, serde_json::json!({ "sortBy": "estoque.1", "sortOrder": "DESC" })).await;
+        assert_eq!(desc, vec![1, 2]);
+
+        // Loja 3 está apagada → todo mundo empatado em 0, desempate por id.
+        let loja_apagada = ids(&pool, serde_json::json!({ "sortBy": "estoque.3", "sortOrder": "DESC" })).await;
+        assert_eq!(loja_apagada, vec![1, 2]);
+    }
+
+    #[tokio::test]
+    async fn ordena_por_coluna_comum() {
+        let pool = seed_pool().await;
+
+        let ids = ids(&pool, serde_json::json!({ "sortBy": "descricao", "sortOrder": "ASC" })).await;
+
+        assert_eq!(ids, vec![2, 1], "BRANCA vem antes de PRETA");
+    }
+
+    #[tokio::test]
+    async fn sort_by_inexistente_e_ignorado_em_vez_de_quebrar_a_query() {
+        let pool = seed_pool().await;
+
+        // Antes disso, qualquer `sort_by` ia direto para o SQL: `estoque`
+        // (que deixou de ser coluna) e `senha` (coluna que não existe em
+        // `mercadorias`) derrubavam a listagem com erro do SQLite.
+        for sort_by in ["estoque", "senha", "id; DROP TABLE mercadorias", "estoqueJson", ""] {
+            let ids = ids(
+                &pool,
+                serde_json::json!({ "sortBy": sort_by, "sortOrder": "DESC" }),
+            )
+            .await;
+
+            assert_eq!(ids.len(), 2, "sortBy {sort_by:?} não pode quebrar a query");
+        }
+    }
+
+    #[tokio::test]
+    async fn sort_by_de_loja_malformado_e_ignorado() {
+        let pool = seed_pool().await;
+
+        for sort_by in ["estoque.abc", "estoque.-1", "estoque.", "estoque.1 OR 1=1"] {
+            let ids = ids(&pool, serde_json::json!({ "sortBy": sort_by })).await;
+
+            assert_eq!(ids.len(), 2, "sortBy {sort_by:?} não pode virar SQL arbitrário");
+        }
+    }
+
+    #[tokio::test]
+    async fn empate_na_ordenacao_desempata_por_id() {
+        let pool = seed_pool().await;
+
+        sqlx::raw_sql(
+            "INSERT INTO mercadorias VALUES
+                (3, 12, 'CAMISETA VERMELHA', 10, 20, NULL,
+                    '2024-01-03T00:00:00.000Z', '2024-01-03T00:00:00.000Z', 1, 1, NULL)",
+        )
+        .execute(&pool)
+        .await
+        .expect("falha ao inserir a terceira mercadoria");
+
+        // Mercadorias 2 e 3 empatam em total 0; sem desempate a ordem entre
+        // elas não é garantida e a paginação poderia pular/repetir linhas.
+        let ids = ids(&pool, serde_json::json!({ "sortBy": "estoqueTotal", "sortOrder": "ASC" })).await;
+
+        assert_eq!(ids, vec![2, 3, 1], "0, 0 e 12 — os dois zeros empatados por id");
+    }
+
+    #[test]
+    fn clausula_de_ordenacao_por_estoque_e_correlacionada() {
+        let total = order_by_clause(Some("estoqueTotal"), Some("DESC")).expect("ordenável");
+        assert!(total.starts_with("ORDER BY (SELECT COALESCE(SUM(e.estoque), 0)"), "{total}");
+        assert!(total.contains("e.mercadoriaId = mercadorias.id"), "{total}");
+        assert!(total.ends_with(" DESC"), "{total}");
+
+        let por_loja = order_by_clause(Some("estoque.2"), Some("asc")).expect("ordenável");
+        assert!(por_loja.contains("AND e.lojaId = 2"), "{por_loja}");
+        assert!(por_loja.ends_with(" ASC"), "{por_loja}");
+
+        assert_eq!(order_by_clause(Some("descricao"), None), Some("ORDER BY descricao ASC".into()));
+        assert_eq!(order_by_clause(None, Some("DESC")), None, "sem sortBy não há ORDER BY");
     }
 }

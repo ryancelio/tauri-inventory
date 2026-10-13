@@ -17,6 +17,7 @@ const fieldLabels: Record<keyof MercadoriaInternalFilter, string> = {
   categoriaId: "Categoria",
   grupoId: "Grupo",
   estoque: "Estoque",
+  estoqueTotal: "Estoque Total",
   caracteristicas: "Características",
   observacoes: "Observações",
   precoCusto: "Preço de Custo",

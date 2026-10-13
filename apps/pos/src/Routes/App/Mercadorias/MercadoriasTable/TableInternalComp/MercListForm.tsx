@@ -5,7 +5,13 @@ import {
   SlidersHorizontal,
   Printer,
 } from "lucide-react";
-import { Form, Link, useLoaderData, useNavigate, useSearchParams } from "react-router";
+import {
+  Form,
+  Link,
+  useLoaderData,
+  useNavigate,
+  useSearchParams,
+} from "react-router";
 import { useMemo, RefObject } from "react";
 import { MercPageLoaderData } from "../MercadoriaPage";
 import AutoCompleteDropdown from "../../MercadoriaEdit/FormComponents/BASE-UI/AutoCompleteDropdown/AutoCompleteDropdown";
@@ -33,7 +39,7 @@ export default function MercListForm({
     useLoaderData<MercPageLoaderData>();
 
   // const query = new URL(location.href).searchParams;
-    const [searchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const handleFormChange = (e: React.ChangeEvent<HTMLFormElement>) => {
     if (!e.target.name) return;
@@ -60,8 +66,27 @@ export default function MercListForm({
     formRef.current?.reset();
     resetFormKey();
     caracteristicasRef.current = {};
-    navigate("?");
+
+    // A ordenação (`sortBy`/`sortOrder`) é estado da tabela, não um filtro:
+    // limpando tudo, o próximo clique de cabeçalho voltaria a "do zero".
+    const params = new URLSearchParams();
+    for (const key of ["sortBy", "sortOrder"] as const) {
+      const value = searchParams.get(key);
+      if (value) params.set(key, value);
+    }
+
+    navigate(`?${params.toString()}`);
   };
+
+  // Com só a ordenação na URL não há filtro a remover — o botão ficaria ativo
+  // sem efeito nenhum.
+  const temFiltroAtivo = useMemo(
+    () =>
+      [...searchParams.keys()].some(
+        (key) => key !== "sortBy" && key !== "sortOrder",
+      ),
+    [searchParams],
+  );
 
   const fabricanteItems = useMemo(() => {
     return fabricantes.map((fab) => ({ value: fab.id, label: fab.nome }));
@@ -86,9 +111,10 @@ export default function MercListForm({
             type="button"
             className="absolute right-3 bottom-1.5 flex cursor-pointer items-center justify-center text-xs font-semibold text-gray-600 hover:text-blue-600 disabled:text-gray-300"
             onClick={(e) => {
-              e.preventDefault()
-              handleCleanFilter()}}
-            disabled={searchParams.size == 0}
+              e.preventDefault();
+              handleCleanFilter();
+            }}
+            disabled={!temFiltroAtivo}
           >
             <X size={16} className="mt-0.5" />
             <span className="">Remover filtros</span>

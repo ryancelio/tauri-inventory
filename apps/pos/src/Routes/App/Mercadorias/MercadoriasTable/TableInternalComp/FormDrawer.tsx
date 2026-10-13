@@ -87,7 +87,9 @@ export default function FormDrawer({
                 form="merc-list-form"
                 key={resetKey}
                 lojas={lojas}
-                submitForm={() => submitForm(0)}
+                // Com delay: o grupo agora também tem campo numérico, e sem
+                // debounce cada tecla dispararia uma consulta.
+                submitForm={submitForm}
               />
             </div>
           </div>

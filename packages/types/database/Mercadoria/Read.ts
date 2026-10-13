@@ -114,6 +114,25 @@ export interface MercadoriaInternalFilter {
   categoriaId?: NumberFilter;
   grupoId?: NumberFilter;
   estoque?: EstoqueFilter;
+  /**
+   * Filtro sobre o **estoque total** da mercadoria, ou seja, a soma de
+   * `Estoque.estoque` em todas as lojas — o mesmo resultado de
+   * {@link getEstoqueTotal}.
+   *
+   * Fica fora de `EstoqueFilter` de propósito: as chaves daquele mapa são ids
+   * de loja (validadas como dígitos, e chave inválida é descartada em silêncio),
+   * então um pseudo-computado como "total" ali viraria um filtro que
+   * discretamente não faz nada.
+   *
+   * Mercadoria sem nenhuma linha em `Estoque` tem total `0`
+   * (`COALESCE(SUM(...), 0)`), então `{ lte: { eq: 0 } }` encontra mercadorias
+   * sem estoque cadastrado.
+   *
+   * @example
+   * // "pelo menos 10 unidades somando todas as lojas"
+   * { estoqueTotal: { gte: 10 } }
+   */
+  estoqueTotal?: NumberFilter;
   caracteristicas?: JsonFilter;
   observacoes?: StringFilter;
   precoCusto?: NumberFilter;

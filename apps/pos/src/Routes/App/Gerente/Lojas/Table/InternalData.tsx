@@ -15,7 +15,8 @@ export default function InternalData({
     selectedLoja: ILoja | null;
     isFetching: boolean;
     lojaData: Awaited<ReturnType<typeof getDataLoader>> | undefined;
-}) {
+  }) {
+
 
   if (isFetching) {
     return (
@@ -42,6 +43,16 @@ export default function InternalData({
         {lojaData?.funcionariosAtivos.map((fun) => (
           <div>{fun.nome}</div>
         ))}
+      </div>
+      <div>
+        Mercadorias: {lojaData?.mercadoriasPrincipais.count }
+        <div>
+          {lojaData?.mercadoriasPrincipais.data.map((merc) => (
+            <div key={merc.id}>
+              {merc.descricao}
+            </div>
+          ))}
+        </div>
       </div>
     </motion.div>
   );

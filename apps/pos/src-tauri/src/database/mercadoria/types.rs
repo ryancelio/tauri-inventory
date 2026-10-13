@@ -163,6 +163,14 @@ pub struct MercadoriaInternalFilter {
     /// Lojas são ANDed: `{"1": {gt: 0}, "2": {gt: 0}}` = estoque positivo na
     /// loja 1 **e** na 2.
     pub estoque: Option<EstoqueFilter>,
+    /// Filtro sobre o **estoque total** (soma de `estoques.estoque` em todas as
+    /// lojas não apagadas), o espelho de `getEstoqueTotal` no front-end.
+    ///
+    /// Fora de `estoque` de propósito: as chaves daquele mapa são ids de loja
+    /// validados como dígitos, e chave inválida é descartada em silêncio — um
+    /// pseudo-computado ali viraria um filtro que discretamente não faz nada.
+    /// Mercadoria sem linha em `estoques` tem total 0.
+    pub estoque_total: Option<NumberFilter>,
     pub caracteristicas: Option<JsonFilter>,
     pub observacoes: Option<StringFilter>,
     pub preco_custo: Option<NumberFilter>,
