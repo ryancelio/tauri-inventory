@@ -1,6 +1,5 @@
 import {
   ActionFunctionArgs,
-  LoaderFunction,
   LoaderFunctionArgs,
   redirect,
   useLoaderData,
@@ -18,18 +17,18 @@ import {
   updateUsuarioAction,
 } from "../../Routers/Actions/UsuariosActions";
 
-export async function loader({ context }: LoaderFunctionArgs){
+export async function loader({ context }: LoaderFunctionArgs) {
   const usuarios = await getUsuarios(true);
   const usuarioLogado = context.get(userContext);
   const isOfflineMode = await getIsOfflineModeActive();
   const lojas = await getLojas();
 
   if (!usuarioLogado) {
-    return redirect("/unauthorized")
+    return redirect("/unauthorized");
   }
 
   return { usuarios, isOfflineMode, usuarioLogado, lojas };
-};
+}
 
 export interface UsuarioPageLoaderData {
   usuarios: IUsuario[];
@@ -71,8 +70,6 @@ export async function action({ request, context }: ActionFunctionArgs) {
 }
 
 export function Component() {
-
-
   const [search, setSearch] = useState("");
 
   const { usuarios, usuarioLogado, isOfflineMode, lojas } =
@@ -86,7 +83,6 @@ export function Component() {
         user.id.toString().includes(search),
     );
   }, [usuarios, search]);
-
 
   return (
     <>
@@ -131,11 +127,16 @@ export function Component() {
 
           {/* Cards */}
           <div className="grid grid-cols-1 gap-5 overflow-y-auto p-5 xl:grid-cols-3">
-            {
-              lojas.map((loja) => (
-                <UsersCard usuario={usuarioLogado} users={usuariosFiltrados.filter((user) => user.local.id === loja.id)} isDisabled={isOfflineMode} loja={loja}/>
-              ))
-            }
+            {lojas.map((loja) => (
+              <UsersCard
+                usuario={usuarioLogado}
+                users={usuariosFiltrados.filter(
+                  (user) => user.local.id === loja.id,
+                )}
+                isDisabled={isOfflineMode}
+                loja={loja}
+              />
+            ))}
             {/*<UsersCard
               usuario={usuarioLogado}
               users={loja02}

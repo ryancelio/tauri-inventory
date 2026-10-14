@@ -6,7 +6,6 @@ import {
   Loader2,
   Lock,
   Tag,
-  Trash2,
   User,
 } from "lucide-react";
 import { useLoaderData, useFetcher } from "react-router";
@@ -158,7 +157,7 @@ export default function AddUsuarioModal({
     );
     if (!confirmed || !usuario) return;
     await fetcher.submit(
-      { id: usuario.id, ativo: false, },
+      { id: usuario.id, ativo: false },
       { action: "/gerente/usuarios", method: "PUT" },
     );
   };
