@@ -5,8 +5,13 @@ import { useState } from "react";
 import { useFetcher } from "react-router";
 import { getDataLoader } from "../../../../Routers/AppRoutes/Gerente/Lojas/LojasDataRoute";
 
-export default function LojasTable() {
-  const [selectedLoja, setSelectedLoja] = useState<ILoja | null>(null);
+export default function LojasTable({
+  selectedLoja,
+  setSelectedLoja,
+}: {
+  selectedLoja: ILoja | null;
+  setSelectedLoja: (loja: ILoja | null) => void;
+}) {
   const lojaExtraDataFetcher = useFetcher<typeof getDataLoader>();
 
   const handleSelectLoja = (loja: ILoja | null) => {

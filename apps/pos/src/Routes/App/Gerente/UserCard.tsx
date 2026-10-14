@@ -9,7 +9,7 @@ import {
 import CreateButton from "../Mercadorias/MercadoriaEdit/FormComponents/CreateButton";
 import { AnimatePresence, motion } from "framer-motion";
 import AddUsuarioModal from "./UsuariosModal";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function UsersCard({
   usuario,
@@ -42,6 +42,12 @@ export default function UsersCard({
   };
 
   const [expandedInactive, setExpandedInactive] = useState(false);
+
+  useEffect(() => {
+    if (usuariosInativos.length === 0) {
+      setExpandedInactive(false);
+    }
+  }, [usuariosInativos, setExpandedInactive]);
 
   return (
     <>
@@ -101,17 +107,21 @@ export default function UsersCard({
               ))}
               <div className="flex h-fit w-full flex-col">
                 <button
-                  className="flex p-2"
+                  className={`flex items-center border-b border-slate-200 bg-gray-50 px-4 py-2.5 text-center ${usuariosInativos.length > 0 && "hover:bg-slate-100"} group`}
                   type="button"
                   onClick={() => {
                     if (usuariosInativos.length === 0) return;
                     return setExpandedInactive(!expandedInactive);
                   }}
                 >
-                  Usuarios Inativos: {usuariosInativos.length}
+                  <span
+                    className={`text-sm font-semibold text-slate-500 transition-colors ${usuariosInativos.length > 0 && "group-hover:text-slate-800"} ${expandedInactive && "text-slate-800"}`}
+                  >
+                    Usuarios Inativos: {usuariosInativos.length}
+                  </span>
                   {usuariosInativos.length > 0 && (
                     <ChevronDown
-                      className={`${expandedInactive ? "rotate-180" : "rotate-0"} ml-auto transition-all ease-out`}
+                      className={`${expandedInactive ? "rotate-180" : "rotate-0"} ml-auto size-6 rounded-full p-1 transition-all ease-out hover:bg-slate-300`}
                     />
                   )}
                 </button>

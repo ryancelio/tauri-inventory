@@ -50,3 +50,36 @@ pub async fn get_lojas(
 
     Ok(body)
 }
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct LojaEstoqueTotal {
+    pub count: i32,
+}
+
+#[tauri::command]
+pub async fn get_loja_estoque_total(
+    loja_id: i32,
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<LojaEstoqueTotal, RustApiError> {
+    let is_offline_mode = state.is_offline_mode.load(Ordering::Relaxed);
+    if is_offline_mode {
+        return Ok(LojaEstoqueTotal { count: 0 });
+    }
+
+    let token = get_token(&state)?;
+    let api_url = get_api_url(&app)?;
+
+    let request = state
+        .http_client
+        .get(format!("{api_url}/lojas/{loja_id}"))
+        .bearer_auth(token);
+
+    let identifier = String::from("get_loja_estoque_total");
+
+    let response = try_connection(request, &identifier, &state, &app).await?;
+
+    let body = get_body(&app, response, &identifier).await?;
+
+    Ok(body)
+}

@@ -87,12 +87,12 @@ export function Component() {
               label: "Logs",
               icon: ScrollText,
               // disabled: isOfflineMode,
-          },
-          {
-            to: "/gerente/lojas",
-            label: "Lojas",
-            icon: StoreIcon,
-          }
+            },
+            {
+              to: "/gerente/lojas",
+              label: "Lojas",
+              icon: StoreIcon,
+            },
           ]
         : [];
 
@@ -232,7 +232,10 @@ export function Component() {
                   exit={{ opacity: 0, x: -10 }}
                   className="ml-2 text-lg font-bold tracking-tight whitespace-nowrap text-gray-800"
                 >
-                  Célio Móveis
+                  <div className="flex flex-col">
+                    <h1>Célio Móveis</h1>
+                    <p className="text-[13px] text-gray-500 font-normal">{usuario?.local.nome}</p>
+                  </div>
                 </motion.span>
               )}
             </AnimatePresence>

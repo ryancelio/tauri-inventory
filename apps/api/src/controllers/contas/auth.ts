@@ -23,6 +23,10 @@ export const login = async (
     if (!row)
       return res.status(400).json({ response: "Usuário ou Senha Inválidos." });
     const user = row;
+
+    if (user && user.ativo === false) {
+      return res.status(400).json({response: "Usuario desativado. Entre em contato com um administrador."})
+    }
     const matches = await bcrypt.compare(senha, user.senhaHash);
 
     if (!matches)

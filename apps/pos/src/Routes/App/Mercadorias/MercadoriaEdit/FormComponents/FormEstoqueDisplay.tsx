@@ -23,6 +23,12 @@ const EstoqueDisplay = ({
           " focus:border-blue-400 focus:bg-white focus:ring-1 focus:ring-blue-400 focus:outline-none " +
           " [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         }
+        onClick={(e) => e.currentTarget.select()}
+        onBlur={(e) => {
+          if (e.target.value === ""){
+            e.target.value = "0"
+          }
+        }}
         id={id}
         name={id}
         type="number"

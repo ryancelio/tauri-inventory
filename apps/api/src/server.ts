@@ -18,6 +18,7 @@ import logsRouter from "./routes/Logs";
 import MercadoriaModel from "./models/Mercadoria";
 import { Sequelize } from "sequelize-typescript";
 import lojasRouter from "./routes/Loja";
+import { getLojaEstoqueTotal } from "./controllers/Loja";
 
 const app = express();
 
@@ -49,30 +50,7 @@ app.use("/photos/mercadorias", mercPhotosRouter);
 
 app.use("", authRouter);
 
-app.use("/test", async (req, res) => {
-  return res.status(202).json(
-    await MercadoriaModel.findAndCountAll({
-      limit: 50,
-      include: [
-        { association: "fabricante" },
-        {
-          association: "categoria",
-          include: ["grupo"],
-        },
-        {
-          association: "caracteristicas",
-          attributes: ["id", "nome", "tipo"],
-          through: { attributes: ["valor"] },
-        },
-        {
-          association: "estoque",
-          include:[{association: "loja"}]
-        }
-      ],
-      attributes: { exclude: ["grupoId", "categoriaId", "fabricanteId"] },
-    })
-  );
-});
+app.use("/test/:lojaId", getLojaEstoqueTotal);
 const PORT = 8080;
 
 app.listen(PORT, "0.0.0.0", () => {

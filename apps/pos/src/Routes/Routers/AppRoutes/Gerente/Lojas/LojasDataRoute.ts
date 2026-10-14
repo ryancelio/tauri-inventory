@@ -1,6 +1,7 @@
 import { LoaderFunctionArgs, RouteObject } from "react-router";
 import { getUsuarios } from "../../../../../api/apiUsuario";
 import { getMercadorias } from "../../../../../api/apiMercadoria";
+import { getLojaEstoqueTotal } from "../../../../../api/apiLojas";
 
 // /gerente/lojas/
 const LojasDataRoute: RouteObject[] = [
@@ -44,7 +45,9 @@ export async function getDataLoader({ request }: LoaderFunctionArgs) {
     sortOrder: "DESC"
   });
 
-  return { funcionariosAtivos, funcionariosInativos, mercadoriasPrincipais };
+  const lojaEstoqueTotal = await getLojaEstoqueTotal(lojaId);
+
+  return { funcionariosAtivos, funcionariosInativos, mercadoriasPrincipais, lojaEstoqueTotal: lojaEstoqueTotal.count };
 }
 
 export default LojasDataRoute;
