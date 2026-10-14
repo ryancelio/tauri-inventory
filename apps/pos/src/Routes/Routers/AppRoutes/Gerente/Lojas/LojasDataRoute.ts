@@ -42,12 +42,17 @@ export async function getDataLoader({ request }: LoaderFunctionArgs) {
     },
     limit: 5,
     sortBy: `estoque.${lojaId}`,
-    sortOrder: "DESC"
+    sortOrder: "DESC",
   });
 
   const lojaEstoqueTotal = await getLojaEstoqueTotal(lojaId);
 
-  return { funcionariosAtivos, funcionariosInativos, mercadoriasPrincipais, lojaEstoqueTotal: lojaEstoqueTotal.count };
+  return {
+    funcionariosAtivos,
+    funcionariosInativos,
+    mercadoriasPrincipais,
+    lojaEstoqueTotal: lojaEstoqueTotal.count,
+  };
 }
 
 export default LojasDataRoute;
