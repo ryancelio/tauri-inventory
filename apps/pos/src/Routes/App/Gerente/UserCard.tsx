@@ -5,6 +5,7 @@ import {
   ShieldCheck,
   Users,
   ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import CreateButton from "../Mercadorias/MercadoriaEdit/FormComponents/CreateButton";
 import { AnimatePresence, motion } from "framer-motion";
@@ -95,9 +96,10 @@ export default function UsersCard({
         </div>
 
         {/* Tabela */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="h-full overflow-y-auto">
           {users.length > 0 ? (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-slate-100 flex flex-col justify-between h-full">
+              <div className="grow">
               {usuariosAtivos.map((user) => (
                 <UserRow
                   loja={loja}
@@ -105,7 +107,8 @@ export default function UsersCard({
                   handleDoubleClick={handleDoubleClickActive}
                 />
               ))}
-              <div className="flex h-fit w-full flex-col">
+              </div>
+              <div className="flex w-full flex-col">
                 <button
                   className={`flex items-center border-b border-slate-200 bg-gray-50 px-4 py-2.5 text-center ${usuariosInativos.length > 0 && "hover:bg-slate-100"} group`}
                   type="button"
@@ -120,7 +123,7 @@ export default function UsersCard({
                     Usuarios Inativos: {usuariosInativos.length}
                   </span>
                   {usuariosInativos.length > 0 && (
-                    <ChevronDown
+                    <ChevronUp
                       className={`${expandedInactive ? "rotate-180" : "rotate-0"} ml-auto size-6 rounded-full p-1 transition-all ease-out hover:bg-slate-300`}
                     />
                   )}
@@ -132,7 +135,7 @@ export default function UsersCard({
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.15 }}
-                      className={`flex flex-col overflow-hidden`}
+                      className={`flex flex-col overflow-hidden max-h-1/2`}
                     >
                       {usuariosInativos.map((usuario) => (
                         <UserRow

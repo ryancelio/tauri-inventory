@@ -2,6 +2,7 @@ import { LoaderFunctionArgs, RouteObject } from "react-router";
 import { getUsuarios } from "../../../../../api/apiUsuario";
 import { getMercadorias } from "../../../../../api/apiMercadoria";
 import { getLojaEstoqueTotal } from "../../../../../api/apiLojas";
+import { timeout } from "../../../../../Helpers/delay";
 
 // /gerente/lojas/
 const LojasDataRoute: RouteObject[] = [
@@ -11,6 +12,7 @@ const LojasDataRoute: RouteObject[] = [
   },
 ];
 export async function getDataLoader({ request }: LoaderFunctionArgs) {
+  await timeout(2000);
   const url = new URL(request.url);
   const searchParams = url.searchParams;
 

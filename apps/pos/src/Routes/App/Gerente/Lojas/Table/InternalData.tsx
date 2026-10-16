@@ -28,10 +28,27 @@ export default function InternalData({
 }) {
   if (isFetching || !lojaData) {
     return (
-      <div className="grid h-full place-items-center">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-          <p className="text-sm text-slate-500">Carregando informações...</p>
+      <div className="flex size-full flex-col gap-2 overflow-y-auto">
+        <div className="h-24 shrink-0 border-b border-slate-200 bg-linear-to-r from-slate-50 via-white to-blue-50/60 px-6 py-5" >
+          <div className="h-full rounded-lg w-1/2 bg-slate-100 animate-pulse"/>
+        </div>
+
+        <div className="p-4 flex-col flex gap-6">
+          <div className="flex gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="h-20 w-full shrink animate-pulse rounded-xl bg-slate-100 shadow-sm"
+              />
+            ))}
+          </div>
+          <div className="flex gap-5">
+            {[1, 2].map((i) => (
+              <div key={i}
+              className="h-40 w-full shrink animate-pulse rounded-xl bg-slate-100 shadow-sm"
+              />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -110,7 +127,7 @@ function StoreHeader({ loja }: { loja: ILoja }) {
   return (
     <div className="shrink-0 border-b border-slate-200 bg-linear-to-r from-slate-50 via-white to-blue-50/60 px-6 py-5">
       <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25">
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-white text-slate-600 shadow-xs">
           <Store size={22} />
         </div>
         <div className="min-w-0 flex-1">

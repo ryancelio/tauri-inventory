@@ -5,6 +5,9 @@ import { useFetcher } from "react-router";
 import { getDataLoader } from "../../../../Routers/AppRoutes/Gerente/Lojas/LojasDataRoute";
 import { AnimatePresence, motion } from "motion/react";
 import { Store } from "lucide-react";
+import CreateButton from "../../../Mercadorias/MercadoriaEdit/FormComponents/CreateButton";
+import { useState } from "react";
+import CreateLojaModal from "../CreateLojaModal";
 
 export default function LojasTable({
   selectedLoja,
@@ -15,6 +18,9 @@ export default function LojasTable({
 }) {
   const lojaExtraDataFetcher = useFetcher<typeof getDataLoader>();
 
+  const [createLojaOpen, setCreateLojaOpen] = useState(false);
+
+
   const handleSelectLoja = (loja: ILoja | null) => {
     setSelectedLoja(loja);
     if (!loja) return;
@@ -24,7 +30,16 @@ export default function LojasTable({
     );
   };
 
+
+
   return (
+    <>
+      <AnimatePresence>
+        {
+          createLojaOpen &&
+          <CreateLojaModal onClose={() => setCreateLojaOpen(false)} />
+        }
+      </AnimatePresence>
     <div className="flex h-full min-h-0 gap-6">
       <motion.div
         initial={{ opacity: 0, x: -8 }}
@@ -32,11 +47,17 @@ export default function LojasTable({
         transition={{ duration: 0.2, delay: 0.05 }}
         className="flex h-full w-1/3 min-w-0 flex-col rounded-xl border border-slate-200 bg-white shadow-sm"
       >
-        <div className="border-b border-slate-200 px-4 py-3">
+        <div className="border-b border-slate-200 px-4 py-3 flex">
+          <div className="">
+
           <h2 className="text-sm font-semibold text-slate-800">
             Selecione a Loja
           </h2>
           <p className="text-xs text-slate-500">Lista de lojas cadastradas</p>
+          </div>
+          <div className="ml-auto">
+            <CreateButton className="size-8" onClick={() => setCreateLojaOpen(true)} />
+          </div>
         </div>
         <div className="min-h-0 flex-1 p-4">
           <InternalTable
@@ -93,6 +114,8 @@ export default function LojasTable({
           )}
         </AnimatePresence>
       </motion.div>
-    </div>
+      </div>
+    </>
+
   );
 }

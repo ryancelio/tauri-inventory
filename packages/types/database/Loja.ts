@@ -1,3 +1,5 @@
+import z from "zod";
+
 export interface ILoja{
   id: number;
   nome: string;
@@ -5,3 +7,10 @@ export interface ILoja{
   createdAt: string;
   updatedAt: string;
 }
+
+export const createLojaSchema = z.object({
+  nome: z.string(),
+  CNPJ: z.string(),
+})
+
+export type CreateLojaPayload = z.infer<typeof createLojaSchema>;

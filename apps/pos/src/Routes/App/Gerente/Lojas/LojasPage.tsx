@@ -1,10 +1,35 @@
 import { AnimatePresence, motion } from "motion/react";
 import { Loader2, Store } from "lucide-react";
-import { LoaderFunctionArgs } from "react-router";
+import { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import LojasTable from "./Table/LojasTable";
-import { getLojas } from "../../../../api/apiLojas";
+import { createLoja, getLojas } from "../../../../api/apiLojas";
 import { useState } from "react";
 import { ILoja } from "@tauri-inventory/types";
+
+export async function action({ request }: ActionFunctionArgs) {
+  try {
+    // await timeout(1000);
+    const formData = await request.formData();
+    const nome = formData.get("nome")?.toString();
+    const cnpj = formData.get("CNPJ")?.toString();
+
+    if (!nome || nome === "") {
+      return { ok: false, error: "Nome inválido." };
+    }
+
+    if (!cnpj || cnpj === "") {
+      return { ok: false, error: "CNPJ inválido." };
+    }
+
+    console.log({ CNPJ: cnpj, nome });
+
+    await createLoja({ CNPJ: cnpj, nome });
+    return { ok: true, error: null };
+  } catch (e) {
+    console.error(e);
+    return { ok: false, error: e };
+  }
+}
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const allLojas = await getLojas();
@@ -33,7 +58,7 @@ export function Component() {
   const [selectedLoja, setSelectedLoja] = useState<ILoja | null>(null);
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-linear-to-br from-slate-50 via-white to-blue-50/30 p-4 sm:p-6 lg:p-8">
+    <div className="flex h-full w-full flex-col overflow-hidden bg-linear-to-br from-slate-50 via-white to-blue-50/30 p-4 md:p-5">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -43,8 +68,8 @@ export function Component() {
         <header className="shrink-0 border-b border-slate-200 bg-linear-to-r from-slate-50 via-white to-blue-50 p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
-                <Store className="h-5 w-5 text-white" />
+              <div className="flex size-11 items-center justify-center rounded-xl bg-white shadow-xs">
+                <Store className="size-6 text-slate-600" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-slate-800">Lojas</h1>
@@ -61,10 +86,9 @@ export function Component() {
                   exit={{ opacity: 0, y: 8 }}
                   transition={{ duration: 0.15, ease: "easeOut" }}
                   key={selectedLoja.id}
-                  className="flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50/80 px-4 py-2 shadow-sm"
+                  className="flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 shadow-sm"
                 >
-                  <Store size={18} className="text-blue-600" />
-                  <h1 className="text-lg font-semibold text-blue-800">
+                  <h1 className="text-lg font-semibold text-slate-800">
                     {selectedLoja.nome}
                   </h1>
                 </motion.div>

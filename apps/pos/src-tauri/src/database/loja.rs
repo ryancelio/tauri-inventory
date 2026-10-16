@@ -83,3 +83,44 @@ pub async fn get_loja_estoque_total(
 
     Ok(body)
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct CreateLojaPayload {
+    pub nome: String,
+    #[serde(rename = "CNPJ")]
+    pub cnpj: String,
+}
+
+#[tauri::command]
+pub async fn create_loja(
+    create_loja_payload: CreateLojaPayload,
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<Loja, RustApiError> {
+    let is_offline_mode = state.is_offline_mode.load(Ordering::Relaxed);
+    if is_offline_mode {
+        return Err(RustApiError {
+            code: 400,
+            message: crate::ApiResponse {
+                response: "Não é possivel alterar dados em modo offline.".to_string(),
+            },
+        });
+    }
+
+    let token = get_token(&state)?;
+    let api_url = get_api_url(&app)?;
+
+    let request = state
+        .http_client
+        .post(format!("{api_url}/lojas/"))
+        .bearer_auth(token)
+        .json(&create_loja_payload);
+
+    let identifier = String::from("create_loja");
+
+    let response = try_connection(request, &identifier, &state, &app).await?;
+
+    let body = get_body(&app, response, &identifier).await?;
+
+    Ok(body)
+}
