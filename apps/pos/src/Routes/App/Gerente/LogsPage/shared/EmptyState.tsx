@@ -14,7 +14,7 @@ export function EmptyState({
   icon: Icon = Inbox,
 }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center">
+    <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 px-4 py-16 text-center">
       <Icon className="h-8 w-8 text-slate-300" />
       <p className="mt-3 text-sm font-medium text-slate-600">{message}</p>
       {hint && <p className="mt-1 text-sm text-slate-400">{hint}</p>}

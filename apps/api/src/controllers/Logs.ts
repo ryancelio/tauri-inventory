@@ -64,7 +64,7 @@ export async function getAllLogs(
           association: "Usuario",
           as: "usuario",
           attributes: ["id", "nome", "funcao"],
-          include: [{association: "local"}]
+          include: [{ association: "local" }],
         },
       ],
       attributes: { exclude: ["usuarioId"] },
@@ -105,7 +105,7 @@ export async function getMercLogs(
           association: "Usuario",
           as: "usuario",
           attributes: ["id", "nome", "funcao"],
-          include: [{association: "local"}]
+          include: [{ association: "local" }],
         },
       ],
       attributes: { exclude: ["usuarioId"] },
@@ -147,7 +147,7 @@ export async function getUserLogs(
           association: "Usuario",
           as: "usuario",
           attributes: ["id", "nome", "funcao"],
-          include: [{association: "local"}]
+          include: [{ association: "local" }],
         },
       ],
       attributes: { exclude: ["usuarioId"] },
@@ -187,7 +187,47 @@ export async function getFabricanteLogs(
           association: "Usuario",
           as: "usuario",
           attributes: ["id", "nome", "funcao"],
-          include: [{association: "local"}]
+          include: [{ association: "local" }],
+        },
+      ],
+      attributes: { exclude: ["usuarioId"] },
+      paranoid: false,
+    });
+    res.status(200).json({ count, data: rows as any });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ response: "Erro interno" });
+  }
+}
+
+// GET /logs/loja/:lojaId?page=<Number>
+export async function getLojasLog(
+  req: Request,
+  res: Response<ApiListResponse<AuditLog> | ApiResponse>,
+) {
+  try {
+    const { actionFilter, levelFilter, userIdFilter, offset } =
+      getDefaultFilters(req);
+
+    const lojaId = req.params.lojaId;
+
+    const { count, rows } = await AuditLogModel.findAndCountAll({
+      where: {
+        alvoTipo: AuditLogTargetType.LOJA,
+        alvoId: lojaId,
+        ...userIdFilter,
+        ...levelFilter,
+        ...actionFilter,
+      },
+      order: [["id", "DESC"]],
+      limit: LOG_PAGE_LIMIT,
+      offset,
+      include: [
+        {
+          association: "Usuario",
+          as: "usuario",
+          attributes: ["id", "nome", "funcao"],
+          include: [{ association: "local" }],
         },
       ],
       attributes: { exclude: ["usuarioId"] },

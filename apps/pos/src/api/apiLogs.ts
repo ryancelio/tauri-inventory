@@ -124,3 +124,34 @@ export async function getLogsFabricantes({
     level,
   });
 }
+export async function getLogsLojas({
+  lojaId,
+  page,
+  userId,
+  action,
+  level,
+}: {
+  lojaId: number;
+  page?: number;
+  userId?: number;
+  action?: AuditLogAction;
+  level?: AuditLogLevel;
+}): Promise<ApiListResponse<AuditLog>> {
+  if (!page || page < 0) {
+    page = 1;
+  }
+  if (!lojaId) {
+    return {
+      count: 0,
+      data: [],
+    };
+  }
+
+  return await invoke<ApiListResponse<AuditLog>>("get_logs_loja", {
+    page: page.toString(),
+    lojaId,
+    userId,
+    action,
+    level,
+  });
+}

@@ -89,17 +89,23 @@ export default function UsersCard({
         </div>
 
         {/* Tabela */}
-        <div className="h-full overflow-y-auto">
+        <div className={`h-full ${usuariosAtivos.length > 0 || expandedInactive ?  "overflow-y-auto" : "overflow-hidden"}`}>
           {users.length > 0 ? (
             <div className="flex h-full flex-col justify-between divide-y divide-slate-100">
               <div className="grow">
-                {usuariosAtivos.map((user) => (
+
+                {
+                  usuariosAtivos.length > 0 || expandedInactive ?
+                  usuariosAtivos.map((user) => (
                   <UserRow
                     loja={loja}
                     user={user}
                     handleDoubleClick={handleDoubleClickActive}
                   />
-                ))}
+                  )) :
+                  <EmptyUserList onClick={() => setAddModal(loja)} isDisabled={isDisabled} active />
+
+                }
               </div>
               <div className="flex w-full flex-col">
                 <button
@@ -143,34 +149,39 @@ export default function UsersCard({
               </div>
             </div>
           ) : (
-            <div className="flex h-full items-center justify-center p-8">
-              <div className="text-center">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
-                  <Users size={30} className="text-slate-400" />
-                </div>
-
-                <h2 className="text-lg font-semibold text-slate-700">
-                  Nenhum usuário encontrado
-                </h2>
-
-                <p className="mt-2 text-sm text-slate-500">
-                  Adicione usuários para esta loja.
-                </p>
-
-                <CreateButton
-                  disabled={isDisabled || false}
-                  onClick={() => setAddModal(loja)}
-                  // className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-blue-500 px-4 font-medium text-white transition-all not-disabled:hover:brightness-90 disabled:bg-blue-300"
-                  className="mt-5 inline-flex h-11"
-                  label="Adicionar Usuário"
-                />
-              </div>
-            </div>
+            <EmptyUserList onClick={() => setAddModal(loja)} isDisabled={isDisabled} />
           )}
         </div>
       </div>
     </>
   );
+}
+
+function EmptyUserList({onClick,active,isDisabled}:{isDisabled?: boolean, onClick: () => void, active?: boolean}) {
+  return (
+    <div className="flex h-full items-center justify-center p-8">
+      <div className="text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
+          <Users size={30} className="text-slate-400" />
+        </div>
+
+        <h2 className="text-lg font-semibold text-slate-700">
+          {`Nenhum usuário ${active ? "ativo" : ""} encontrado`}
+        </h2>
+
+        <p className="mt-2 text-sm text-slate-500">
+          Adicione usuários para esta loja.
+        </p>
+
+        <CreateButton
+          disabled={isDisabled || false}
+          onClick={onClick}
+          className="mt-5 inline-flex h-11"
+          label="Adicionar Usuário"
+        />
+      </div>
+    </div>
+  )
 }
 
 function UserRow({

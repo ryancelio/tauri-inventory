@@ -1,7 +1,7 @@
 import { redirect, RouteObject } from "react-router";
 import LogsPage from "../../../../App/Gerente/LogsPage/LogsPage";
 
-  // /gerente/logs
+// /gerente/logs
 const LogsRoute: RouteObject[] = [
   {
     path: "logs",
@@ -29,6 +29,10 @@ const LogsRoute: RouteObject[] = [
       {
         path: "fabricantes",
         lazy: () => import("../../../../App/Gerente/LogsPage/FabricanteLogs"),
+      },
+      {
+        path: "lojas",
+        lazy: () => import("../../../../App/Gerente/LogsPage/LojasLog"),
       },
     ],
   },

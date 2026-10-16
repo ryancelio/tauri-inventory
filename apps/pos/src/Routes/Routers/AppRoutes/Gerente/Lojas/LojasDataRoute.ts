@@ -2,7 +2,6 @@ import { LoaderFunctionArgs, RouteObject } from "react-router";
 import { getUsuarios } from "../../../../../api/apiUsuario";
 import { getMercadorias } from "../../../../../api/apiMercadoria";
 import { getLojaEstoqueTotal } from "../../../../../api/apiLojas";
-import { timeout } from "../../../../../Helpers/delay";
 
 // /gerente/lojas/
 const LojasDataRoute: RouteObject[] = [

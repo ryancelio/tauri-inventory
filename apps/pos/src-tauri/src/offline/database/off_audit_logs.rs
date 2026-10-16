@@ -5,11 +5,7 @@ use sqlx::{QueryBuilder, Sqlite};
 use tauri::State;
 
 use crate::{
-    database::{
-        audit_logs::AuditLog,
-        usuarios::LoggedUser,
-        ApiListResponse,
-    },
+    database::{audit_logs::AuditLog, usuarios::LoggedUser, ApiListResponse},
     offline::database::{
         get_db_pool,
         off_users::{SQLiteLoggedUser, USUARIOS_SELECT},
@@ -38,10 +34,7 @@ pub struct SQLiteAuditLog {
 }
 
 impl SQLiteAuditLog {
-    fn into_audit_log(
-        self,
-        usuarios: &HashMap<i32, LoggedUser>,
-    ) -> Result<AuditLog, RustApiError> {
+    fn into_audit_log(self, usuarios: &HashMap<i32, LoggedUser>) -> Result<AuditLog, RustApiError> {
         Ok(AuditLog {
             id: self.id,
             usuario: self.usuario_id.and_then(|id| usuarios.get(&id)).cloned(),
@@ -66,15 +59,11 @@ fn parse_enum_value<T>(value: &str, coluna: &str) -> Result<T, RustApiError>
 where
     T: serde::de::DeserializeOwned,
 {
-    serde_json::from_value(serde_json::Value::String(value.to_string())).map_err(|_| {
-        RustApiError {
-            code: 500,
-            message: ApiResponse {
-                response: format!(
-                    "Valor inválido para a coluna {coluna} no banco de dados local"
-                ),
-            },
-        }
+    serde_json::from_value(serde_json::Value::String(value.to_string())).map_err(|_| RustApiError {
+        code: 500,
+        message: ApiResponse {
+            response: format!("Valor inválido para a coluna {coluna} no banco de dados local"),
+        },
     })
 }
 
@@ -134,26 +123,22 @@ fn apply_log_filters<'args>(
 pub async fn usuarios_por_id(
     pool: &sqlx::Pool<sqlx::Sqlite>,
 ) -> Result<HashMap<i32, LoggedUser>, RustApiError> {
-    let usuarios: Vec<SQLiteLoggedUser> =
-        match sqlx::query_as(&format!(
-            "{USUARIOS_SELECT}WHERE usuarios.deletedAt IS NULL"
-        ))
-        .fetch_all(pool)
-        .await
-        {
-            Ok(val) => val,
-            Err(e) => {
-                return Err(RustApiError {
-                    code: 500,
-                    message: ApiResponse {
-                        response: format!(
-                            "Erro ao executar a consulta no modo offline: {}",
-                            e
-                        ),
-                    },
-                })
-            }
-        };
+    let usuarios: Vec<SQLiteLoggedUser> = match sqlx::query_as(&format!(
+        "{USUARIOS_SELECT}WHERE usuarios.deletedAt IS NULL"
+    ))
+    .fetch_all(pool)
+    .await
+    {
+        Ok(val) => val,
+        Err(e) => {
+            return Err(RustApiError {
+                code: 500,
+                message: ApiResponse {
+                    response: format!("Erro ao executar a consulta no modo offline: {}", e),
+                },
+            })
+        }
+    };
 
     Ok(usuarios
         .into_iter()
@@ -283,6 +268,24 @@ pub async fn offline_get_fabricante_logs(
         &state,
         page,
         Some(("FABRICANTE", fabricante_id)),
+        user_id,
+        action,
+        level,
+    )
+    .await
+}
+pub async fn offline_get_loja_logs(
+    state: State<'_, AppState>,
+    page: &'_ str,
+    loja_id: i32,
+    user_id: Option<i32>,
+    action: Option<&'_ str>,
+    level: Option<&'_ str>,
+) -> Result<ApiListResponse<AuditLog>, RustApiError> {
+    query_audit_logs(
+        &state,
+        page,
+        Some(("LOJA", loja_id)),
         user_id,
         action,
         level,

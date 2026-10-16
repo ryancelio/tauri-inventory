@@ -1,3 +1,1 @@
-export default function LogPageSkeleton(){
-    
-}
+export default function LogPageSkeleton() {}

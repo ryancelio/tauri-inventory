@@ -1,4 +1,4 @@
-import { Loader2, Package } from "lucide-react";
+import { Package } from "lucide-react";
 import { LoaderFunctionArgs, useLoaderData } from "react-router";
 import { AuditLogList, useFilterParams } from "./AuditLog/AuditLogsList";
 import {
@@ -12,14 +12,11 @@ import { getSingleMercadoria, getUsuarios } from "../../../../api/apiHelper";
 import { getLogsMercadoria } from "../../../../api/apiLogs";
 import { Item } from "../../Mercadorias/MercadoriaEdit/FormComponents/BASE-UI/AutoCompleteDropdown/AutoCompleteDropdown";
 import MercadoriaSimpleSelect from "../../Mercadorias/MercadoriaEdit/FormComponents/BASE-UI/AutoCompleteDropdown/MercadoriaSImpleDropdown";
+import { AppError } from "../../Errors/AppError";
+import { LogHydrateFallback } from "./shared/LogFallback";
 
-export function HydrateFallback() {
-  return (
-    <div className="grid size-full place-items-center">
-      <Loader2 />
-    </div>
-  );
-}
+export const HydrateFallback = LogHydrateFallback;
+export const ErrorBoundary = AppError;
 
 export async function loader({ url }: LoaderFunctionArgs) {
   const page = Number(url.searchParams.get("page"));
@@ -80,25 +77,24 @@ export function Component() {
       emptyIcon={Package}
       usersItems={usersItems}
       actions={
-        <div className="w-2/3">
-          <MercadoriaSimpleSelect
-            name="mercItem"
-            label="Mercadoria"
-            classNames={{ input: "bg-white" }}
-            isLog={true}
-            selectedItem={
-              mercadoria
-                ? { label: mercadoria.descricao, value: mercadoria.id }
-                : null
-            }
-            onValueChange={(item) =>
-              updateFilters({
-                mercId: item?.value?.toString(),
-                mercDesc: item?.label,
-              })
-            }
-          />
-        </div>
+        <MercadoriaSimpleSelect
+          name="mercItem"
+          label="Mercadoria"
+          textSize="small"
+          classNames={{ input: "bg-white" }}
+          isLog={true}
+          selectedItem={
+            mercadoria
+              ? { label: mercadoria.descricao, value: mercadoria.id }
+              : null
+          }
+          onValueChange={(item) =>
+            updateFilters({
+              mercId: item?.value?.toString(),
+              mercDesc: item?.label,
+            })
+          }
+        />
       }
     />
   );

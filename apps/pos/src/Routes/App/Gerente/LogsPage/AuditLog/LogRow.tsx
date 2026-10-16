@@ -43,8 +43,8 @@ export function LogRow({ log, index }: { log: AuditLog; index: number }) {
     <motion.div
       initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, delay: Math.min(index * 0.03, 0.3) }}
-      className="group relative shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md"
+      transition={{ duration: 0.18, delay: Math.min(index * 0.012, 0.15) }}
+      className="group relative shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white transition-colors hover:border-slate-300 hover:bg-slate-50"
     >
       <span
         className={`absolute inset-y-0 left-0 w-1 ${nivel.barClassName}`}
@@ -179,7 +179,7 @@ export function LogRow({ log, index }: { log: AuditLog; index: number }) {
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="overflow-hidden"
           >
-            <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-4 pl-13">
+            <div className="border-t border-slate-200 bg-slate-50 px-5 py-4 pl-18">
               <LogDetails dados={log.dados} />
             </div>
           </motion.div>

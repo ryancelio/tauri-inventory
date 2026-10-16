@@ -32,7 +32,7 @@ app.use("/grupos", requiresAuth, grupoRouter);
 app.use("/usuarios", requiresAuth, usuarioRouter);
 app.use("/atributos", requiresAuth, atributosRouter);
 app.use("/logs", logsRouter);
-app.use("/lojas", lojasRouter);
+app.use("/lojas", requiresAuth, lojasRouter);
 
 app.get("/health", (req, res, next) => {
   res.status(200).json({ response: "Ok", timestamp: new Date().toISOString() });
@@ -50,7 +50,6 @@ app.use("/photos/mercadorias", mercPhotosRouter);
 
 app.use("", authRouter);
 
-app.use("/test/:lojaId", getLojaEstoqueTotal);
 const PORT = 8080;
 
 app.listen(PORT, "0.0.0.0", () => {

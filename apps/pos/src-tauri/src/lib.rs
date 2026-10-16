@@ -169,6 +169,7 @@ pub fn run() {
             database::audit_logs::get_logs_mercadoria,
             database::audit_logs::get_logs_usuario,
             database::audit_logs::get_logs_fabricante,
+            database::audit_logs::get_logs_loja,
             database::loja::get_lojas,
             database::loja::get_loja_estoque_total,
             database::loja::create_loja,

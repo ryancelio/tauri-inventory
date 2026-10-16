@@ -1,4 +1,4 @@
-import { Loader2, User } from "lucide-react";
+import { User } from "lucide-react";
 import { useMemo } from "react";
 import { LoaderFunctionArgs, useLoaderData } from "react-router";
 import { AuditLogList, useFilterParams } from "./AuditLog/AuditLogsList";
@@ -13,14 +13,11 @@ import { getUsuarios } from "../../../../api/apiHelper";
 import AutoCompleteDropdown, {
   Item,
 } from "../../Mercadorias/MercadoriaEdit/FormComponents/BASE-UI/AutoCompleteDropdown/AutoCompleteDropdown";
+import { AppError } from "../../Errors/AppError";
+import { LogHydrateFallback } from "./shared/LogFallback";
 
-export function HydrateFallback() {
-  return (
-    <div className="grid place-items-center">
-      <Loader2 />
-    </div>
-  );
-}
+export const HydrateFallback = LogHydrateFallback;
+export const ErrorBoundary = AppError;
 
 export async function loader({ url }: LoaderFunctionArgs) {
   // await new Promise((res) => setTimeout(res, 800));
@@ -63,8 +60,9 @@ export function Component() {
 
   const targetUserIdItem = useMemo(
     () =>
-      usersItems.find((i) => i.value !== null && String(i.value) === targetUserId) ??
-      null,
+      usersItems.find(
+        (i) => i.value !== null && String(i.value) === targetUserId,
+      ) ?? null,
     [targetUserId, usersItems],
   );
 
@@ -85,19 +83,18 @@ export function Component() {
       emptyIcon={User}
       usersItems={usersItems}
       actions={
-        <div className="w-1/3">
-          <AutoCompleteDropdown
-            items={usersItems}
-            classNames={{ input: "bg-white" }}
-            name="userIdTarget"
-            label="Usuario"
-            selectedItem={targetUserIdItem}
-            placeholder="Selecione o usuario alvo"
-            setSelectedItem={(item) =>
-              updateFilters({ targetUserId: item?.value?.toString() })
-            }
-          />
-        </div>
+        <AutoCompleteDropdown
+          items={usersItems}
+          classNames={{ input: "bg-white" }}
+          name="userIdTarget"
+          label="Usuário"
+          textSize="small"
+          selectedItem={targetUserIdItem}
+          placeholder="Selecione o usuário alvo"
+          setSelectedItem={(item) =>
+            updateFilters({ targetUserId: item?.value?.toString() })
+          }
+        />
       }
     />
   );

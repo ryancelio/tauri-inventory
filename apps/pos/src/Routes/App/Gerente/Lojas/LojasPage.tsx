@@ -26,7 +26,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return { ok: true, error: null };
   } catch (e) {
     console.error(e);
-    return { ok: false, error: e };
+    return { ok: false, error: e instanceof Error ? e.message : "Erro ao criar loja" };
   }
 }
 

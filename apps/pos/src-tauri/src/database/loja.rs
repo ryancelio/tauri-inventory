@@ -72,7 +72,7 @@ pub async fn get_loja_estoque_total(
 
     let request = state
         .http_client
-        .get(format!("{api_url}/lojas/{loja_id}"))
+        .get(format!("{api_url}/lojas/{loja_id}/estoque"))
         .bearer_auth(token);
 
     let identifier = String::from("get_loja_estoque_total");

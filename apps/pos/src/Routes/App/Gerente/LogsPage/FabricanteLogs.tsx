@@ -12,6 +12,11 @@ import AutoCompleteDropdown, {
   Item,
 } from "../../Mercadorias/MercadoriaEdit/FormComponents/BASE-UI/AutoCompleteDropdown/AutoCompleteDropdown";
 import { AuditLogList, useFilterParams } from "./AuditLog/AuditLogsList";
+import { AppError } from "../../Errors/AppError";
+import { LogHydrateFallback } from "./shared/LogFallback";
+
+export const HydrateFallback = LogHydrateFallback;
+export const ErrorBoundary = AppError;
 
 export async function loader({ url }: LoaderFunctionArgs) {
   const page = Number(url.searchParams.get("page"));
@@ -73,23 +78,20 @@ export function Component() {
       emptyIcon={Factory}
       usersItems={usersItems}
       actions={
-        <div className="w-1/3">
-          <AutoCompleteDropdown
-            items={fabricantesItems}
-            name="fabricanteId"
-            label="Fabricante"
-            selectedItem={
-              fabricante
-                ? { label: fabricante.nome, value: fabricante.id }
-                : null
-            }
-            placeholder="Selecione o Fabricante"
-            classNames={{ input: "bg-white" }}
-            setSelectedItem={(item) =>
-              updateFilters({ fabricanteId: item?.value?.toString() })
-            }
-          />
-        </div>
+        <AutoCompleteDropdown
+          items={fabricantesItems}
+          name="fabricanteId"
+          label="Fabricante"
+          placeholder="Selecione o Fabricante"
+          textSize="small"
+          selectedItem={
+            fabricante ? { label: fabricante.nome, value: fabricante.id } : null
+          }
+          classNames={{ input: "bg-white" }}
+          setSelectedItem={(item) =>
+            updateFilters({ fabricanteId: item?.value?.toString() })
+          }
+        />
       }
     />
   );

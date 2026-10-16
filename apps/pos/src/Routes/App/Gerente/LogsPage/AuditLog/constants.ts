@@ -17,6 +17,7 @@ import {
   User as UserIcon,
   type LucideIcon,
   Timeline,
+  Store,
 } from "lucide-react";
 import { Item } from "../../../Mercadorias/MercadoriaEdit/FormComponents/BASE-UI/AutoCompleteDropdown/AutoCompleteDropdown";
 
@@ -87,6 +88,7 @@ export const ALVO_CONFIG: Record<
   [AuditLogTargetType.GRUPO]: { label: "Grupo", icon: Layers },
   [AuditLogTargetType.USUARIO]: { label: "Usuário", icon: UserIcon },
   [AuditLogTargetType.ATRIBUTO]: { label: "Atributo", icon: Timeline },
+  [AuditLogTargetType.LOJA]: { label: "Loja", icon: Store },
 };
 
 export const ACAO_ITEMS: Item[] = [
@@ -118,8 +120,8 @@ export const FIELD_LABELS: Record<string, string> = {
   mercadoriaKey: "Key da mercadoria",
   key: "Key",
   createdAt: "Criado em",
-  updatedAt: "Alterado em"
+  updatedAt: "Alterado em",
 };
 
 export const CURRENCY_FIELDS = new Set(["precoCusto", "precoVenda"]);
-export const DATE_FIELDS = new Set(["createdAt","updatedAt"])
+export const DATE_FIELDS = new Set(["createdAt", "updatedAt"]);

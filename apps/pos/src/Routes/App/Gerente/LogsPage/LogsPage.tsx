@@ -1,12 +1,18 @@
-import { Box, Loader2, LucideProps, ScanEye, Truck, User } from "lucide-react";
+import {
+  Box,
+  Loader2,
+  LucideProps,
+  ScanEye,
+  ScrollText,
+  Store,
+  Truck,
+  User,
+} from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { ForwardRefExoticComponent, RefAttributes } from "react";
-import {
-  NavLink,
-  Outlet,
-  useLocation,
-  useRouteError,
-} from "react-router";
+import { NavLink, Outlet, useLocation } from "react-router";
+import { AppError } from "../../Errors/AppError";
+import { LogHydrateFallback } from "./shared/LogFallback";
 
 interface FilteringTabType {
   label: string;
@@ -14,48 +20,6 @@ interface FilteringTabType {
     Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
   >;
   to: string;
-}
-
-function HydrateFallback() {
-  return (
-    <div className="grid size-full place-items-center">
-      <Loader2 />
-    </div>
-  );
-}
-
-function ErrorBoundary() {
-  let error = useRouteError() as any;
-  console.log(error);
-  if (error instanceof Error) {
-    return (
-      <div className="grid place-items-center size-full border-4 border-dotted border-red-600  bg-linear-to-br from-red-400 to-red-600">
-        <div className="text-center text-white font-semibold text-shadow-sm">
-
-        <div>Erro ao acessar logs.</div>
-        <p>{error.message}</p>
-        <p>
-          Tente novamente e, caso o erro persista, entre em contato com um
-          administrador.
-        </p>
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="grid place-items-center border border-dotted border-red-500 bg-red-400">
-      <div>Erro ao acessar logs.</div>
-      <p>
-        {error?.message && error?.message?.response
-          ? error.message.response
-          : ""}
-      </p>
-      <p>
-        Tente novamente e, caso o erro persista, entre em contato com um
-        administrador.
-      </p>
-    </div>
-  );
 }
 
 const filteringTabs: FilteringTabType[] = [
@@ -75,67 +39,84 @@ const filteringTabs: FilteringTabType[] = [
     to: "fabricantes",
   },
   {
-    label: "Usuario",
+    label: "Usuário",
     icon: User,
     to: "usuarios",
   },
+  {
+    label: "Lojas",
+    icon: Store,
+    to: "lojas",
+  },
 ];
 
-function Component() {
+export const HydrateFallback = LogHydrateFallback;
+export const ErrorBoundary = AppError;
+
+export function Component() {
   const location = useLocation();
+  const activeTab = location.pathname.split("/")[3] ?? "all";
+
   return (
-    <div className="size-full bg-white p-0">
+    <div className="h-full w-full overflow-hidden bg-slate-50 p-3 md:p-5">
       <motion.div
-        className="flex size-full bg-linear-to-b from-gray-50 to-white p-2"
-        initial={{ y: 5 }}
-        animate={{ y: 0 }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.18, ease: "easeOut" }}
+        className="flex h-full w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
       >
-        <nav className="h-full w-1/6 min-w-fit shrink-0">
-          <ul className="flex size-full flex-col gap-1 rounded-lg bg-white">
-            {filteringTabs.map((tab) => {
-              return (
+        <header className="shrink-0 border-b border-slate-200 p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-slate-100 p-3 text-slate-600">
+                <ScrollText size={24} />
+              </div>
+
+              <div>
+                <h1 className="text-2xl font-semibold text-slate-800">Logs</h1>
+                <p className="text-sm text-slate-500">
+                  Rastreabilidade das ações realizadas no sistema
+                </p>
+              </div>
+            </div>
+
+            <nav className="flex flex-wrap items-center gap-1">
+              {filteringTabs.map((tab) => (
                 <NavLink
+                  key={tab.to}
                   to={tab.to}
                   className={({ isActive }) =>
-                    `group relative flex h-12 items-center gap-3 rounded-lg rounded-r-none p-2.5 transition-colors ${
+                    `flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
                       isActive
-                        ? "bg-linear-to-r from-blue-50 to-gray-100 font-semibold text-blue-700"
+                        ? "bg-blue-50 font-semibold text-blue-700"
                         : "font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    } `
+                    }`
                   }
                 >
-                  {({ isTransitioning, isPending }) => (
+                  {({ isPending, isTransitioning }) => (
                     <>
-                      <tab.icon
-                        className={`size-6 shrink-0 ${isTransitioning || (isPending && "animate-pulse")}`}
-                      />
+                      {isPending || isTransitioning ? (
+                        <Loader2 className="h-4 w-4 shrink-0 animate-spin text-blue-500" />
+                      ) : (
+                        <tab.icon className="h-4 w-4 shrink-0" />
+                      )}
 
-                      <span className="flex-1 whitespace-nowrap">
-                        {tab.label}
-                      </span>
-
-                      <Loader2
-                        className={`absolute right-3 size-6 shrink-0 text-blue-500 transition-opacity duration-300 ${
-                          isTransitioning || isPending
-                            ? "animate-spin opacity-100"
-                            : "opacity-0"
-                        }`}
-                      />
+                      <span className="whitespace-nowrap">{tab.label}</span>
                     </>
                   )}
                 </NavLink>
-              );
-            })}
-          </ul>
-        </nav>
+              ))}
+            </nav>
+          </div>
+        </header>
 
-        {/* Table */}
-        <div className="h-full w-5/6 overflow-hidden bg-linear-to-b from-gray-100 to-white p-5">
+        <div className="min-h-0 flex-1 overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
-              key={location.pathname.split("/")[3]}
-              initial={{ y: 15, opacity: 0.4 }}
-              animate={{ y: 0, opacity: 1 }}
+              key={activeTab}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
               className="size-full"
             >
               <Outlet />

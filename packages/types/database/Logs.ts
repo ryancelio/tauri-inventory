@@ -9,6 +9,7 @@ export enum AuditLogTargetType {
   GRUPO = "GRUPO",
   USUARIO = "USUARIO",
   ATRIBUTO = "ATRIBUTO",
+  LOJA = "LOJA"
 }
 
 export function isAuditLogTargetType(
