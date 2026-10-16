@@ -12,7 +12,7 @@ const LojasDataRoute: RouteObject[] = [
   },
 ];
 export async function getDataLoader({ request }: LoaderFunctionArgs) {
-  await timeout(2000);
+  // await timeout(2000);
   const url = new URL(request.url);
   const searchParams = url.searchParams;
 

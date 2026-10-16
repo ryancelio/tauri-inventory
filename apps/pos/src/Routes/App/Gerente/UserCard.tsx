@@ -1,12 +1,5 @@
 import { ILoja, UsuarioListing, UsuarioLogado } from "@tauri-inventory/types";
-import {
-  Store,
-  UserRound,
-  ShieldCheck,
-  Users,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { Store, UserRound, ShieldCheck, Users, ChevronUp } from "lucide-react";
 import CreateButton from "../Mercadorias/MercadoriaEdit/FormComponents/CreateButton";
 import { AnimatePresence, motion } from "framer-motion";
 import AddUsuarioModal from "./UsuariosModal";
@@ -98,15 +91,15 @@ export default function UsersCard({
         {/* Tabela */}
         <div className="h-full overflow-y-auto">
           {users.length > 0 ? (
-            <div className="divide-y divide-slate-100 flex flex-col justify-between h-full">
+            <div className="flex h-full flex-col justify-between divide-y divide-slate-100">
               <div className="grow">
-              {usuariosAtivos.map((user) => (
-                <UserRow
-                  loja={loja}
-                  user={user}
-                  handleDoubleClick={handleDoubleClickActive}
-                />
-              ))}
+                {usuariosAtivos.map((user) => (
+                  <UserRow
+                    loja={loja}
+                    user={user}
+                    handleDoubleClick={handleDoubleClickActive}
+                  />
+                ))}
               </div>
               <div className="flex w-full flex-col">
                 <button
@@ -135,7 +128,7 @@ export default function UsersCard({
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.15 }}
-                      className={`flex flex-col overflow-hidden max-h-1/2`}
+                      className={`flex max-h-1/2 flex-col overflow-hidden`}
                     >
                       {usuariosInativos.map((usuario) => (
                         <UserRow

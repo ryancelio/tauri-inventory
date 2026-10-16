@@ -1,25 +1,16 @@
-import {
-  AlertCircle,
-  Loader2,
-  Plus,
-  Store,
-  X,
-} from "lucide-react";
+import { AlertCircle, Loader2, Plus, Store, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useFetcher } from "react-router";
 
 import FullscreenModalWrapper from "../../SharedComponents/FullscreenModal";
 
 type CreateLojaResponse = {
+  ok?: boolean;
   error?: string;
 };
 
-export default function CreateLojaModal({
-  onClose,
-}: {
-  onClose: () => void;
-}) {
+export default function CreateLojaModal({ onClose }: { onClose: () => void }) {
   const fetcher = useFetcher<CreateLojaResponse>();
   const isLoading = fetcher.state !== "idle";
 
@@ -31,14 +22,18 @@ export default function CreateLojaModal({
       ? fetcher.data?.error
       : undefined;
 
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data?.ok) {
+      onClose();
+    }
+  }, [fetcher.state, fetcher.data, onClose]);
+
   return (
     <FullscreenModalWrapper
       cardWrapperClass="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
       handleClose={onClose}
     >
-      <div
-        className="w-full"
-      >
+      <div className="w-full">
         {/* Cabeçalho */}
         <header className="flex items-start justify-between border-b border-slate-100 px-6 py-5">
           <div className="flex items-center gap-3">
@@ -64,7 +59,7 @@ export default function CreateLojaModal({
             type="button"
             onClick={onClose}
             aria-label="Fechar modal"
-            className="grid size-9 shrink-0 place-items-center rounded-lg text-slate-400 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="grid size-9 shrink-0 place-items-center rounded-lg text-slate-400 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:outline-none"
           >
             <X className="size-5" />
           </button>
@@ -99,7 +94,7 @@ export default function CreateLojaModal({
               autoComplete="organization"
               placeholder="Ex.: Loja Centro"
               onChange={() => setErrorDismissed(true)}
-              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 outline-none transition duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 transition duration-200 outline-none placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
             />
           </div>
 
@@ -143,7 +138,7 @@ export default function CreateLojaModal({
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="h-11 rounded-xl px-4 text-sm font-medium text-slate-600 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-11 rounded-xl px-4 text-sm font-medium text-slate-600 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
             >
               Cancelar
             </button>
@@ -154,14 +149,11 @@ export default function CreateLojaModal({
               whileHover={isLoading ? undefined : { scale: 1.01 }}
               whileTap={isLoading ? undefined : { scale: 0.98 }}
               transition={{ duration: 0.15 }}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-medium text-white shadow-sm shadow-blue-600/15 transition-colors duration-200 hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/25 disabled:cursor-not-allowed disabled:opacity-70"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-medium text-white shadow-sm shadow-blue-600/15 transition-colors duration-200 hover:bg-blue-700 focus-visible:ring-4 focus-visible:ring-blue-500/25 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isLoading ? (
                 <>
-                  <Loader2
-                    className="size-4 animate-spin"
-                    aria-hidden="true"
-                  />
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                   <span>Criando loja...</span>
                 </>
               ) : (
@@ -210,10 +202,7 @@ function formatCnpj(value: string) {
 function CnpjInput({ value, onChange }: CnpjInputProps) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label
-        htmlFor="cnpj"
-        className="text-sm font-medium text-slate-700"
-      >
+      <label htmlFor="cnpj" className="text-sm font-medium text-slate-700">
         CNPJ
         <span className="ml-1 text-red-500" aria-hidden="true">
           *
@@ -234,7 +223,7 @@ function CnpjInput({ value, onChange }: CnpjInputProps) {
         pattern="[0-9]{2}\.[0-9]{3}\.[0-9]{3}/[0-9]{4}-[0-9]{2}"
         title="Digite o CNPJ completo no formato 00.000.000/0000-00."
         aria-describedby="cnpj-hint"
-        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm tabular-nums text-slate-900 outline-none transition duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 tabular-nums transition duration-200 outline-none placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
       />
 
       <p id="cnpj-hint" className="text-xs text-slate-400">

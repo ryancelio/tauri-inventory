@@ -3,7 +3,7 @@ import { loader } from "../LojasPage";
 import { ILoja } from "@tauri-inventory/types";
 import { useDebouncedCallback } from "use-debounce";
 import { motion } from "motion/react";
-import { Search, Store, X } from "lucide-react";
+import { ChevronRight, Search, Store } from "lucide-react";
 
 export default function InternalTable({
   selectedLoja,
@@ -38,71 +38,73 @@ export default function InternalTable({
     <div className="flex h-full flex-col gap-3">
       <div className="relative">
         <Form method="GET" onChange={(e) => debounce(e.currentTarget)}>
-          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search
+            size={18}
+            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"
+          />
           <input
             type="search"
             name="nome"
-            placeholder="Buscar por nome da loja..."
-            className="h-10 w-full rounded-lg border border-slate-200 bg-white pr-4 pl-10 text-sm text-slate-700 transition-all outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10"
+            placeholder="Buscar loja..."
+            className="h-11 w-full rounded-xl border border-slate-200 bg-white pr-4 pl-10 text-sm text-slate-700 transition-all outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50"
           />
         </Form>
       </div>
 
-      <div className="custom-scrollbar relative -mx-2 flex-1 overflow-y-auto px-2">
-        <div className="flex flex-col gap-1.5">
+      <div className="custom-scrollbar -mx-1 flex-1 overflow-y-auto px-1">
+        <div className="flex flex-col gap-1">
           {lojas.map((loja, index) => {
             const isSelected = selectedLoja?.id === loja.id;
             return (
               <motion.button
                 key={loja.id}
-                initial={{ opacity: 0, y: 6 }}
+                initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{
-                  duration: 0.15,
-                  delay: index * 0.02,
+                  duration: 0.12,
+                  delay: Math.min(index * 0.015, 0.12),
                   ease: "easeOut",
                 }}
                 onClick={() => handleSelect(loja)}
-                className={`group relative flex items-center gap-3 rounded-lg border p-3 text-left transition-all duration-150 ${
+                aria-pressed={isSelected}
+                className={`group flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors ${
                   isSelected
-                    ? "border-blue-300 bg-blue-50 shadow-sm"
-                    : "border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/40"
+                    ? "border-blue-200 bg-blue-50/70"
+                    : "border-transparent bg-white hover:bg-slate-50"
                 }`}
               >
                 <div
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                  className={`grid size-9 shrink-0 place-items-center rounded-lg transition-colors ${
                     isSelected
                       ? "bg-blue-100 text-blue-600"
-                      : "bg-slate-100 text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-600"
+                      : "bg-slate-100 text-slate-500 group-hover:text-slate-600"
                   }`}
                 >
                   <Store size={18} />
                 </div>
+
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <p className="truncate font-medium text-slate-800">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-medium text-slate-800">
                       {loja.nome}
                     </p>
-                    <span
-                      className={`ml-2 rounded-full px-2 py-0.5 text-xs font-medium ${
-                        isSelected
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-slate-100 text-slate-500"
-                      }`}
-                    >
+                    <span className="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-500">
                       #{loja.id}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-xs text-slate-500">
+                  <p className="mt-0.5 truncate text-xs text-slate-500">
                     CNPJ: {formatCNPJ(loja.CNPJ)}
                   </p>
                 </div>
-                {isSelected && (
-                  <X
-                    size={16}
-                    className="text-blue-600 transition-opacity group-hover:opacity-80"
-                  />
-                )}
+
+                <ChevronRight
+                  size={16}
+                  className={`shrink-0 transition-all ${
+                    isSelected
+                      ? "translate-x-0.5 text-blue-600"
+                      : "text-slate-300 group-hover:translate-x-0.5 group-hover:text-slate-400"
+                  }`}
+                />
               </motion.button>
             );
           })}
