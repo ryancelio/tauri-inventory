@@ -126,7 +126,7 @@ export default function CreateLojaModal({ onClose }: { onClose: () => void }) {
                     aria-hidden="true"
                   />
 
-                  <p className="min-w-0 break-words">{error}</p>
+                  <p className="min-w-0 wrap-break-word">{error}</p>
                 </div>
               </motion.div>
             )}
