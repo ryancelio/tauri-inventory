@@ -92,12 +92,12 @@ export default function FullscreenImageViewer({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className="fixed inset-0 z-120 flex flex-col bg-black/90 backdrop-blur-sm outline-none select-none"
+      className="fixed inset-0 z-120 flex flex-col bg-black/90 outline-none select-none"
       onClick={() => onClose()}
     >
       <button
         type="button"
-        className="absolute top-10 right-4 z-50 cursor-pointer rounded-full bg-white/10 p-2 text-white backdrop-blur-md transition-colors outline-none hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-blue-500"
+        className="absolute top-10 right-4 z-50 cursor-pointer rounded-full bg-white/10 p-2 text-white transition-colors outline-none hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-blue-500"
         onClick={(e) => {
           e.stopPropagation();
           onClose();
@@ -109,7 +109,7 @@ export default function FullscreenImageViewer({
 
       {/* Badge do grupo atual */}
       {itemGroups.length > 1 && (
-        <span className="absolute top-10 left-4 z-50 rounded-full bg-white/10 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-md">
+        <span className="absolute top-10 left-4 z-50 rounded-full bg-white/10 px-3 py-1.5 text-sm font-medium text-white">
           {current.group.label}
         </span>
       )}
@@ -118,7 +118,7 @@ export default function FullscreenImageViewer({
         <>
           <button
             type="button"
-            className="absolute top-1/2 left-4 z-50 -translate-y-1/2 cursor-pointer rounded-full bg-white/10 p-3 text-white backdrop-blur-md transition-all outline-none hover:scale-110 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-blue-500 active:scale-95"
+            className="absolute top-1/2 left-4 z-50 -translate-y-1/2 cursor-pointer rounded-full bg-white/10 p-3 text-white transition-all outline-none hover:scale-110 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-blue-500 active:scale-95"
             onClick={(e) => {
               e.stopPropagation();
               prevIndex();
@@ -129,7 +129,7 @@ export default function FullscreenImageViewer({
           </button>
           <button
             type="button"
-            className="absolute top-1/2 right-4 z-50 -translate-y-1/2 cursor-pointer rounded-full bg-white/10 p-3 text-white backdrop-blur-md transition-all outline-none hover:scale-110 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-blue-500 active:scale-95"
+            className="absolute top-1/2 right-4 z-50 -translate-y-1/2 cursor-pointer rounded-full bg-white/10 p-3 text-white transition-all outline-none hover:scale-110 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-blue-500 active:scale-95"
             onClick={(e) => {
               e.stopPropagation();
               nextIndex();
@@ -169,7 +169,7 @@ export default function FullscreenImageViewer({
 
       {flatItems.length > 1 && (
         <div
-          className="custom-scrollbar absolute bottom-0 left-1/2 z-50 flex max-w-[90vw] -translate-x-1/2 gap-3 overflow-x-auto rounded-2xl bg-black/50 p-3 opacity-30 backdrop-blur-md transition-opacity duration-300 ease-out hover:opacity-100"
+          className="custom-scrollbar absolute bottom-0 left-1/2 z-50 flex max-w-[90vw] -translate-x-1/2 gap-3 overflow-x-auto rounded-2xl bg-black/50 p-3 opacity-30 transition-opacity duration-300 ease-out hover:opacity-100"
           onClick={(e) => e.stopPropagation()}
         >
           {flatItems.map((item, idx) => (

@@ -43,21 +43,15 @@ export default function MercListForm({
 
   const handleFormChange = (e: React.ChangeEvent<HTMLFormElement>) => {
     if (!e.target.name) return;
-    let delay = 500;
+    let delay = 0;
     switch (e.target.name) {
       case "descricao":
         delay = 500;
         break;
-      case "fabricanteId":
-        delay = 0;
-        break;
-      case "grupoId":
-        delay = 0;
-        break;
-      case "categoriaId":
-        delay = 0;
-        break;
     }
+    // if (e.target.name.endsWith("Min")) {
+    //   delay = 500;
+    // }
 
     submitForm(delay);
   };

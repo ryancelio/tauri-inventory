@@ -32,7 +32,7 @@ export default function FullscreenSingleImage({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
           onClick={onClose}
-          className="fixed inset-0 z-130 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm outline-none sm:p-8"
+          className="fixed inset-0 z-130 flex items-center justify-center bg-black/80 p-4 outline-none sm:p-8"
         >
           <motion.img
             src={image}
