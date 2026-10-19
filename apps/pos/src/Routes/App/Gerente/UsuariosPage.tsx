@@ -7,7 +7,6 @@ import {
 import { getLojas, getUsuarios } from "../../../api/apiHelper";
 import { Search, Users } from "lucide-react";
 import { useMemo, useState } from "react";
-import { IUsuario, UsuarioListing } from "@tauri-inventory/types";
 import { getIsOfflineModeActive } from "../../../backend/backendHelper";
 import { userContext } from "../../../context/contexts";
 import UsersCard from "./UserCard";
