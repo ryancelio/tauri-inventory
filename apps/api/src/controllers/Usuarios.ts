@@ -212,6 +212,8 @@ export const alterarUsuario = async (
       senhaHash = await bcrypt.hash(usuarioData.senha, 10);
     }
 
+    console.log(usuarioData);
+
     const novoUsuario = {
       id: id,
       nome: usuarioData.nome,

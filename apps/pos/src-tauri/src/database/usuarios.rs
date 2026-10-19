@@ -256,7 +256,7 @@ pub async fn update_usuario(
     let api_url = get_api_url(&app)?;
     let token = get_token(&state)?;
 
-    // println!("{:?}", &usuario);
+    println!("{:?}", &usuario);
 
     let request = state
         .http_client

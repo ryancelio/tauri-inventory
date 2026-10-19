@@ -30,11 +30,6 @@ export async function loader({ context }: LoaderFunctionArgs) {
   return { usuarios, isOfflineMode, usuarioLogado, lojas };
 }
 
-export interface UsuarioPageLoaderData {
-  usuarios: IUsuario[];
-  isOfflineMode: boolean;
-  usuarioLogado: UsuarioListing;
-}
 export async function action({ request, context }: ActionFunctionArgs) {
   try {
     const method = request.method;

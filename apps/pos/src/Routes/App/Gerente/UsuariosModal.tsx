@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Ban,
   Check,
@@ -13,7 +13,7 @@ import { UsuarioListing } from "../../../../../../packages/types/database/Usuari
 import { useToast } from "../../../context/Toast/ToastContext";
 import UISelect from "../Components/BASE-UI/Select";
 import FullscreenModalWrapper from "../SharedComponents/FullscreenModal";
-import { UsuarioPageLoaderData } from "./UsuariosPage";
+import { loader } from "./UsuariosPage";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import { ActionResponse } from "../../Routers/routes";
 import { AnimatePresence, motion } from "motion/react";
@@ -23,6 +23,7 @@ type UserFormState = {
   nome: string;
   usuario: string;
   funcao: string;
+  lojaId: string;
   senha: string;
   confirmarSenha: string;
 };
@@ -30,6 +31,7 @@ type UserFormState = {
 export interface UsuarioModalErrors {
   nome?: string;
   usuario?: string;
+  lojaId?: string;
   novaSenha?: string;
   funcao?: string;
 }
@@ -40,6 +42,7 @@ const EMPTY_FORM_STATE: UserFormState = {
   funcao: "",
   senha: "",
   confirmarSenha: "",
+  lojaId: "",
 };
 
 export default function AddUsuarioModal({
@@ -56,7 +59,7 @@ export default function AddUsuarioModal({
   const [isAlterarSenha, setAlterarSenha] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
 
-  const { usuarioLogado } = useLoaderData<UsuarioPageLoaderData>();
+  const { usuarioLogado, lojas } = useLoaderData<typeof loader>();
 
   const fetcher = useFetcher<ActionResponse<UsuarioModalErrors>>();
   const isSubmitting = fetcher.state === "submitting";
@@ -74,6 +77,7 @@ export default function AddUsuarioModal({
     nome: usuario?.nome ?? "",
     usuario: usuario?.usuario ?? "",
     funcao: usuario?.funcao ?? "",
+    lojaId: usuario?.local.id.toString() ?? "",
     senha: "",
     confirmarSenha: "",
   });
@@ -95,6 +99,7 @@ export default function AddUsuarioModal({
       nome: String(formData.get("nome") ?? ""),
       usuario: String(formData.get("usuario") ?? ""),
       funcao: String(formData.get("funcao") ?? ""),
+      lojaId: String(formData.get("local") ?? ""),
       senha: String(formData.get("senha") ?? ""),
       confirmarSenha: String(formData.get("confirmarSenha") ?? ""),
     };
@@ -109,6 +114,7 @@ export default function AddUsuarioModal({
       currentState.usuario !== initialState.usuario ||
       currentState.funcao !== initialState.funcao ||
       currentState.senha !== initialState.senha ||
+      currentState.lojaId !== initialState.lojaId ||
       currentState.confirmarSenha !== initialState.confirmarSenha;
 
     setIsDirty(dirty);
@@ -173,6 +179,12 @@ export default function AddUsuarioModal({
       { action: "/gerente/usuarios", method: "PUT" },
     );
   };
+
+  const lojasItems = useMemo(
+    () => lojas.map((loja) => ({ label: loja.nome, value: loja.id })),
+    [lojas],
+  );
+
   return (
     <FullscreenModalWrapper handleClose={handleClose}>
       <div className="px-5 pt-5 pb-3">
@@ -226,11 +238,12 @@ export default function AddUsuarioModal({
           onChange={checkDirty}
           className="flex flex-col gap-4"
         >
-          <input
+          {
+            isNew && <input
             type="hidden"
             name="lojaId"
             value={loja?.id || usuario?.local.id}
-          />
+          />}
 
           <input type="hidden" value={usuario?.id} name="id" />
 
@@ -288,7 +301,60 @@ export default function AddUsuarioModal({
               />
             </div>
           </div>
+          <div>
+            {/*<label
+              className="mb-1.5 block text-sm font-semibold text-slate-700"
+              htmlFor="funcao"
+            >
+              Função
+            </label>*/}
 
+            <UISelect
+              defaultValue={
+                usuario?.funcao && {
+                  value: usuario.funcao,
+                  label: usuario.funcao,
+                }
+              }
+              label="Função"
+              className=""
+              name="funcao"
+              items={[
+                {
+                  label: "Vendedor",
+                  value: "vendedor",
+                },
+                {
+                  label: "Gerente",
+                  value: "gerente",
+                },
+                ...(usuarioLogado.funcao === "admin"
+                  ? [
+                      {
+                        label: "Admin",
+                        value: "admin",
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+          </div>
+
+          { !isNew &&
+            <div>
+            <UISelect
+              defaultValue={
+                usuario?.local && {
+                  value: usuario.local.id,
+                  label: usuario.local.nome,
+                }
+              }
+              name="lojaId"
+              items={lojasItems}
+              label="Local"
+            />
+          </div>
+          }
           {!isNew ? (
             <div
               className={`flex h-fit flex-col gap-1 overflow-hidden rounded-lg border-2 bg-gray-50 transition-all ease-out ${
@@ -328,44 +394,6 @@ export default function AddUsuarioModal({
           ) : (
             <PasswordInput isNew isAlterarSenha error={errors?.novaSenha} />
           )}
-
-          <div>
-            <label
-              className="mb-1.5 block text-sm font-semibold text-slate-700"
-              htmlFor="funcao"
-            >
-              Função
-            </label>
-
-            <UISelect
-              defaultValue={
-                usuario?.funcao && {
-                  value: usuario.funcao,
-                  label: usuario.funcao,
-                }
-              }
-              className="h-12 text-[17px]"
-              name="funcao"
-              items={[
-                {
-                  label: "Vendedor",
-                  value: "vendedor",
-                },
-                {
-                  label: "Gerente",
-                  value: "gerente",
-                },
-                ...(usuarioLogado.funcao === "admin"
-                  ? [
-                      {
-                        label: "Admin",
-                        value: "admin",
-                      },
-                    ]
-                  : []),
-              ]}
-            />
-          </div>
 
           <div className="mt-2 flex flex-col gap-1">
             {usuario?.id === usuarioLogado.id && (

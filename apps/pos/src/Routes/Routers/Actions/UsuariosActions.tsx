@@ -60,9 +60,9 @@ export async function updateUsuarioAction(formData: FormData) {
       break;
   }
 
-console.log(ativoString)
+  console.log(lojaId);
 
-  //   console.log(Object.fromEntries(formData.entries()));
+    // console.log(Object.fromEntries(formData.entries()));
   if (senha && confirmarSenha) {
     if (senha !== confirmarSenha) {
       const response: ActionErrorData<UsuarioModalErrors> = {
