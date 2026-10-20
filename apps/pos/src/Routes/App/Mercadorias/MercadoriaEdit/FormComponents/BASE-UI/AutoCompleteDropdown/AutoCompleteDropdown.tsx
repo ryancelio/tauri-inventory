@@ -73,15 +73,19 @@ export default function AutoCompleteDropdown({
   const [inputValue, setInputValue] = useState(
     currentSelectedItem?.label || "",
   );
-  const firstRender = useRef(true);
+  // Guarda por comparação com o valor anterior — e não por uma flag de
+  // "primeiro render": no dev com StrictMode o effect roda setup → cleanup →
+  // setup no mesmo mount, e uma flag seria consumida na primeira passada,
+  // disparando `onValueChange(null)` na segunda. No formulário de lista de
+  // mercadorias isso submetia o form "cru" logo na montagem e apagava os
+  // filtros vindos na URL (ex.: `estoque<id>Positivo=on`).
+  const lastSelectedRef = useRef(currentSelectedItem);
 
   useEffect(() => {
     setInputValue(currentSelectedItem?.label || "");
-    if (firstRender.current) {
-      firstRender.current = false;
-    } else {
-      onValueChange?.(currentSelectedItem);
-    }
+    if (lastSelectedRef.current === currentSelectedItem) return;
+    lastSelectedRef.current = currentSelectedItem;
+    onValueChange?.(currentSelectedItem);
   }, [currentSelectedItem]);
   const handledCreation = useRef<unknown>(creationFetcher?.data);
 

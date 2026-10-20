@@ -48,15 +48,28 @@ export default function GrupoCatDropdown({
   const [selectedCategoriaItem, setSelectedCategoriaItem] =
     useState<Item | null>(defaultCatItem);
 
-  const firstRender = useRef(true);
+  // Comparação com a seleção anterior, não uma flag de "primeiro render":
+  // sob StrictMode (dev) o effect roda duas vezes no mount e a flag seria
+  // consumida na primeira, disparando `onChangeValue()` na segunda — o que
+  // submetia o formulário de filtros vazio e limpava a URL logo após a
+  // navegação.
+  const lastSelectionRef = useRef({
+    categoria: selectedCategoriaItem,
+    grupo: selectedGrupoItem,
+  });
 
   useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
+    if (
+      lastSelectionRef.current.categoria === selectedCategoriaItem &&
+      lastSelectionRef.current.grupo === selectedGrupoItem
+    ) {
       return;
     }
 
-    // Not first render
+    lastSelectionRef.current = {
+      categoria: selectedCategoriaItem,
+      grupo: selectedGrupoItem,
+    };
     onChangeValue?.();
   }, [selectedCategoriaItem, selectedGrupoItem]);
 

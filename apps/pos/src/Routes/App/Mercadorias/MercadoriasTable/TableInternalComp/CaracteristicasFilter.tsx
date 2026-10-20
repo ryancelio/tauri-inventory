@@ -42,7 +42,14 @@ export default function CaracteristicasFilter({
   );
 
   const [filters, setFilters] = useState<AttrFilter[]>([]);
-  const lastFilterStr = useRef<string>("");
+  // `filters` nasce vazio, então o objeto do primeiro efeito é `{}`. Começar
+  // a referência com o mesmo valor impede que a montagem dispare `onChange`:
+  // isso submetia o formulário ainda "cru" e apagava na hora os filtros
+  // vindos da URL (ex.: o `estoque<id>Positivo=on` vindo do link da tela de
+  // lojas). Ao desligar todos os filtros de caract., `lastFilterStr` já
+  // guardou o valor com conteúdo, então o `onChange({})` de limpeza continua
+  // disparando normalmente.
+  const lastFilterStr = useRef<string>(JSON.stringify({}));
 
   const lastFilterRef = useRef<HTMLDivElement>(null);
 
