@@ -2,8 +2,7 @@ import { IMercadoria, MercadoriaPhotosListing } from "@tauri-inventory/types";
 import { ImageIcon, Ban, Plus } from "lucide-react";
 import ImageCarousel from "../../../SharedComponents/ImagesContainers/ImageCarousel";
 import CreateButton from "./CreateButton";
-import { Dispatch, SetStateAction } from "react";
-const API_URL = "http://localhost:8080";
+import { Dispatch, SetStateAction, useMemo } from "react";
 
 export default function FotosCard({
   isEdit,
@@ -22,6 +21,30 @@ export default function FotosCard({
   mercadoriaKey: number | string;
   mercCor: string;
 }) {
+  const itemGroups = useMemo(
+    () => [
+      {
+        label: mercCor,
+        items: photos.id,
+        baseUrl: `mercadorias-fotos/${mercadoria.id}`,
+        deleteAction: "/gerente/mercadorias/photos",
+      },
+      {
+        label: mercadoria.descricao.split(" ")[0],
+        items: photos.key,
+        baseUrl: `mercadorias-fotos/key/${mercadoriaKey}`,
+        deleteAction: "/gerente/mercadorias/photos/key",
+      },
+    ],
+    [
+      mercCor,
+      mercadoria.id,
+      mercadoria.descricao,
+      mercadoriaKey,
+      photos.id,
+      photos.key,
+    ],
+  );
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-slate-200/60 bg-white p-6 shadow-sm">
@@ -63,22 +86,7 @@ export default function FotosCard({
         </div>
       ) : (
         <div className="h-96 w-full">
-          <ImageCarousel
-            itemGroups={[
-              {
-                label: mercCor,
-                items: photos.id,
-                baseUrl: `${API_URL}/mercadorias-fotos/${mercadoria.id}`,
-                deleteAction: "/gerente/mercadorias/photos",
-              },
-              {
-                label: mercadoria.descricao.split(" ")[0],
-                items: photos.key,
-                baseUrl: `${API_URL}/mercadorias-fotos/key/${mercadoriaKey}`,
-                deleteAction: "/gerente/mercadorias/photos/key",
-              },
-            ]}
-          />
+          <ImageCarousel itemGroups={itemGroups} />
         </div>
       )}
     </div>

@@ -1,24 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import FullscreenInfoModal from "../InfoModal";
 import { useFetcher } from "react-router";
 import FullscreenSingleImage from "./FullscreenSingleImage";
-import { MercadoriaPhotosListing } from "@tauri-inventory/types";
 import { useToast } from "../../../../context/Toast/ToastContext";
 import { AnimatePresence } from "motion/react";
+import { useCarouselImages, type CarouselGroup } from "./useCarouselImages";
 
-export interface CarouselGroup {
-  label: string;
-  items: MercadoriaPhotosListing[];
-  baseUrl: string;
-  deleteAction?: string;
-}
-
-interface FlatPhoto {
-  photo: MercadoriaPhotosListing;
-  group: CarouselGroup;
-  groupIndex: number;
-}
+export type { CarouselGroup } from "./useCarouselImages";
 
 export default function ImageCarousel({
   itemGroups,
@@ -27,19 +16,9 @@ export default function ImageCarousel({
   itemGroups: CarouselGroup[];
   infiniteScroll?: boolean;
 }) {
-  // Achata os grupos uma vez — o índice continua único e global,
-  // os grupos só decidem baseUrl/deleteAction/label de cada slide.
-  const flatItems = useMemo(() => {
-    const result: FlatPhoto[] = [];
-    itemGroups.forEach((group, groupIndex) => {
-      group.items.forEach((photo) => {
-        result.push({ photo, group, groupIndex });
-      });
-    });
-    return result;
-  }, [itemGroups]);
+  const { images, groups } = useCarouselImages(itemGroups);
 
-  const lastIndex = flatItems.length - 1;
+  const lastIndex = images.length - 1;
   const [index, setIndex] = useState(0);
   const [confirmDeleteModal, setConfirmDeleteModal] = useState(false);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
@@ -54,7 +33,10 @@ export default function ImageCarousel({
     }
   }, [lastIndex, index]);
 
-  const current = flatItems[index];
+  const current = images[index];
+  const currentGroup = current ? groups[current.groupIndex] : undefined;
+  const hasMultipleGroups =
+    new Set(images.map((image) => image.groupIndex)).size > 1;
 
   function nextIndex() {
     if (index === lastIndex) {
@@ -76,35 +58,41 @@ export default function ImageCarousel({
     setIndex((prev) => (prev === 0 ? 0 : prev - 1));
   }
 
+  // Mantido async para o FullscreenInfoModal fechar ao concluir a ação
+  // (ele só faz autoClose quando `action()` devolve uma Promise).
   async function handleDeletePhoto() {
-    if (!current?.group.deleteAction) return;
+    if (!current || !currentGroup?.deleteAction) return;
 
-    await fetcher.submit(
-      { id: current.photo.id },
+    fetcher.submit(
+      { id: current.id },
       {
-        action: current.group.deleteAction,
+        action: currentGroup.deleteAction,
         method: "DELETE",
         encType: "application/json",
       },
     );
-    setSafeIndexOnDelete();
   }
 
   useEffect(() => {
     if (!fetcher.data) return;
+
     toaster.toast({
       title: "Deletar Foto",
       message: fetcher.data.response,
       type: fetcher.data.ok ? "success" : "error",
     });
-  }, [fetcher.data]);
 
-  if (flatItems.length === 0) return null;
+    if (fetcher.data.ok) {
+      setSafeIndexOnDelete();
+    }
+  }, [fetcher.data, toaster]);
+
+  if (images.length === 0) return null;
 
   return (
     <>
       <AnimatePresence>
-        {confirmDeleteModal && current?.group.deleteAction && (
+        {confirmDeleteModal && currentGroup?.deleteAction && (
           <FullscreenInfoModal
             information="Deseja mesmo deletar a imagem?"
             onClose={() => setConfirmDeleteModal(false)}
@@ -132,13 +120,14 @@ export default function ImageCarousel({
       >
         {/* Thumbs, com cabeçalho de grupo (só na coluna vertical/desktop) */}
         <div className="custom-scrollbar flex aspect-square h-20 shrink-0 items-center justify-start gap-2 overflow-x-auto pb-2 md:h-full md:w-20 md:flex-col md:overflow-y-auto md:pr-2 md:pb-0">
-          {flatItems.map((item, idx) => {
+          {images.map((item, idx) => {
+            const groupLabel = groups[item.groupIndex]?.label;
             const isFirstOfGroup =
-              idx === 0 || flatItems[idx - 1].groupIndex !== item.groupIndex;
+              idx === 0 || images[idx - 1].groupIndex !== item.groupIndex;
 
             return (
               <div
-                key={`${item.group.label}-${item.photo.id}`}
+                key={`${item.groupIndex}-${item.id}`}
                 className="contents md:block md:w-full"
               >
                 {isFirstOfGroup && (
@@ -147,7 +136,7 @@ export default function ImageCarousel({
                       idx !== 0 ? "md:pt-2" : ""
                     }`}
                   >
-                    {item.group.label}
+                    {groupLabel}
                   </span>
                 )}
                 <button
@@ -158,11 +147,12 @@ export default function ImageCarousel({
                       : "border-slate-200/60 opacity-60 hover:border-blue-300 hover:opacity-100"
                   }`}
                   onClick={() => setIndex(idx)}
+                  aria-label={`Ir para imagem ${idx + 1}${groupLabel ? ` (${groupLabel})` : ""}`}
                 >
                   <img
-                    src={`${item.group.baseUrl}/thumb/${item.photo.url}`}
+                    src={item.thumbSrc}
                     className="aspect-square h-full w-full object-contain p-1"
-                    alt="Thumbnail da foto de mercadoria"
+                    alt={`Miniatura ${idx + 1}${groupLabel ? ` (${groupLabel})` : ""}`}
                   />
                 </button>
               </div>
@@ -176,34 +166,30 @@ export default function ImageCarousel({
             className="flex h-full transition-transform duration-550 ease-[cubic-bezier(0.25,1,0.5,1)]"
             style={{ transform: `translateX(-${index * 100}%)` }}
           >
-            {flatItems.map((item, idx) => (
+            {images.map((item, idx) => (
               <li
-                key={`${item.group.label}-${item.photo.id}`}
+                key={`${item.groupIndex}-${item.id}`}
                 className="relative flex h-full w-full shrink-0 items-center justify-center"
               >
                 <img
                   className="h-full w-full object-contain"
                   loading={idx === 0 ? "eager" : "lazy"}
-                  src={`${item.group.baseUrl}/${item.photo.url}`}
+                  src={item.src}
                   alt="Foto da mercadoria"
-                  onDoubleClick={() =>
-                    setFullscreenImage(
-                      `${item.group.baseUrl}/${item.photo.url}`,
-                    )
-                  }
+                  onDoubleClick={() => setFullscreenImage(item.src)}
                 />
               </li>
             ))}
           </ul>
 
           {/* Badge indicando a que grupo a imagem atual pertence */}
-          {itemGroups.length > 1 && (
+          {hasMultipleGroups && currentGroup && (
             <span className="absolute top-3 left-3 rounded-full bg-slate-900/50 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
-              {current?.group.label}
+              {currentGroup.label}
             </span>
           )}
 
-          {flatItems.length > 1 && (
+          {images.length > 1 && (
             <>
               <button
                 type="button"
@@ -223,7 +209,7 @@ export default function ImageCarousel({
           )}
 
           {/* Só mostra deletar se o grupo atual expõe deleteAction */}
-          {current?.group.deleteAction && (
+          {currentGroup?.deleteAction && (
             <button
               type="button"
               className="absolute top-3 right-3 rounded-xl border border-slate-200/60 bg-white/80 p-2 text-slate-600 opacity-0 shadow-sm backdrop-blur-sm transition-all outline-none group-hover:opacity-100 hover:scale-105 hover:border-red-200 hover:bg-red-50 hover:text-red-600 focus:opacity-100 active:scale-95"
@@ -234,11 +220,11 @@ export default function ImageCarousel({
             </button>
           )}
 
-          {flatItems.length > 1 && (
+          {images.length > 1 && (
             <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5 rounded-full bg-slate-900/40 px-3 py-2 opacity-0 backdrop-blur-md transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-              {flatItems.map((_, idx) => (
+              {images.map((item, idx) => (
                 <button
-                  key={idx}
+                  key={`${item.groupIndex}-${item.id}`}
                   className={`rounded-full transition-all duration-300 outline-none ${
                     idx === index
                       ? "h-1.5 w-4 bg-white"

@@ -7,8 +7,12 @@ import {
   MercadoriaPhotosListing,
 } from "@tauri-inventory/types";
 import { Boxes, ClipboardList, Image, Package2, Tag } from "lucide-react";
-import { useEffect, useState } from "react";
-import { getKeyPhotos, getMercPhotos } from "../../../../../../api/apiHelper";
+import { useEffect, useMemo, useState } from "react";
+import {
+  getKeyPhotos,
+  getMercImage,
+  getMercPhotos,
+} from "../../../../../../api/apiHelper";
 import FullscreenImageViewer from "../../../../SharedComponents/ImagesContainers/FullscreenImageViewer";
 import { AnimatePresence } from "motion/react";
 import { useLoaderData } from "react-router";
@@ -65,16 +69,9 @@ export default function MercExtraInfo({
   const [mercPhotos, setMercPhotos] = useState<MercadoriaPhotosListing[]>([]);
   const [keyPhotos, setKeyPhotos] = useState<MercadoriaPhotosListing[]>([]);
   const [isPhotoFullscreenOpen, setPhotoFullscreenOpen] = useState(false);
-  const { isOfflineMode, apiUrl } = useLoaderData<typeof loader>();
+  const { isOfflineMode } = useLoaderData<typeof loader>();
   const toaster = useToast();
-
-  console.log(apiUrl)
-
-  // const atributosMap = useMemo(() => {
-  //   const map = new Map<string, string>();
-  //   atributos.forEach((at) => map.set(at.id.toString(), at.nome));
-  //   return map;
-  // }, [atributos]);
+  const [displayPhotoSrc, setDisplayPhotoSrc] = useState<string | null>();
 
   useEffect(() => {
     if (!isExpanded) return;
@@ -83,8 +80,28 @@ export default function MercExtraInfo({
     }
     const fetchPhotos = async () => {
       try {
-        setMercPhotos(await getMercPhotos(mercadoria.id));
-        setKeyPhotos(await getKeyPhotos(mercadoria.key));
+        const mercPhotosRes = await getMercPhotos(mercadoria.id);
+        const keyPhotosRes = await getKeyPhotos(mercadoria.key);
+        setMercPhotos(mercPhotosRes);
+        setKeyPhotos(keyPhotosRes);
+
+        if (mercPhotosRes.length > 0) {
+          setDisplayPhotoSrc(
+            await getMercImage({
+              baseUrl: `mercadorias-fotos/${mercadoria.id}`,
+              filename: mercPhotosRes[0].url,
+              isThumb: true,
+            }),
+          );
+        } else if (keyPhotosRes.length > 0) {
+          setDisplayPhotoSrc(
+            await getMercImage({
+              baseUrl: `mercadorias-fotos/key/${mercadoria.key}`,
+              filename: keyPhotosRes[0].url,
+              isThumb: true,
+            }),
+          );
+        }
       } catch (e) {
         console.error(e);
         toaster.toast({
@@ -96,26 +113,39 @@ export default function MercExtraInfo({
     };
     fetchPhotos();
   }, [mercadoria, isExpanded]);
+
+  const itemGroups = useMemo(
+    () => [
+      {
+        label: getMercadoriaCor(mercadoria),
+        items: mercPhotos,
+        baseUrl: `mercadorias-fotos/${mercadoria.id}`,
+        deleteAction: "/gerente/mercadorias/photos",
+      },
+      {
+        label: mercadoria.descricao.split(" ")[0],
+        items: keyPhotos,
+        baseUrl: `mercadorias-fotos/key/${mercadoria.key}`,
+        deleteAction: "/gerente/mercadorias/photos/key",
+      },
+    ],
+    [
+      mercadoria.id,
+      mercadoria.key,
+      mercadoria.descricao,
+      mercadoria.caracteristicas,
+      mercPhotos,
+      keyPhotos,
+    ],
+  );
+
   return (
     <>
       <AnimatePresence>
         {isPhotoFullscreenOpen && (
           <FullscreenImageViewer
             key="fullscreen-viewer"
-            itemGroups={[
-              {
-                label: getMercadoriaCor(mercadoria),
-                items: mercPhotos,
-                baseUrl: `${apiUrl}/mercadorias-fotos/${mercadoria.id}`,
-                deleteAction: "/gerente/mercadorias/photos",
-              },
-              {
-                label: mercadoria.descricao.split(" ")[0],
-                items: keyPhotos,
-                baseUrl: `${apiUrl}/mercadorias-fotos/key/${mercadoria.key}`,
-                deleteAction: "/gerente/mercadorias/photos/key",
-              },
-            ]}
+            itemGroups={itemGroups}
             onClose={() => setPhotoFullscreenOpen(false)}
           />
         )}
@@ -135,7 +165,8 @@ export default function MercExtraInfo({
                     onClick={() => setPhotoFullscreenOpen(true)}
                   >
                     <img
-                      src={`http://localhost:8080/mercadorias-fotos/${mercadoria.id}/thumb/${mercPhotos[0].url}`}
+                      // src={`http://localhost:8080/mercadorias-fotos/${mercadoria.id}/thumb/${mercPhotos[0].url}`}
+                      src={displayPhotoSrc ?? undefined}
                       alt=""
                       className="h-full w-full rounded-xl transition-all hover:scale-105"
                     />

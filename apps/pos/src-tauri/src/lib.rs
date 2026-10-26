@@ -165,6 +165,8 @@ pub fn run() {
             database::mercadoria_photos::upload_key_photo,
             database::mercadoria_photos::get_key_photos,
             database::mercadoria_photos::delete_key_photo,
+            database::mercadoria_photos::get_merc_images,
+            database::mercadoria_photos::get_merc_img_bulk,
             database::audit_logs::get_logs_all,
             database::audit_logs::get_logs_mercadoria,
             database::audit_logs::get_logs_usuario,

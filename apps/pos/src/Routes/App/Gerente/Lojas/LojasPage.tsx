@@ -1,10 +1,11 @@
 import { motion } from "motion/react";
 import { Loader2, Store } from "lucide-react";
-import { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import { ActionFunctionArgs, LoaderFunctionArgs, useLoaderData } from "react-router";
 import LojasTable from "./Table/LojasTable";
 import { createLoja, getLojas } from "../../../../api/apiLojas";
 import { useState } from "react";
 import { ILoja } from "@tauri-inventory/types";
+import { getMercImage } from "../../../../api/apiPhotos";
 
 export async function action({ request }: ActionFunctionArgs) {
   try {
@@ -41,6 +42,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         loja.nome.toLowerCase().includes(nome.toLowerCase()),
       )
     : allLojas;
+
 
   return { lojas };
 }
