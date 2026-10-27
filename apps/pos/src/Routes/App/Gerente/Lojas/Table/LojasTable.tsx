@@ -33,7 +33,7 @@ export default function LojasTable({
     <>
       <AnimatePresence>
         {createLojaOpen && (
-          <CreateLojaModal onClose={() => setCreateLojaOpen(false)} />
+          <CreateLojaModal onClose={() => setCreateLojaOpen(false)} onCreate={(loja) => setSelectedLoja(loja)} />
         )}
       </AnimatePresence>
 

@@ -4,14 +4,11 @@ import { useEffect, useState } from "react";
 import { useFetcher } from "react-router";
 
 import FullscreenModalWrapper from "../../SharedComponents/FullscreenModal";
+import { ILoja } from "@tauri-inventory/types";
+import { action } from "./LojasPage";
 
-type CreateLojaResponse = {
-  ok?: boolean;
-  error?: string;
-};
-
-export default function CreateLojaModal({ onClose }: { onClose: () => void }) {
-  const fetcher = useFetcher<CreateLojaResponse>();
+export default function CreateLojaModal({ onClose, onCreate }: { onClose: () => void, onCreate: (newLoja: ILoja) => void }) {
+  const fetcher = useFetcher<typeof action>();
   const isLoading = fetcher.state !== "idle";
 
   const [cnpj, setCnpj] = useState("");
@@ -23,7 +20,9 @@ export default function CreateLojaModal({ onClose }: { onClose: () => void }) {
       : undefined;
 
   useEffect(() => {
-    if (fetcher.state === "idle" && fetcher.data?.ok) {
+    if (fetcher.state === "idle" && fetcher.data?.ok && fetcher.data.response) {
+      const loja = fetcher.data.response;
+      onCreate(loja);
       onClose();
     }
   }, [fetcher.state, fetcher.data, onClose]);

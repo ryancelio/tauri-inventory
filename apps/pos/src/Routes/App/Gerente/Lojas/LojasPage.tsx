@@ -23,11 +23,11 @@ export async function action({ request }: ActionFunctionArgs) {
 
     console.log({ CNPJ: cnpj, nome });
 
-    await createLoja({ CNPJ: cnpj, nome });
-    return { ok: true, error: null };
+    const newLoja = await createLoja({ CNPJ: cnpj, nome });
+    return { ok: true,response: newLoja, error: null };
   } catch (e) {
     console.error(e);
-    return { ok: false, error: e instanceof Error ? e.message : "Erro ao criar loja" };
+    return { ok: false, response: null, error: e instanceof Error ? e.message : "Erro ao criar loja" };
   }
 }
 
