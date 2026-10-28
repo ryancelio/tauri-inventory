@@ -1,30 +1,40 @@
 import { ILoja } from "@tauri-inventory/types";
 import InternalData from "./InternalData";
 import InternalTable from "./InternalTable";
-import { useFetcher } from "react-router";
+import { useFetcher, useLoaderData } from "react-router";
 import { getDataLoader } from "../../../../Routers/AppRoutes/Gerente/Lojas/LojasDataRoute";
 import { AnimatePresence, motion } from "motion/react";
 import { Store } from "lucide-react";
 import CreateButton from "../../../Mercadorias/MercadoriaEdit/FormComponents/CreateButton";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import CreateLojaModal from "../CreateLojaModal";
+import { loader } from "../LojasPage";
+import DeleteLojaModal from "../DeleteLojaModal";
 
 export default function LojasTable({
-  selectedLoja,
-  setSelectedLoja,
+  selectedLojaId,
+  setSelectedLojaId,
 }: {
-  selectedLoja: ILoja | null;
-  setSelectedLoja: (loja: ILoja | null) => void;
+  selectedLojaId: number | string | null;
+  setSelectedLojaId: (id: number | string | null) => void;
 }) {
   const lojaExtraDataFetcher = useFetcher<typeof getDataLoader>();
+  const { lojas } = useLoaderData<typeof loader>();
+
+  const currentLoja = useMemo(
+    () => lojas.find((lj) => lj.id === selectedLojaId),
+    [selectedLojaId, lojas],
+  );
 
   const [createLojaOpen, setCreateLojaOpen] = useState(false);
+  const [editingLoja, setEditingLoja] = useState<ILoja | null>(null);
+  const [deleteLojaModal, setDeleteLojaModal] = useState<ILoja | null>(null);
 
-  const handleSelectLoja = (loja: ILoja | null) => {
-    setSelectedLoja(loja);
-    if (!loja) return;
+  const handleSelectLoja = (id: number | string | null) => {
+    setSelectedLojaId(id);
+    if (!id) return;
     lojaExtraDataFetcher.submit(
-      { lojaId: loja.id },
+      { lojaId: id },
       { action: "/gerente/lojas/get-data", method: "get" },
     );
   };
@@ -33,7 +43,26 @@ export default function LojasTable({
     <>
       <AnimatePresence>
         {createLojaOpen && (
-          <CreateLojaModal onClose={() => setCreateLojaOpen(false)} onCreate={(loja) => setSelectedLoja(loja)} />
+          <CreateLojaModal
+            onClose={() => setCreateLojaOpen(false)}
+            onCreate={(loja) => setSelectedLojaId(loja?.id ?? null)}
+          />
+        )}
+        {editingLoja && currentLoja && (
+          <CreateLojaModal
+            onClose={() => setEditingLoja(null)}
+            loja={currentLoja}
+            isEdit
+          />
+        )}
+        {deleteLojaModal && currentLoja && (
+          <DeleteLojaModal
+            onClose={() => {
+              setDeleteLojaModal(null);
+              setSelectedLojaId(null);
+            }}
+            loja={currentLoja}
+          />
         )}
       </AnimatePresence>
 
@@ -60,8 +89,8 @@ export default function LojasTable({
           </div>
           <div className="min-h-0 flex-1 p-3">
             <InternalTable
-              selectedLoja={selectedLoja}
-              setSelectedLoja={handleSelectLoja}
+              selectedLojaId={selectedLojaId}
+              setSelectedLojaId={handleSelectLoja}
             />
           </div>
         </motion.div>
@@ -73,9 +102,9 @@ export default function LojasTable({
           className="flex h-full w-2/3 min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white"
         >
           <AnimatePresence mode="wait">
-            {selectedLoja ? (
+            {selectedLojaId ? (
               <motion.div
-                key={selectedLoja.id}
+                key={selectedLojaId}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -83,7 +112,9 @@ export default function LojasTable({
                 className="flex h-full min-h-0 flex-col"
               >
                 <InternalData
-                  selectedLoja={selectedLoja}
+                  loja={currentLoja}
+                  onEdit={setEditingLoja}
+                  onDelete={setDeleteLojaModal}
                   isFetching={lojaExtraDataFetcher.state !== "idle"}
                   lojaData={lojaExtraDataFetcher.data}
                 />

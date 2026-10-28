@@ -93,14 +93,15 @@ export const criarUsuario = async (
 
     if (e instanceof ValidationError) {
       if (e.errors && e.errors.length > 0) {
+        console.error(e.errors)
         switch (e.errors[0].message) {
           case "PRIMARY must be unique":
             error = "Erro ao criar usuario, ID já existente no banco de dados.";
             status = 400;
             break;
-          case "O nome do usuario já está em uso.":
+          case "O usuário já está em uso.":
             error =
-              "Erro ao criar usuario, nome já existente no banco de dados.";
+              "Erro ao criar usuario, campo usuario já existente no banco de dados.";
             status = 400;
             break;
         }

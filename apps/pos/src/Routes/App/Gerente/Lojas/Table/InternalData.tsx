@@ -4,27 +4,40 @@ import {
   Calendar,
   ChevronRight,
   CreditCard,
+  EllipsisVertical,
   Package,
   PackageX,
+  Pencil,
   Store,
+  Trash2,
   UserCheck,
   Users,
   UserX,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { getDataLoader } from "../../../../Routers/AppRoutes/Gerente/Lojas/LojasDataRoute";
-import { motion } from "motion/react";
-import { Link } from "react-router";
+import { AnimatePresence, motion } from "motion/react";
+import { Link, useLoaderData } from "react-router";
+import SimpleMenu from "../../../Components/BASE-UI/SimpleMenu";
+import { useMemo, useState } from "react";
+import CreateLojaModal from "../CreateLojaModal";
+import { loader } from "../LojasPage";
 
 export default function InternalData({
-  selectedLoja,
+  loja,
   isFetching,
   lojaData,
+  onEdit,
+  onDelete,
 }: {
-  selectedLoja: ILoja | null;
+  loja: ILoja | undefined;
+    onEdit: (loja: ILoja | null) => void;
+    onDelete: (loja: ILoja) => void;
   isFetching: boolean;
   lojaData: Awaited<ReturnType<typeof getDataLoader>> | undefined;
-}) {
+  }) {
+
+
   if (isFetching || !lojaData) {
     return (
       <div className="flex size-full flex-col overflow-y-auto">
@@ -49,7 +62,7 @@ export default function InternalData({
     );
   }
 
-  if (!selectedLoja) {
+  if (!loja) {
     return null;
   }
 
@@ -61,8 +74,10 @@ export default function InternalData({
   } = lojaData;
 
   return (
+    <>
+
     <div className="custom-scrollbar flex h-full flex-col overflow-y-auto">
-      <StoreHeader loja={selectedLoja} />
+      <StoreHeader loja={loja} onEdit={onEdit} onDelete={onDelete}/>
 
       <div className="flex flex-1 flex-col gap-5 p-5">
         <StatsPanel
@@ -77,14 +92,16 @@ export default function InternalData({
             funcionariosAtivos={funcionariosAtivos}
             totalInativos={funcionariosInativos.length}
           />
-          <MercadoriasCard loja={selectedLoja} data={mercadoriasPrincipais} />
+          <MercadoriasCard loja={loja} data={mercadoriasPrincipais} />
         </div>
       </div>
-    </div>
+      </div>
+    </>
+
   );
 }
 
-function StoreHeader({ loja }: { loja: ILoja }) {
+function StoreHeader({ loja, onEdit,onDelete }: { loja: ILoja, onEdit: (loja: ILoja) => void, onDelete: (loja: ILoja) => void; }) {
   const formatCNPJ = (cnpj: string) =>
     cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
 
@@ -125,8 +142,42 @@ function StoreHeader({ loja }: { loja: ILoja }) {
             </span>
           </div>
         </div>
+        <div className="">
+          <SimpleMenu
+            menuItems={[
+              {
+                items: [
+                  {
+                    row: (
+                      <div className="flex w-full items-center gap-2">
+                        <Pencil size={16} className="text-slate-500" />
+                        <span>Editar</span>
+                      </div>
+                    ),
+                    onClick: () => onEdit(loja),
+                  },
+                  {
+                    row: (
+                      <div className="flex w-full items-center gap-2 text-red-600">
+                        <Trash2 size={16} className="text-red-500" />
+                        <span>Excluir</span>
+                      </div>
+                    ),
+                    onClick: () => onDelete(loja),
+                  },
+                ],
+              },
+            ]}
+          >
+            <div
+              className="grid size-8 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-300"
+            >
+              <EllipsisVertical size={18} />
+            </div>
+          </SimpleMenu>
+        </div>
       </div>
-    </div>
+      </div>
   );
 }
 

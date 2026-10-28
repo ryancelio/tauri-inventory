@@ -1,6 +1,6 @@
 import { ILoja, UsuarioListing, UsuarioLogado } from "@tauri-inventory/types";
 import { Store, UserRound, ShieldCheck, Users, ChevronUp } from "lucide-react";
-import CreateButton from "../Mercadorias/MercadoriaEdit/FormComponents/CreateButton";
+import CreateButton from "../../Mercadorias/MercadoriaEdit/FormComponents/CreateButton";
 import { AnimatePresence, motion } from "framer-motion";
 import AddUsuarioModal from "./UsuariosModal";
 import { useEffect, useMemo, useState } from "react";
@@ -81,7 +81,7 @@ export default function UsersCard({
               </div>
             </div>
             <CreateButton
-              disabled={isDisabled || false}
+              disabled={isDisabled}
               onClick={() => setAddModal(loja)}
               className="size-9"
             />

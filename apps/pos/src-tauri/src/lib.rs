@@ -175,6 +175,8 @@ pub fn run() {
             database::loja::get_lojas,
             database::loja::get_loja_estoque_total,
             database::loja::create_loja,
+            database::loja::edit_loja,
+            database::loja::delete_loja,
             config::api_url::command_get_api_url,
             config::api_url::change_api_url,
             config::api_url::check_api_url,

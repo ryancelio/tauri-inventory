@@ -6,11 +6,11 @@ import { motion } from "motion/react";
 import { ChevronRight, Search, Store } from "lucide-react";
 
 export default function InternalTable({
-  selectedLoja,
-  setSelectedLoja,
+  selectedLojaId,
+  setSelectedLojaId,
 }: {
-  selectedLoja: ILoja | null;
-  setSelectedLoja: (loja: ILoja | null) => void;
+  selectedLojaId: number | string | null;
+  setSelectedLojaId: (id: number | string | null) => void;
 }) {
   const { lojas } = useLoaderData<typeof loader>();
   const submit = useSubmit();
@@ -20,11 +20,11 @@ export default function InternalTable({
   }, 150);
 
   const handleSelect = (loja: ILoja) => {
-    if (selectedLoja?.id === loja.id) {
-      setSelectedLoja(null);
+    if (selectedLojaId === loja.id) {
+      setSelectedLojaId(null);
       return;
     }
-    setSelectedLoja(loja);
+    setSelectedLojaId(loja.id);
   };
 
   const formatCNPJ = (cnpj: string) => {
@@ -54,7 +54,7 @@ export default function InternalTable({
       <div className="custom-scrollbar -mx-1 flex-1 overflow-y-auto px-1">
         <div className="flex flex-col gap-1">
           {lojas.map((loja, index) => {
-            const isSelected = selectedLoja?.id === loja.id;
+            const isSelected = selectedLojaId === loja.id;
             return (
               <motion.button
                 key={loja.id}

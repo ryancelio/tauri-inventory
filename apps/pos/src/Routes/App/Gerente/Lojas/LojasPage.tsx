@@ -1,33 +1,73 @@
 import { motion } from "motion/react";
 import { Loader2, Store } from "lucide-react";
-import { ActionFunctionArgs, LoaderFunctionArgs, useLoaderData } from "react-router";
+import { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import LojasTable from "./Table/LojasTable";
-import { createLoja, getLojas } from "../../../../api/apiLojas";
+import {
+  createLoja,
+  deleteLoja,
+  editLoja,
+  getLojas,
+} from "../../../../api/apiLojas";
 import { useState } from "react";
 import { ILoja } from "@tauri-inventory/types";
-import { getMercImage } from "../../../../api/apiPhotos";
 
 export async function action({ request }: ActionFunctionArgs) {
   try {
     const formData = await request.formData();
     const nome = formData.get("nome")?.toString();
     const cnpj = formData.get("CNPJ")?.toString();
+    const lojaId = formData.get("id")?.toString();
+    const id = Number(lojaId);
 
-    if (!nome || nome === "") {
-      return { ok: false, error: "Nome inválido." };
+    const checkDados = () => {
+      if (!nome) {
+        return { ok: false, response: null, error: "Nome inválido." };
+      }
+
+      if (!cnpj) {
+        return { ok: false, response: null, error: "CNPJ inválido." };
+      }
+
+      return null;
+    };
+
+    const checkId = () => {
+      if (!id || isNaN(id)) {
+        console.error("ID da loja nao presente no payload na action.");
+        return { ok: false, response: null, error: "Dados incompletos." };
+      }
+      return null;
+    };
+
+    let response: ILoja | null = null;
+    switch (request.method) {
+      case "POST":
+        const postErr = checkDados();
+        if (postErr) return postErr;
+        const newLoja = await createLoja({ CNPJ: cnpj!, nome: nome! });
+        response = newLoja;
+        break;
+      case "PUT":
+        const putErr = checkId();
+        if (putErr) return putErr;
+        const putErr2 = checkDados();
+        if (putErr2) return putErr2;
+        response = await editLoja({ CNPJ: cnpj!, nome: nome! }, id);
+        break;
+      case "DELETE":
+        const deleteErr = checkId();
+        if (deleteErr) return deleteErr;
+        response = await deleteLoja(id);
+        break;
     }
-
-    if (!cnpj || cnpj === "") {
-      return { ok: false, error: "CNPJ inválido." };
-    }
-
-    console.log({ CNPJ: cnpj, nome });
-
-    const newLoja = await createLoja({ CNPJ: cnpj, nome });
-    return { ok: true,response: newLoja, error: null };
+    return { ok: true, response, error: null };
   } catch (e) {
     console.error(e);
-    return { ok: false, response: null, error: e instanceof Error ? e.message : "Erro ao criar loja" };
+    return {
+      ok: false,
+      response: null,
+      error: e instanceof Error ? e.message : "Erro ao criar/editar loja",
+    };
   }
 }
 
@@ -43,7 +83,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
       )
     : allLojas;
 
-
   return { lojas };
 }
 
@@ -56,7 +95,9 @@ export function HydrateFallback() {
 }
 
 export function Component() {
-  const [selectedLoja, setSelectedLoja] = useState<ILoja | null>(null);
+  const [selectedLojaId, setSelectedLojaId] = useState<number | string | null>(
+    null,
+  );
 
   return (
     <div className="h-full w-full overflow-hidden bg-slate-50 p-3 md:p-5">
@@ -82,8 +123,8 @@ export function Component() {
 
         <div className="min-h-0 flex-1 p-4">
           <LojasTable
-            selectedLoja={selectedLoja}
-            setSelectedLoja={setSelectedLoja}
+            selectedLojaId={selectedLojaId}
+            setSelectedLojaId={setSelectedLojaId}
           />
         </div>
       </motion.div>

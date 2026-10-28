@@ -4,17 +4,17 @@ import {
   redirect,
   useLoaderData,
 } from "react-router";
-import { getLojas, getUsuarios } from "../../../api/apiHelper";
+import { getLojas, getUsuarios } from "../../../../api/apiHelper";
 import { Search, Users } from "lucide-react";
 import { useMemo, useState } from "react";
-import { getIsOfflineModeActive } from "../../../backend/backendHelper";
-import { userContext } from "../../../context/contexts";
+import { getIsOfflineModeActive } from "../../../../backend/backendHelper";
+import { userContext } from "../../../../context/contexts";
 import UsersCard from "./UserCard";
 import {
   createUsuarioAction,
   deactivateUsuarioAction,
   updateUsuarioAction,
-} from "../../Routers/Actions/UsuariosActions";
+} from "../../../Routers/Actions/UsuariosActions";
 
 export async function loader({ context }: LoaderFunctionArgs) {
   const usuarios = await getUsuarios(true);
@@ -127,51 +127,10 @@ export function Component() {
                 users={usuariosFiltrados.filter(
                   (user) => user.local.id === loja.id,
                 )}
-                isDisabled={isOfflineMode}
+                isDisabled={isOfflineMode || (usuarioLogado.funcao !== "admin" && usuarioLogado.local.id !== loja.id)}
                 loja={loja}
               />
             ))}
-            {/*<UsersCard
-              usuario={usuarioLogado}
-              users={loja02}
-              title="Loja 02"
-              local="02"
-              onAdd={() => setAddModal("02")}
-              isDisabled={
-                isOfflineMode ||
-                (usuarioLogado.funcao !== "admin" &&
-                  usuarioLogado.local !== "02")
-              }
-              onDoubleClick={setEditModal}
-            />
-
-            <UsersCard
-              usuario={usuarioLogado}
-              users={loja03}
-              title="Loja 03"
-              local="03"
-              onAdd={() => setAddModal("03")}
-              isDisabled={
-                isOfflineMode ||
-                (usuarioLogado.funcao !== "admin" &&
-                  usuarioLogado.local !== "03")
-              }
-              onDoubleClick={setEditModal}
-            />
-
-            <UsersCard
-              usuario={usuarioLogado}
-              users={loja04}
-              title="Loja 04"
-              local="04"
-              onAdd={() => setAddModal("04")}
-              isDisabled={
-                isOfflineMode ||
-                (usuarioLogado.funcao !== "admin" &&
-                  usuarioLogado.local !== "03")
-              }
-              onDoubleClick={setEditModal}
-            />*/}
           </div>
         </div>
       </div>

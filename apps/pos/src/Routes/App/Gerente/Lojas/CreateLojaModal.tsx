@@ -1,4 +1,4 @@
-import { AlertCircle, Loader2, Plus, Store, X } from "lucide-react";
+import { AlertCircle, Loader2, Plus, Save, Store, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useFetcher } from "react-router";
@@ -7,11 +7,21 @@ import FullscreenModalWrapper from "../../SharedComponents/FullscreenModal";
 import { ILoja } from "@tauri-inventory/types";
 import { action } from "./LojasPage";
 
-export default function CreateLojaModal({ onClose, onCreate }: { onClose: () => void, onCreate: (newLoja: ILoja) => void }) {
+export default function CreateLojaModal({
+  onClose,
+  onCreate,
+  isEdit = false,
+  loja,
+}: {
+  onClose: () => void;
+  onCreate?: (newLoja: ILoja | null) => void;
+  isEdit?: boolean;
+  loja?: ILoja;
+}) {
   const fetcher = useFetcher<typeof action>();
   const isLoading = fetcher.state !== "idle";
 
-  const [cnpj, setCnpj] = useState("");
+  const [cnpj, setCnpj] = useState(loja?.CNPJ || "");
   const [errorDismissed, setErrorDismissed] = useState(false);
 
   const error =
@@ -20,12 +30,14 @@ export default function CreateLojaModal({ onClose, onCreate }: { onClose: () => 
       : undefined;
 
   useEffect(() => {
-    if (fetcher.state === "idle" && fetcher.data?.ok && fetcher.data.response) {
-      const loja = fetcher.data.response;
-      onCreate(loja);
+    console.log(fetcher.data)
+    console.log(fetcher.state)
+    if (fetcher.state === "idle" && fetcher.data?.ok) {
+      const loja = fetcher.data?.response ?? null;
+      onCreate?.(loja);
       onClose();
     }
-  }, [fetcher.state, fetcher.data, onClose]);
+  }, [fetcher.state, fetcher.data, onClose, onCreate]);
 
   return (
     <FullscreenModalWrapper
@@ -45,11 +57,12 @@ export default function CreateLojaModal({ onClose, onCreate }: { onClose: () => 
                 id="create-loja-title"
                 className="text-lg font-semibold tracking-tight text-slate-900"
               >
-                Nova loja
+                {isEdit ? "Editar" : "Nova"} loja
               </h1>
 
               <p className="mt-0.5 text-sm text-slate-500">
-                Informe os dados para realizar o cadastro.
+                Informe os dados para {isEdit ? "atualizar" : "realizar"} o
+                cadastro.
               </p>
             </div>
           </div>
@@ -66,11 +79,13 @@ export default function CreateLojaModal({ onClose, onCreate }: { onClose: () => 
 
         {/* Formulário */}
         <fetcher.Form
-          method="POST"
+          method={isEdit ? "PUT" : "POST"}
+          action="/gerente/lojas"
           aria-labelledby="create-loja-title"
           onSubmit={() => setErrorDismissed(false)}
           className="flex flex-col gap-5 px-6 py-6"
         >
+          <input type="hidden" name="id" value={loja?.id} />
           {/* Nome da loja */}
           <div className="flex flex-col gap-1.5">
             <label
@@ -91,6 +106,7 @@ export default function CreateLojaModal({ onClose, onCreate }: { onClose: () => 
               minLength={2}
               maxLength={120}
               autoComplete="organization"
+              defaultValue={isEdit ? loja?.nome : undefined}
               placeholder="Ex.: Loja Centro"
               onChange={() => setErrorDismissed(true)}
               className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 transition duration-200 outline-none placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
@@ -153,12 +169,25 @@ export default function CreateLojaModal({ onClose, onCreate }: { onClose: () => 
               {isLoading ? (
                 <>
                   <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                  <span>Criando loja...</span>
+                  {isEdit ? (
+                    <span>Editando Loja...</span>
+                  ) : (
+                    <span>Criando loja...</span>
+                  )}
                 </>
               ) : (
                 <>
-                  <Plus className="size-4" aria-hidden="true" />
-                  <span>Criar loja</span>
+                  {isEdit ? (
+                    <>
+                      <Save className="size-4" aria-hidden="true" />
+                      <span>Editar loja</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="size-4" aria-hidden="true" />
+                      <span>Criar loja</span>
+                    </>
+                  )}
                 </>
               )}
             </motion.button>

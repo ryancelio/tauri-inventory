@@ -5,12 +5,14 @@ import {
   editarUsuario,
 } from "../../../api/apiHelper";
 import { ActionErrorData } from "../routes";
-import { UsuarioModalErrors } from "../../App/Gerente/UsuariosModal";
+import { UsuarioModalErrors } from "../../App/Gerente/Usuarios/UsuariosModal";
 
 export async function createUsuarioAction(formData: FormData) {
   const nome = (formData.get("nome") as string) || undefined;
   const usuario = (formData.get("usuario") as string) || undefined;
   const senha = (formData.get("senha") as string) || undefined;
+  const confirmarSenha =
+    (formData.get("confirmarSenha") as string) || undefined;
   const funcao = (formData.get("funcao") as Funcao) || undefined;
   // O `UsuariosModal` manda `<input type="hidden" name="lojaId">`, não `local`:
   // a loja é uma entidade e o payload espera o id (mesmo campo do
@@ -23,6 +25,14 @@ export async function createUsuarioAction(formData: FormData) {
 
   if (!funcao || !lojaId) {
     throw { message: { response: "Dados incompletos" } };
+  }
+
+  if (senha !== confirmarSenha) {
+    const response: ActionErrorData<UsuarioModalErrors> = {
+      message: { response: "Senhas não coincidem." },
+      errors: { novaSenha: "Senhas nao coincidem" },
+    };
+    throw response;
   }
 
   const usuarioPayload: CriarUsuarioPayload = {
@@ -62,7 +72,7 @@ export async function updateUsuarioAction(formData: FormData) {
 
   console.log(lojaId);
 
-    // console.log(Object.fromEntries(formData.entries()));
+  // console.log(Object.fromEntries(formData.entries()));
   if (senha && confirmarSenha) {
     if (senha !== confirmarSenha) {
       const response: ActionErrorData<UsuarioModalErrors> = {

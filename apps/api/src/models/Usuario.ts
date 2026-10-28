@@ -17,8 +17,7 @@ export default class UsuarioModel extends Model {
   })
   declare id: number;
 
-  @AllowNull(false)
-  @Column(DataTypes.STRING)
+  @Column({type: DataTypes.STRING, allowNull: false,unique: false})
   declare nome: string;
 
   @AllowNull(false)
@@ -35,6 +34,7 @@ export default class UsuarioModel extends Model {
   @AllowNull(false)
   @Column({
     type: DataTypes.STRING,
+    unique: false,
     validate: {
       async isUnique(this: UsuarioModel, value: string) {
         const usuario = await UsuarioModel.findOne({

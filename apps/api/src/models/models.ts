@@ -23,56 +23,6 @@ import UsuarioModel from "./Usuario";
 import LojasModel from "./Lojas";
 import EstoqueModel from "./Estoque";
 
-// // ---- Um fabricante pode ter várias mercadorias ----
-// // Criando a coluna fabricanteId na tabela mercadoria,
-// // e chamando-a de mercadorias na tabela fabricante para consultas
-// FabricanteModel.hasMany(MercadoriaModel, {
-//   foreignKey: "fabricanteId",
-//   as: "mercadorias",
-// });
-
-// // ---- Uma mercadoria pertence a um fabricante ----
-// // Utiliza a coluna criada anteriormente, e a apelida de fabricante
-// MercadoriaModel.belongsTo(FabricanteModel, {
-//   foreignKey: "fabricanteId",
-//   as: "fabricante",
-// });
-
-// CategoriaModel.hasMany(MercadoriaModel, {
-//   foreignKey: "categoriaId",
-//   as: "mercadorias",
-// });
-// MercadoriaModel.belongsTo(CategoriaModel, {
-//   foreignKey: "categoriaId",
-//   as: "categoria",
-// });
-
-// MercadoriaModel.hasMany(MercadoriaPhotoModel, {
-//   foreignKey: "mercadoriaId",
-//   as: "photos",
-// });
-// MercadoriaPhotoModel.belongsTo(MercadoriaModel, {
-//   foreignKey: "mercadoriaId",
-//   as: "mercadoria",
-// });
-
-// MercadoriaModel.belongsToMany(AtributoModel, {
-//   through: MercadoriaAtributosModel,
-// });
-// AtributoModel.belongsToMany(MercadoriaModel, {
-//   through: MercadoriaAtributosModel,
-// });
-
-// GrupoModel.hasMany(CategoriaModel, {
-//   foreignKey: "grupoId",
-//   as: "categorias",
-// });
-
-// CategoriaModel.belongsTo(GrupoModel, {
-//   foreignKey: "grupoId",
-//   as: "grupo",
-// });
-
 sequelize.addModels([
   GrupoModel,
   CategoriaModel,
@@ -90,13 +40,9 @@ sequelize.addModels([
 ]);
 
 sequelize
-  // .sync()
   .sync({ alter: true })
   .then(() => console.log("Modelos sincronizados com sucesso."));
 
-// for (let key = 1; key <= 114; key++) {
-//   sequelize.query(`INSERT INTO MercadoriaKeys (\`key\`) VALUES (${key});`);
-// }
 export {
   MercadoriaModel as Mercadoria,
   FabricanteModel as Fabricante,

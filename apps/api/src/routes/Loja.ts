@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createLoja, getLojaEstoqueTotal, getLojas } from "../controllers/Loja";
+import { createLoja, deleteLoja, editLoja, getLojaEstoqueTotal, getLojas } from "../controllers/Loja";
 import { bodyParser } from "../middlewares/bodyParser";
 import { createLojaSchema } from "../../../../packages/types/dist/database/Loja";
 import { requiredRole } from "../middlewares/auth";
@@ -13,6 +13,17 @@ lojasRouter.post(
   requiredRole(["admin", "gerente"]),
   bodyParser(createLojaSchema),
   createLoja,
+);
+lojasRouter.put(
+  "/:lojaId",
+  requiredRole(["admin", "gerente"]),
+  bodyParser(createLojaSchema),
+  editLoja,
+);
+lojasRouter.delete(
+  "/:lojaId",
+  requiredRole(["admin", "gerente"]),
+  deleteLoja,
 );
 
 export default lojasRouter;

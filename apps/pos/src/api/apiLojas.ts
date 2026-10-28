@@ -13,3 +13,11 @@ export async function getLojaEstoqueTotal(lojaId: number) {
 export async function createLoja(createLojaPayload: CreateLojaPayload) {
   return await invoke<ILoja>("create_loja",{createLojaPayload});
 }
+
+export async function editLoja(editLojaPayload: CreateLojaPayload, lojaId: number) {
+  return await invoke<ILoja>("edit_loja", { editLojaPayload, lojaId });
+}
+
+export async function deleteLoja(lojaId: number) {
+  return await invoke<ILoja>("delete_loja", { lojaId });
+}

@@ -9,13 +9,13 @@ import {
   User,
 } from "lucide-react";
 import { useLoaderData, useFetcher } from "react-router";
-import { UsuarioListing } from "../../../../../../packages/types/database/Usuario";
-import { useToast } from "../../../context/Toast/ToastContext";
-import UISelect from "../Components/BASE-UI/Select";
-import FullscreenModalWrapper from "../SharedComponents/FullscreenModal";
+import { UsuarioListing } from "../../../../../../../packages/types/database/Usuario";
+import { useToast } from "../../../../context/Toast/ToastContext";
+import UISelect from "../../Components/BASE-UI/Select";
+import FullscreenModalWrapper from "../../SharedComponents/FullscreenModal";
 import { loader } from "./UsuariosPage";
 import { confirm } from "@tauri-apps/plugin-dialog";
-import { ActionResponse } from "../../Routers/routes";
+import { ActionResponse } from "../../../Routers/routes";
 import { AnimatePresence, motion } from "motion/react";
 import { ILoja } from "@tauri-inventory/types";
 

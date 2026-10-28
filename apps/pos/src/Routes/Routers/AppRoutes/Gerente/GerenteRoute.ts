@@ -16,7 +16,7 @@ const GerenteRoute: RouteObject[] = [
       },
       {
         path: "usuarios",
-        lazy: () => import("../../../App/Gerente/UsuariosPage"),
+        lazy: () => import("../../../App/Gerente/Usuarios/UsuariosPage"),
       },
       ...LogsRoute,
       {
