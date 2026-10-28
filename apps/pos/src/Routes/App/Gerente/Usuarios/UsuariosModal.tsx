@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Ban,
   Check,
@@ -77,7 +77,9 @@ export default function AddUsuarioModal({
     nome: usuario?.nome ?? "",
     usuario: usuario?.usuario ?? "",
     funcao: usuario?.funcao ?? "",
-    lojaId: usuario?.local.id.toString() ?? "",
+    // For a new user the store comes from the `loja` prop (hidden input),
+    // while an existing user's store comes from `usuario.local`.
+    lojaId: String((isNew ? loja?.id : usuario?.local?.id) ?? ""),
     senha: "",
     confirmarSenha: "",
   });
@@ -86,7 +88,7 @@ export default function AddUsuarioModal({
    * Extract only the values that are relevant for determining
    * whether the user changed anything.
    */
-  const getFormState = (): UserFormState => {
+  const getFormState = useCallback((): UserFormState => {
     const form = formRef.current;
 
     if (!form) {
@@ -99,26 +101,35 @@ export default function AddUsuarioModal({
       nome: String(formData.get("nome") ?? ""),
       usuario: String(formData.get("usuario") ?? ""),
       funcao: String(formData.get("funcao") ?? ""),
-      lojaId: String(formData.get("local") ?? ""),
+      // The field is named "lojaId" both in the hidden input and in the UISelect.
+      lojaId: String(formData.get("lojaId") ?? ""),
       senha: String(formData.get("senha") ?? ""),
       confirmarSenha: String(formData.get("confirmarSenha") ?? ""),
     };
-  };
+  }, []);
 
-  const checkDirty = () => {
-    const currentState = getFormState();
-    const initialState = initialStateRef.current;
+  /**
+   * `overrides` is used by the selects, whose hidden inputs only receive the
+   * new value after React re-renders (i.e. after this handler runs).
+   */
+  const checkDirty = useCallback(
+    (overrides?: Partial<UserFormState>) => {
+      const currentState = { ...getFormState(), ...overrides };
+      const initialState = initialStateRef.current;
 
-    const dirty =
-      currentState.nome !== initialState.nome ||
-      currentState.usuario !== initialState.usuario ||
-      currentState.funcao !== initialState.funcao ||
-      currentState.senha !== initialState.senha ||
-      currentState.lojaId !== initialState.lojaId ||
-      currentState.confirmarSenha !== initialState.confirmarSenha;
+      const dirty =
+        currentState.nome !== initialState.nome ||
+        currentState.usuario !== initialState.usuario ||
+        currentState.funcao !== initialState.funcao ||
+        currentState.senha !== initialState.senha ||
+        currentState.lojaId !== initialState.lojaId ||
+        currentState.confirmarSenha !== initialState.confirmarSenha;
 
-    setIsDirty(dirty);
-  };
+      setIsDirty(dirty);
+    },
+    [getFormState],
+  );
+
   useEffect(() => {
     checkDirty();
   }, [isAlterarSenha, checkDirty]);
@@ -235,7 +246,7 @@ export default function AddUsuarioModal({
           ref={formRef}
           action="/gerente/usuarios"
           method={isNew ? "POST" : "PUT"}
-          onChange={checkDirty}
+          onChange={() => checkDirty()}
           className="flex flex-col gap-4"
         >
           {
@@ -319,6 +330,9 @@ export default function AddUsuarioModal({
               label="Função"
               className=""
               name="funcao"
+              onValueChange={(item) =>
+                checkDirty({ funcao: String(item?.value ?? "") })
+              }
               items={[
                 {
                   label: "Vendedor",
@@ -350,6 +364,9 @@ export default function AddUsuarioModal({
                 }
               }
               name="lojaId"
+              onValueChange={(item) =>
+                checkDirty({ lojaId: String(item?.value ?? "") })
+              }
               items={lojasItems}
               label="Local"
             />
