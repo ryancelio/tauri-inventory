@@ -26,7 +26,7 @@ export const loader: LoaderFunction = async ({ request, context }) => {
     Object.fromEntries(searchParams);
 
   const usuario = context.get(userContext);
-  const isOfflineMode = getIsOfflineModeActive();
+  const isOfflineMode = await getIsOfflineModeActive();
 
   if (!usuario) {
     throw new Error("Usuario nao autenticado");

@@ -258,7 +258,7 @@ export default function MercExtraInfo({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-3">
+              <div className={`grid grid-cols-1 gap-3 max-h-60 overflow-y-auto ${lojas.length > 3 && "pr-3"}`}>
                 {lojas.length === 0 ? (
                   <p className="text-sm text-gray-400 italic">
                     Nenhuma loja cadastrada.

@@ -35,8 +35,8 @@ export async function loader() {
 
 export const HydrateFallback = () => {
   return (
-    <div className="grid size-full place-items-center">
-      <Loader2 />
+    <div className="grid size-full place-items-center text-blue-500">
+      <Loader2 size={48} className="animate-spin"/>
     </div>
   );
 };

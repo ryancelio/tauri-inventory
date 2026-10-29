@@ -27,7 +27,7 @@ import CreateButton from "../Mercadorias/MercadoriaEdit/FormComponents/CreateBut
 export const loader: LoaderFunction = async ({ context }) => {
   const atributos = await getAtributos();
   const usuario = context.get(userContext);
-  const isOfflineMode = await getIsOfflineModeActive();
+  const isOfflineMode = await await getIsOfflineModeActive();
 
   return { atributos, usuario, isOfflineMode };
 };

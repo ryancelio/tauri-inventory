@@ -20,9 +20,10 @@ export default function FotosCard({
   photos: { id: MercadoriaPhotosListing[]; key: MercadoriaPhotosListing[] };
   mercadoriaKey: number | string;
   mercCor: string;
-}) {
+  }) {
+
   const itemGroups = useMemo(
-    () => [
+    () => isEdit ? [
       {
         label: mercCor,
         items: photos.id,
@@ -35,7 +36,7 @@ export default function FotosCard({
         baseUrl: `mercadorias-fotos/key/${mercadoriaKey}`,
         deleteAction: "/gerente/mercadorias/photos/key",
       },
-    ],
+    ] : [],
     [
       mercCor,
       mercadoria.id,
@@ -43,6 +44,7 @@ export default function FotosCard({
       mercadoriaKey,
       photos.id,
       photos.key,
+      isEdit,
     ],
   );
 
