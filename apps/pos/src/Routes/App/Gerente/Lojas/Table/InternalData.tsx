@@ -16,12 +16,9 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { getDataLoader } from "../../../../Routers/AppRoutes/Gerente/Lojas/LojasDataRoute";
-import { AnimatePresence, motion } from "motion/react";
-import { Link, useLoaderData } from "react-router";
+import { motion } from "motion/react";
+import { Link } from "react-router";
 import SimpleMenu from "../../../Components/BASE-UI/SimpleMenu";
-import { useMemo, useState } from "react";
-import CreateLojaModal from "../CreateLojaModal";
-import { loader } from "../LojasPage";
 
 export default function InternalData({
   loja,
